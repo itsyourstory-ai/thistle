@@ -1,0 +1,23 @@
+project_id = "zsvknybyzvvirkvfrhuf"
+
+[functions.generate-summary]
+verify_jwt = false
+
+[functions.generate-cover]
+verify_jwt = false
+
+[functions.generate-character-portrait]
+verify_jwt = false
+
+[functions.generate-book]
+verify_jwt = false
+
+[functions.export-book-to-drive]
+verify_jwt = false
+
+[functions.generate-book-images]
+verify_jwt = false
+
+[functions.export-book-images-to-drive]
+verify_jwt = false
+
