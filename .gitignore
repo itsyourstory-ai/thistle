@@ -12,6 +12,15 @@ dist
 dist-ssr
 *.local
 
+# Environment variables — never commit real values. Use .env.example as the template.
+.env
+.env.*
+!.env.example
+
+# Vercel CLI artifacts and local token file
+.vercel
+.vercel.token
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
