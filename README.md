@@ -1,41 +1,64 @@
 # Thistle
 
-A Vite + React SPA backed by Supabase (database, auth, edge functions). Hosted on Vercel.
+Vite + React SPA. Backend: Supabase (database, auth, edge functions). Hosting: Vercel.
 
-## Deployment
+---
 
-### How it works
+## Working on a feature
 
-| Trigger | What happens |
-|---|---|
-| Open a PR targeting `main` | CI runs (lint, test, build) + Vercel preview URL generated |
-| Merge to `main` | Auto-deploys to **staging** |
-| Click "Promote to Production" in Vercel | Promotes current staging build to **production** |
+**1. Start from a fresh main**
+```bash
+git checkout main
+git pull
+```
 
-CI is a required check — merges are blocked if lint, tests, or build fail.
+**2. Create a branch**
+```bash
+git checkout -b feature/your-description
+# or: fix/your-description
+```
 
-### Promote to production
+**3. Work, then push and open a PR**
+```bash
+git add .
+git commit -m "feature: describe what you did"
+git push origin feature/your-description
+gh pr create
+```
+
+**4. Wait for CI** — lint, tests, and build run automatically. Merge is blocked until they pass.
+
+**5. Merge the PR on GitHub**, then delete the branch (GitHub offers this immediately after merge).
+
+**6. Clean up locally**
+```bash
+git checkout main
+git pull
+git branch -d feature/your-description
+```
+
+---
+
+## Shipping to production
+
+Merging to `main` auto-deploys to **staging**. When you're ready to go live:
 
 1. Open [Vercel dashboard](https://vercel.com/dashboard) → Thistle → Deployments
 2. Find the latest `main` deployment
 3. Click `⋯` → **Promote to Production**
 
-No git branch push needed. Production is always a promoted staging build.
+---
 
-### Environment variables
+## Local setup
 
-Set in **Vercel → Project → Settings → Environment Variables** (already configured):
+```bash
+cp .env.example .env   # fill in your Supabase values
+nvm use                # switches to Node 22
+npm install
+npm run dev
+```
 
+Env vars needed (get from Supabase dashboard):
 - `VITE_SUPABASE_URL`
 - `VITE_SUPABASE_PUBLISHABLE_KEY`
 - `VITE_SUPABASE_PROJECT_ID`
-
-For local development, copy `.env.example` → `.env` and fill in the values.
-
-### Setup notes
-
-- **Supabase:** single project shared across staging and production
-- **Node version:** pinned to 22 via `.nvmrc` — run `nvm use` locally; Vercel and CI pick it up automatically
-- **Branch protection:** direct pushes to `main` are blocked; all changes go through PRs
-- **Lockfile:** uses `package-lock.json` (`npm ci`). Do not use Bun to install — it generates an incompatible lockfile
-
