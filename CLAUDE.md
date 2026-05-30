@@ -120,6 +120,29 @@ Key tables (migrations in `supabase/migrations/`):
 
 `/dev/story-preview/:id` (`src/pages/DevStoryPreview.tsx`) renders a full book preview by `generated_books.id`. No auth required; not linked from the main app.
 
+## Git workflow
+
+**Direct pushes to `main` are blocked.** Branch protection requires the "Lint & Test" CI check to pass. Always work on a feature branch and open a PR.
+
+```bash
+git checkout main && git pull
+git checkout -b feature/your-description   # or fix/your-description
+# ... make changes ...
+git add <files>
+git commit -m "feature: describe what you did"
+git push -u origin feature/your-description
+gh pr create
+```
+
+Merge the PR on GitHub after CI passes. Then clean up locally:
+
+```bash
+git checkout main && git pull
+git branch -d feature/your-description
+```
+
 ## CI/CD
 
-GitHub Actions runs lint, test, and build on every PR and push to `main`. All three must pass before merge is allowed. Merging to `main` auto-deploys to Vercel staging. Production promotion is manual via the Vercel dashboard.
+GitHub Actions runs lint, test, and build on every PR. All three must pass before merge is allowed. Merging to `main` auto-deploys to Vercel **staging** — not production.
+
+**To ship to production:** open the [Vercel deployments dashboard](https://vercel.com/its-your-story/thistle/deployments) → find the latest `main` deployment → hover the row → click `⋯` → **Promote to Production**.
