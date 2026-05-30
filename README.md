@@ -43,9 +43,10 @@ git branch -d feature/your-description
 
 Merging to `main` auto-deploys to **staging**. When you're ready to go live:
 
-1. Open [Vercel dashboard](https://vercel.com/dashboard) → Thistle → Deployments
-2. Find the latest `main` deployment
-3. Click `⋯` → **Promote to Production**
+1. Open [Vercel dashboard](https://vercel.com/its-your-story/thistle/deployments)
+2. Find the top `main` deployment (status: **Ready · Preview**)
+3. **Hover** the row — a `⋯` button appears on the right
+4. Click `⋯` → **Promote to Production**
 
 ---
 
