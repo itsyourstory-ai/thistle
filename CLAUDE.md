@@ -124,6 +124,11 @@ Key tables (migrations in `supabase/migrations/`):
 
 **Direct pushes to `main` are blocked.** Branch protection requires the "Lint & Test" CI check to pass. Always work on a feature branch and open a PR.
 
+### Rules for Claude
+
+1. **Always branch before making any changes.** Never commit directly to `main`.
+2. **When the user says to push**, push the branch and create a PR with `gh pr create`, then give the user the PR URL so they can merge it on GitHub.
+
 ```bash
 git checkout main && git pull
 git checkout -b feature/your-description   # or fix/your-description
@@ -131,7 +136,7 @@ git checkout -b feature/your-description   # or fix/your-description
 git add <files>
 git commit -m "feature: describe what you did"
 git push -u origin feature/your-description
-gh pr create
+gh pr create  # then give the user the PR URL
 ```
 
 Merge the PR on GitHub after CI passes. Then clean up locally:

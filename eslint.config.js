@@ -21,7 +21,6 @@ export default tseslint.config(
       ...reactHooks.configs.recommended.rules,
       "react-refresh/only-export-components": ["warn", { allowConstantExport: true }],
       "@typescript-eslint/no-unused-vars": "off",
-      // Lovable-generated code uses `any` extensively — warn only
       "@typescript-eslint/no-explicit-any": "warn",
       // shadcn/ui generates empty interfaces as extension points — not an error
       "@typescript-eslint/no-empty-object-type": "warn",
