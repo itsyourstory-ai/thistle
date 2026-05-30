@@ -1,13 +1,13 @@
 name: CI
 
-# Runs lint + tests on every PR and on pushes to the long-lived branches.
-# Branch protection (configured separately) makes these checks REQUIRED, so a
-# failing run blocks the merge — and therefore blocks the Vercel deploy.
+# Runs lint + tests on every PR targeting main, and on direct pushes to main.
+# Branch protection makes this a REQUIRED check, so a failing run blocks the
+# merge. Production is deployed manually via Vercel "Promote to Production."
 on:
   pull_request:
-    branches: [main, staging]
+    branches: [main]
   push:
-    branches: [main, staging]
+    branches: [main]
 
 # Cancel an in-progress run if the same ref is pushed again.
 concurrency:
