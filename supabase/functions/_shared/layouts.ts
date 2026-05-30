@@ -19,7 +19,7 @@ export type TextPlacement =
   | "bottom"
   | "left"
   | "right"
-  | "overlay-center"
+  | "center"
   | "facing-page";
 
 export type IllustrationCoverage =
@@ -54,7 +54,7 @@ export const PAGE_LAYOUTS: PageLayout[] = [
     id: "title",
     label: "Title page",
     appliesTo: ["title"],
-    textPlacement: "overlay-center",
+    textPlacement: "center",
     illustrationCoverage: "full",
     compositionCue:
       "reuse the cover artwork; no new illustration prompt for this page",
@@ -85,7 +85,7 @@ export const PAGE_LAYOUTS: PageLayout[] = [
     textPlacement: "bottom",
     illustrationCoverage: "three-quarter",
     compositionCue:
-      "square 1:1 canvas — keep the lower third visually quiet (open sky, water, soft ground, or out-of-focus foreground) so text can overlay cleanly",
+      "square 1:1 canvas — reserve the lower third as a calm text-safe area; place important faces, hands, props, and story action in the upper and middle portions; keep the text area low-detail, low-contrast, and free of readable text",
   },
   {
     id: "text-top-third",
@@ -94,7 +94,7 @@ export const PAGE_LAYOUTS: PageLayout[] = [
     textPlacement: "top",
     illustrationCoverage: "three-quarter",
     compositionCue:
-      "square 1:1 canvas — keep the upper third visually quiet (open sky, plain ceiling, soft wall) so text can overlay cleanly",
+      "square 1:1 canvas — reserve the upper third as a calm text-safe area; place important faces, hands, props, and story action in the middle and lower portions; keep the text area low-detail, low-contrast, and free of readable text",
   },
   {
     id: "text-left-half",
@@ -103,7 +103,7 @@ export const PAGE_LAYOUTS: PageLayout[] = [
     textPlacement: "left",
     illustrationCoverage: "half",
     compositionCue:
-      "square 1:1 canvas — compose the scene on the right half; left half is a plain, gently textured backdrop reserved for text",
+      "square 1:1 canvas — reserve the left 40–45% as a calm text-safe area; compose the main scene, expressions, and story action on the right side; keep the text side low-detail, low-contrast, and free of readable text",
     preferFor: ["opening", "rising"],
   },
   {
@@ -113,8 +113,18 @@ export const PAGE_LAYOUTS: PageLayout[] = [
     textPlacement: "right",
     illustrationCoverage: "half",
     compositionCue:
-      "square 1:1 canvas — compose the scene on the left half; right half is a plain, gently textured backdrop reserved for text",
+      "square 1:1 canvas — reserve the right 40–45% as a calm text-safe area; compose the main scene, expressions, and story action on the left side; keep the text side low-detail, low-contrast, and free of readable text",
     preferFor: ["resolution", "closing"],
+  },
+  {
+    id: "text-center-card",
+    label: "Text center / framed illustration",
+    appliesTo: ["story"],
+    textPlacement: "center",
+    illustrationCoverage: "three-quarter",
+    compositionCue:
+      "square 1:1 canvas — reserve a large calm centered text-safe area; frame characters, setting details, and decorative story elements around the center without crowding it; keep the center softly textured, low-detail, low-contrast, and free of readable text",
+    preferFor: ["turn", "resolution", "closing"],
   },
 ];
 

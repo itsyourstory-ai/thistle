@@ -41,8 +41,8 @@ const App = () => (
             <Route path="/step/6-art-style" element={<Step6ArtStyle />} />
             <Route path="/step/7-character" element={<Step7Character />} />
             <Route path="/step/8-summary" element={<Step8Summary />} />
-            <Route path="/step/9-generating" element={<Step9Generating />} />
-            <Route path="/step/10-preview" element={<Step10Preview />} />
+            <Route path="/step/9-preview" element={<Step10Preview />} />
+            <Route path="/step/10-generating" element={<Step9Generating />} />
             {/* Secret Ingredient hidden — route preserved */}
             <Route path="/step/secret-ingredient" element={<StepSecretIngredient />} />
             {/* Legacy numeric redirects */}

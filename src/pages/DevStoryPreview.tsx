@@ -190,7 +190,7 @@ export default function DevStoryPreview() {
     (async () => {
       const { data, error } = await supabase
         .from("generated_books")
-        .select("*")
+        .select("id,created_at,framework_id,brief,raw_output,parsed,model,generation_ms,status,drive_folder_url,drive_doc_url,drive_export_status,drive_export_error")
         .eq("id", id)
         .maybeSingle();
       if (error) setError(error.message);

@@ -2,8 +2,8 @@ import { useEffect, useState } from "react";
 import WizardShell from "@/components/WizardShell";
 import { useWizard } from "@/contexts/WizardContext";
 import { Input } from "@/components/ui/input";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { SelectableTile } from "@/components/SelectableTile";
 import bookBoard from "@/assets/book-board.jpg";
 import bookPicture from "@/assets/book-picture.jpg";
 import bookEarly from "@/assets/book-early.jpg";
@@ -33,7 +33,10 @@ export default function Step1() {
   const age = (answers.ageRange as string) || "";
   const gender = (answers.gender as string) || "";
   const language = (answers.language as string) || "english";
-  const bookBelongsTo = answers.bookBelongsTo !== false;
+
+  useEffect(() => {
+    setAnswer("bookBelongsTo", true);
+  }, []);
 
   const [headingVisible, setHeadingVisible] = useState(true);
   const [headingText, setHeadingText] = useState("Who is this book for?");
@@ -58,25 +61,12 @@ export default function Step1() {
     setCanContinue(name.trim().length > 0 && age !== "" && gender !== "");
   }, [name, age, gender, setCanContinue]);
 
-  const pillClass = (selected: boolean) =>
-    `cursor-pointer rounded-2xl px-5 py-3 text-center transition-all border-2 shadow-sm ${
-      selected
-        ? "border-[hsl(var(--wizard-primary))] bg-[hsl(var(--wizard-primary)/0.08)]"
-        : "border-transparent bg-white hover:shadow-md"
-    }`;
-
-  const chipClass = (selected: boolean) =>
-    `cursor-pointer rounded-2xl px-4 py-3 text-center transition-all border-2 shadow-sm ${
-      selected
-        ? "border-[hsl(var(--wizard-primary))] bg-[hsl(var(--wizard-primary)/0.08)]"
-        : "border-transparent bg-white hover:shadow-md"
-    }`;
 
   return (
     <WizardShell>
-      <div className="space-y-8">
+      <div className="space-y-10">
         {/* Heading */}
-        <div className="text-center space-y-2">
+        <div className="space-y-2">
           <h1
             className="font-heading text-3xl sm:text-4xl font-semibold transition-opacity duration-300"
             style={{
@@ -91,35 +81,26 @@ export default function Step1() {
           </p>
         </div>
 
-        {/* Name input */}
         {/* Name + Gender side by side */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 w-full">
           {/* Name */}
           <div className="space-y-2">
-            <label className="block text-center text-2xl font-sans font-semibold text-[hsl(var(--wizard-primary))]">
+            <h2 className="font-heading text-xl sm:text-2xl font-semibold text-left text-[hsl(var(--wizard-primary))]">
               Name
-            </label>
+            </h2>
             <Input
               value={name}
               onChange={(e) => setAnswer("childName", e.target.value)}
               placeholder="e.g. Emma, John, etc."
-              className="text-center text-base font-medium h-10 w-full rounded-xl border-input bg-white shadow-sm focus-visible:ring-[hsl(var(--wizard-primary))]"
+              className="text-base font-medium h-10 w-full rounded-xl border-input bg-white shadow-sm focus-visible:ring-[hsl(var(--wizard-primary))]"
             />
-            <label className="flex items-center justify-center gap-2 cursor-pointer select-none">
-              <Checkbox
-                checked={bookBelongsTo}
-                onCheckedChange={(checked) => setAnswer("bookBelongsTo", !!checked)}
-                className="border-[hsl(var(--wizard-primary))] data-[state=checked]:bg-[hsl(var(--wizard-primary))]"
-              />
-              <span className="text-sm text-muted-foreground">Add "This book belongs to" page</span>
-            </label>
           </div>
 
           {/* Gender */}
           <div className="space-y-2">
-            <label className="block text-center text-2xl font-sans font-semibold text-[hsl(var(--wizard-primary))]">
+            <h2 className="font-heading text-xl sm:text-2xl font-semibold text-left text-[hsl(var(--wizard-primary))]">
               Gender
-            </label>
+            </h2>
             <Select value={gender} onValueChange={(v) => setAnswer("gender", v)}>
               <SelectTrigger className="rounded-xl bg-white">
                 <SelectValue placeholder="Select gender" />
@@ -136,22 +117,22 @@ export default function Step1() {
         </div>
 
         {/* Book language — own row */}
-        <div className="space-y-2 w-full">
-          <label className="block text-center text-2xl font-sans font-semibold text-[hsl(var(--wizard-primary))]">
+        <div className="space-y-2 w-full pt-4">
+          <h2 className="font-heading text-xl sm:text-2xl font-semibold text-left text-[hsl(var(--wizard-primary))]">
             What language do they speak?
-          </label>
-          <div className="flex flex-wrap justify-center gap-3">
+          </h2>
+          <div className="flex flex-wrap gap-3">
             {LANGUAGES.map((l) => (
-              <button
+              <SelectableTile
                 key={l.value}
-                type="button"
+                selected={language === l.value}
                 onClick={() => setAnswer("language", l.value)}
-                className={pillClass(language === l.value)}
+                className="px-5 py-3 text-center"
               >
                 <span className="block text-sm font-semibold" style={{ color: "hsl(var(--wizard-primary))" }}>
                   {l.label}
                 </span>
-              </button>
+              </SelectableTile>
             ))}
             <div className="rounded-2xl px-5 py-3 text-center border-2 border-transparent bg-muted opacity-50 shadow-sm">
               <span className="block text-sm font-semibold text-muted-foreground">More coming soon</span>
@@ -161,50 +142,35 @@ export default function Step1() {
 
         {/* Book type tiles (drives age range) */}
         <div className="space-y-4 pt-4">
-          <div className="text-center space-y-1">
-            <h2
-              className="font-heading text-2xl sm:text-3xl font-semibold"
-              style={{ color: "hsl(var(--wizard-primary))" }}
-            >
-              Pick a book type
-            </h2>
-            <p className="text-sm sm:text-base text-muted-foreground">
-              Choose the format that fits them best.
-            </p>
-          </div>
+          <h2 className="font-heading text-xl sm:text-2xl font-semibold text-left text-[hsl(var(--wizard-primary))]">
+            How old are they?
+          </h2>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-5 w-full">
-            {AGE_RANGES.map((a) => {
-              const selected = age === a.value;
-              return (
-                <button
-                  key={a.value}
-                  type="button"
-                  onClick={() => setAnswer("ageRange", a.value)}
-                  className={`group flex flex-col items-center gap-3 rounded-2xl p-4 sm:p-5 transition-all border-2 ${
-                    selected
-                      ? "border-[hsl(var(--wizard-primary))] bg-[hsl(var(--wizard-primary)/0.08)] shadow-lg scale-[1.02]"
-                      : "border-transparent bg-white shadow-sm hover:shadow-md hover:-translate-y-0.5"
-                  }`}
-                >
-                  <div className="w-full overflow-hidden rounded-xl bg-muted" style={{ aspectRatio: "1/1" }}>
-                    <img
-                      src={a.image}
-                      alt={`${a.label} example`}
-                      width={512}
-                      height={512}
-                      loading="lazy"
-                      className="w-full h-full object-cover transition-transform group-hover:scale-105"
-                    />
-                  </div>
-                  <span className="block text-base sm:text-lg font-semibold leading-tight" style={{ color: "hsl(var(--wizard-primary))" }}>
-                    {a.label}
-                  </span>
-                  <span className="block text-sm text-muted-foreground -mt-2">
-                    {a.sub}
-                  </span>
-                </button>
-              );
-            })}
+            {AGE_RANGES.map((a) => (
+              <SelectableTile
+                key={a.value}
+                selected={age === a.value}
+                onClick={() => setAnswer("ageRange", a.value)}
+                className="group flex flex-col items-center gap-3 p-4 sm:p-5"
+              >
+                <div className="w-full overflow-hidden rounded-xl bg-muted" style={{ aspectRatio: "1/1" }}>
+                  <img
+                    src={a.image}
+                    alt={`${a.label} example`}
+                    width={512}
+                    height={512}
+                    loading="lazy"
+                    className="w-full h-full object-cover transition-transform group-hover:scale-105"
+                  />
+                </div>
+                <span className="block text-base sm:text-lg font-semibold leading-tight text-center" style={{ color: "hsl(var(--wizard-primary))" }}>
+                  {a.label}
+                </span>
+                <span className="block text-sm text-muted-foreground -mt-2 text-center">
+                  {a.sub}
+                </span>
+              </SelectableTile>
+            ))}
           </div>
         </div>
 

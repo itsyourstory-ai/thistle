@@ -2,13 +2,15 @@ import { useEffect } from "react";
 import WizardShell from "@/components/WizardShell";
 import { useWizard } from "@/contexts/WizardContext";
 import { ART_STYLES } from "@/lib/artStyles";
+import { SelectableTile } from "@/components/SelectableTile";
 
 function getDefaultArtStyle(genre: string): string {
-  if (["adventure", "superhero", "sports"].includes(genre)) return "bold-bright";
-  if (["bedtime", "everyday"].includes(genre)) return "dreamy-pastel";
-  if (["fantasy", "fairy-tale"].includes(genre)) return "watercolor";
-  return "cozy-sketch";
+  if (["adventure", "superhero", "sports"].includes(genre)) return "geometric-pop";
+  if (["bedtime", "everyday"].includes(genre)) return "hand-drawn-charm";
+  if (["fantasy", "fairy-tale"].includes(genre)) return "cozy-gouache";
+  return "papercraft-collage";
 }
+
 
 export default function Step7() {
   const { answers, setAnswer, setCanContinue } = useWizard();
@@ -21,17 +23,10 @@ export default function Step7() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const cardClass = (selected: boolean) =>
-    `cursor-pointer rounded-2xl p-3 text-left transition-all border-2 shadow-sm ${
-      selected
-        ? "border-[hsl(var(--wizard-primary))] bg-[hsl(var(--wizard-primary)/0.08)]"
-        : "border-transparent bg-white hover:shadow-md"
-    }`;
-
   return (
     <WizardShell>
-      <div className="space-y-8">
-        <div className="text-center space-y-2">
+      <div className="space-y-10">
+        <div className="space-y-2">
           <h1 className="font-heading text-3xl sm:text-4xl font-semibold" style={{ color: "hsl(var(--wizard-primary))" }}>
             Pick an illustration style.
           </h1>
@@ -42,11 +37,11 @@ export default function Step7() {
 
         <div className="grid grid-cols-2 gap-3">
           {ART_STYLES.map((s) => (
-            <button
+            <SelectableTile
               key={s.value}
-              type="button"
+              selected={artStyle === s.value}
               onClick={() => setAnswer("artStyle", s.value)}
-              className={cardClass(artStyle === s.value)}
+              className="p-3 text-left"
             >
               <div
                 className="w-full overflow-hidden rounded-xl mb-2 bg-muted"
@@ -65,12 +60,9 @@ export default function Step7() {
                 <span aria-hidden className="mr-1">{s.emoji}</span>{s.label}
               </span>
               <span className="block text-xs text-muted-foreground mt-0.5">{s.desc}</span>
-            </button>
+            </SelectableTile>
           ))}
         </div>
-        <p className="text-xs text-muted-foreground text-center italic">
-          We pre-selected the best style for your story — feel free to change it.
-        </p>
       </div>
     </WizardShell>
   );
