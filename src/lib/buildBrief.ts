@@ -42,6 +42,9 @@ export interface StoryBrief {
     lesson?: string;
     interests: string[];
     personality: string[];
+    thingsAlreadyGoodAt?: string;
+    thingsCurrentlyTricky?: string;
+    recentMeaningfulMoment?: string;
   };
   protagonist: {
     name?: string;
@@ -62,6 +65,8 @@ export interface StoryBrief {
     /** Free-form details (animal type, color, name, photo, etc.). */
     details?: Record<string, string>;
   };
+  /** The approved title/summary plus hidden story_seed metadata from generate-summary. */
+  approvedConcept?: any;
   /** Buyer's relationship to the child — flavors the dedication voice. */
   buyer_relationship?: string;
   /** Occasion the book is for — light flavor, never central plot. */
@@ -87,7 +92,7 @@ export function buildBrief(answers: Record<string, any>): StoryBrief {
   const supporting = (answers.supportingCharacters as any[]) || [];
 
   const interests = wordsFromList(answers.interestsList);
-  const personality = wordsFromList(proto.traits) .length
+  const personality = wordsFromList(proto.traits).length
     ? wordsFromList(proto.traits)
     : wordsFromList(answers.personalityList);
 
@@ -106,6 +111,9 @@ export function buildBrief(answers: Record<string, any>): StoryBrief {
       lesson: answers.lesson,
       interests,
       personality,
+      thingsAlreadyGoodAt: answers.thingsAlreadyGoodAt,
+      thingsCurrentlyTricky: answers.thingsCurrentlyTricky,
+      recentMeaningfulMoment: answers.recentMeaningfulMoment,
     },
     protagonist: {
       name: proto.name,
@@ -137,6 +145,7 @@ export function buildBrief(answers: Record<string, any>): StoryBrief {
           details: answers.specialThing.details,
         }
       : undefined,
+    approvedConcept: answers.selectedConcept,
     buyer_relationship: answers.buyer_relationship,
     occasion: answers.occasion,
     bookBelongsTo: answers.bookBelongsTo,

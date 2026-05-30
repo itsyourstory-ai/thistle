@@ -12,6 +12,15 @@ import { toast } from "sonner";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
+import { SelectableTile } from "@/components/SelectableTile";
+import {
+  PILL_SELECTED,
+  PILL_SUGGESTION,
+  PILL_REMOVE_BTN,
+} from "@/components/pillStyles";
 
 
 /* ── constants ───────────────────────────────────────────── */
@@ -90,16 +99,33 @@ function PillSelector({ options, value, onChange }: {
   return (
     <div className="flex flex-wrap gap-2">
       {options.map((opt) => (
-        <button key={opt} type="button" onClick={() => onChange(value === opt ? "" : opt)}
-          className={`px-3.5 py-1.5 rounded-full text-sm font-medium border transition-all ${
-            value === opt
-              ? "border-transparent shadow-sm text-white"
-              : "border-border bg-background text-muted-foreground hover:border-primary/40"
-          }`}
-          style={value === opt ? { backgroundColor: "hsl(var(--wizard-primary))" } : undefined}
-        >{opt}</button>
+        <SelectableTile
+          key={opt}
+          shape="pill"
+          selected={value === opt}
+          onClick={() => onChange(value === opt ? "" : opt)}
+        >
+          <span style={{ color: "hsl(var(--wizard-primary))" }}>{opt}</span>
+        </SelectableTile>
       ))}
     </div>
+  );
+}
+
+function GenderSelect({
+  options, value, onChange, placeholder = "Select gender",
+}: { options: readonly string[]; value: string; onChange: (v: string) => void; placeholder?: string }) {
+  return (
+    <Select value={value || undefined} onValueChange={onChange}>
+      <SelectTrigger className="rounded-xl bg-white h-10">
+        <SelectValue placeholder={placeholder} />
+      </SelectTrigger>
+      <SelectContent>
+        {options.map((opt) => (
+          <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
   );
 }
 
@@ -107,14 +133,12 @@ function SkinTonePicker({ value, onChange }: { value: string; onChange: (v: stri
   return (
     <div className="flex gap-2">
       {SKIN_TONES.map((tone) => (
-        <button key={tone} type="button" onClick={() => onChange(value === tone ? "" : tone)}
-          className={`w-8 h-8 rounded-full border-2 transition-all ${
-            value === tone ? "scale-110 shadow-md" : "border-transparent hover:scale-105"
-          }`}
-          style={{
-            backgroundColor: tone,
-            borderColor: value === tone ? "hsl(var(--wizard-primary))" : undefined,
-          }}
+        <SelectableTile
+          key={tone}
+          shape="swatch"
+          selected={value === tone}
+          onClick={() => onChange(value === tone ? "" : tone)}
+          style={{ backgroundColor: tone }}
           aria-label={`Skin tone ${tone}`}
         />
       ))}
@@ -128,7 +152,7 @@ function CharCounter({ current, max }: { current: number; max: number }) {
 
 function FieldLabel({ children, optional }: { children: React.ReactNode; optional?: boolean }) {
   return (
-    <label className="block text-muted-foreground text-xl font-bold">
+    <label className="block font-heading text-xl sm:text-2xl font-semibold text-left text-[hsl(var(--wizard-primary))]">
       {children}{optional && <span className="ml-1 text-xs opacity-60">(optional)</span>}
     </label>
   );
@@ -207,14 +231,11 @@ function AppearanceAccordion({ appearance, onChange, name, defaultExpanded, feat
     <div className="rounded-2xl border overflow-hidden">
       <button type="button" onClick={() => setOpen(!open)}
         className="w-full flex items-center justify-between px-4 py-3 text-sm font-medium text-muted-foreground hover:bg-muted/50 transition-colors">
-        <span>Manually adjust appearance</span>
+        <span>Or describe {name} instead</span>
         {open ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
       </button>
       {open && (
         <div className="px-4 pb-4 space-y-4 animate-fade-in">
-          <p className="text-xs text-muted-foreground">
-            These details help the AI illustrate {name} — especially useful if you didn't upload a photo.
-          </p>
           <div className="space-y-1.5">
             <FieldLabel>Hair color</FieldLabel>
             <PillSelector options={HAIR_COLORS} value={appearance.hairColor} onChange={(v) => upd({ hairColor: v })} />
@@ -253,7 +274,8 @@ function ProtagonistForm({ data, onChange }: { data: Protagonist; onChange: (d: 
   const displayName = data.name || "your character";
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-8">
+
       <PhotoUploadZone photos={data.photos} onChange={(p) => upd({ photos: p })} heroName={data.name} />
 
       <div className="space-y-1.5">
@@ -262,15 +284,17 @@ function ProtagonistForm({ data, onChange }: { data: Protagonist; onChange: (d: 
           onChange={(e) => upd({ name: e.target.value })} />
       </div>
 
-      <div className="space-y-1.5">
-        <FieldLabel>Age</FieldLabel>
-        <Input className="rounded-xl w-24" placeholder="e.g. 5" value={data.age}
-          onChange={(e) => upd({ age: e.target.value })} />
-      </div>
-
-      <div className="space-y-1.5">
-        <FieldLabel>Gender</FieldLabel>
-        <PillSelector options={GENDERS_PROTO} value={data.gender} onChange={(v) => upd({ gender: v })} />
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="space-y-1.5">
+          <FieldLabel>Age</FieldLabel>
+          <Input className="rounded-xl" placeholder="e.g. 5" value={data.age}
+            onChange={(e) => upd({ age: e.target.value })} />
+        </div>
+        <div className="space-y-1.5">
+          <FieldLabel>Gender</FieldLabel>
+          <GenderSelect options={GENDERS_PROTO} value={data.gender}
+            onChange={(v) => upd({ gender: v })} />
+        </div>
       </div>
 
       <MiniPersonality
@@ -357,37 +381,26 @@ function MiniPersonality({
   };
   const remove = (idx: number) => onChange(value.filter((_, i) => i !== idx));
 
-  const filledStyle = {
-    backgroundColor: "hsl(var(--wizard-primary) / 0.10)",
-    color: "hsl(var(--wizard-primary))",
-  } as const;
-
   return (
     <div className="space-y-2">
-      <FieldLabel>
-        Personality{" "}
-        <span className="font-normal text-muted-foreground">
-          — pick up to {MAX_SUPPORT_TRAITS} traits for {name || "this character"}
-        </span>
-      </FieldLabel>
+      <FieldLabel>Personality</FieldLabel>
+      <p className="text-sm text-muted-foreground">
+        Pick up to {MAX_SUPPORT_TRAITS} traits for {name || "this character"}
+      </p>
 
       {value.length > 0 && (
-        <div className="flex flex-wrap gap-1.5">
+        <div className="flex flex-wrap gap-2">
           {value.map((t, idx) => (
-            <span
-              key={`${t.word}-${idx}`}
-              className="inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium"
-              style={filledStyle}
-            >
+            <span key={`${t.word}-${idx}`} className={PILL_SELECTED}>
               {t.emoji && <span aria-hidden>{t.emoji}</span>}
               <span>{t.word}</span>
               <button
                 type="button"
                 onClick={() => remove(idx)}
                 aria-label={`Remove ${t.word}`}
-                className="ml-0.5 opacity-50 hover:opacity-100"
+                className={PILL_REMOVE_BTN}
               >
-                <X className="w-3 h-3" />
+                <X className="w-4 h-4" />
               </button>
             </span>
           ))}
@@ -395,17 +408,13 @@ function MiniPersonality({
       )}
 
       {!atCap && (
-        <div className="flex flex-wrap gap-1.5">
+        <div className="flex flex-wrap gap-2">
           {visible.map((t) => (
             <button
               key={t.word}
               type="button"
               onClick={() => add(t.word, t.emoji)}
-              className="inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium border border-dashed transition-all hover:bg-[hsl(var(--wizard-primary)/0.05)]"
-              style={{
-                borderColor: "hsl(var(--wizard-primary) / 0.35)",
-                color: "hsl(var(--wizard-primary))",
-              }}
+              className={PILL_SUGGESTION}
             >
               <span aria-hidden>{t.emoji}</span>
               <span>{t.word}</span>
@@ -437,7 +446,7 @@ function SupportingCharacterForm({ data, onChange, protagonistName }: {
   const switchLabel = data.mode === "ai" ? "Switch to real person" : "Switch to AI-created";
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-8">
       <button type="button" onClick={() => upd({ mode: data.mode === "ai" ? "real" : "ai", photos: [], appearance: emptyAppearance() })}
         className="text-xs font-medium underline" style={{ color: "hsl(var(--wizard-primary))" }}>
         {switchLabel}
@@ -447,38 +456,50 @@ function SupportingCharacterForm({ data, onChange, protagonistName }: {
         <PhotoUploadZone photos={data.photos} onChange={(p) => upd({ photos: p })} />
       )}
 
-      <div className="space-y-1.5">
-        <FieldLabel>Name</FieldLabel>
-        {data.mode === "ai" && (
-          <div className="flex items-center gap-2 mb-2">
-            <Checkbox checked={data.surpriseName} onCheckedChange={(v) => upd({ surpriseName: !!v })} id={`surprise-${data.id}`} />
-            <label htmlFor={`surprise-${data.id}`} className="text-xs text-muted-foreground cursor-pointer">Surprise me with a name</label>
-          </div>
-        )}
-        {!data.surpriseName && (
-          <Input className="rounded-xl" placeholder="e.g. Uncle James" value={data.name}
-            onChange={(e) => upd({ name: e.target.value })} />
-        )}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="space-y-1.5">
+          <FieldLabel>Name</FieldLabel>
+          {data.mode === "ai" && (
+            <div className="flex items-center gap-2 mb-2">
+              <Checkbox checked={data.surpriseName} onCheckedChange={(v) => upd({ surpriseName: !!v })} id={`surprise-${data.id}`} />
+              <label htmlFor={`surprise-${data.id}`} className="text-xs text-muted-foreground cursor-pointer">Surprise me with a name</label>
+            </div>
+          )}
+          {!data.surpriseName ? (
+            <Input className="rounded-xl" placeholder="e.g. Uncle James" value={data.name}
+              onChange={(e) => upd({ name: e.target.value })} />
+          ) : (
+            <div className="h-10 rounded-xl border border-dashed border-border flex items-center px-3 text-xs text-muted-foreground italic">
+              We'll pick a name
+            </div>
+          )}
+        </div>
+
+        <div className="space-y-1.5">
+          <FieldLabel>Relationship to Main Character</FieldLabel>
+          <GenderSelect options={RELATIONSHIPS} value={data.relationship}
+            onChange={(v) => upd({ relationship: v })} placeholder="Select relationship" />
+        </div>
       </div>
 
-      <div className="space-y-1.5">
-        <FieldLabel>Relationship to {protagonistName || "the hero"}</FieldLabel>
-        <PillSelector options={RELATIONSHIPS} value={data.relationship} onChange={(v) => upd({ relationship: v })} />
-        {data.relationship === "Other" && (
-          <Input className="rounded-xl mt-2" placeholder="Describe relationship…" value={data.relationshipOther}
-            onChange={(e) => upd({ relationshipOther: e.target.value })} />
-        )}
+      {data.relationship === "Other" && (
+        <Input className="rounded-xl" placeholder="Describe relationship…" value={data.relationshipOther}
+          onChange={(e) => upd({ relationshipOther: e.target.value })} />
+      )}
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="space-y-1.5">
+          <FieldLabel>Age range</FieldLabel>
+          <GenderSelect options={AGE_RANGES} value={data.ageRange}
+            onChange={(v) => upd({ ageRange: v })} placeholder="Select age range" />
+        </div>
+        <div className="space-y-1.5">
+          <FieldLabel>Gender</FieldLabel>
+          <GenderSelect options={data.mode === "ai" ? GENDERS_SUPPORT : GENDERS_PROTO}
+            value={data.gender} onChange={(v) => upd({ gender: v })} />
+        </div>
       </div>
 
-      <div className="space-y-1.5">
-        <FieldLabel>Gender</FieldLabel>
-        <PillSelector options={data.mode === "ai" ? GENDERS_SUPPORT : GENDERS_PROTO} value={data.gender} onChange={(v) => upd({ gender: v })} />
-      </div>
-
-      <div className="space-y-1.5">
-        <FieldLabel>Age range</FieldLabel>
-        <PillSelector options={AGE_RANGES} value={data.ageRange} onChange={(v) => upd({ ageRange: v })} />
-      </div>
 
       <MiniPersonality
         value={data.traits || []}
@@ -551,15 +572,32 @@ function AddPill({ label, icon, onClick, disabled, tooltip }: {
 export default function Step6() {
   const { answers, setAnswer, setCanContinue } = useWizard();
 
-  // Pull data from context (or defaults)
+  // Auto-fill protagonist name and gender from Step 1 answers.
+  // Age is NOT auto-filled — Step 1 stores an age range, not a specific age.
+  // Step 1 gender values are lowercase (girl / boy / non-binary); map to the
+  // Title-cased options the protagonist form uses.
+  const step1Name = (answers.childName as string) || "";
+  const step1GenderRaw = (answers.gender as string) || "";
+  const step1Gender =
+    step1GenderRaw === "girl" ? "Girl"
+    : step1GenderRaw === "boy" ? "Boy"
+    : step1GenderRaw === "non-binary" ? "Gender neutral"
+    : "";
+
+  // Pull data from context (or defaults), backfilling empty fields from Step 1.
   const storedProtagonist = answers.protagonist as Protagonist | undefined;
   const protagonist: Protagonist = storedProtagonist
-    ? { traits: [], ...storedProtagonist }
+    ? {
+        traits: [],
+        ...storedProtagonist,
+        name: storedProtagonist.name || step1Name,
+        gender: storedProtagonist.gender || step1Gender,
+      }
     : {
         photos: [],
-        name: (answers.childName as string) || "",
-        age: (answers.childAge as string) || "",
-        gender: (answers.childGender as string) || "",
+        name: step1Name,
+        age: "",
+        gender: step1Gender,
         special: "",
         appearance: emptyAppearance(),
         traits: (answers.personalityList as Array<{ word: string; emoji?: string }>) || [],
@@ -575,6 +613,20 @@ export default function Step6() {
   const [showUpsell, setShowUpsell] = useState(false);
   const [showNoCharsDialog, setShowNoCharsDialog] = useState(false);
   const noCharsResolver = useRef<((ok: boolean) => void) | null>(null);
+
+  // Persist auto-filled values so downstream steps see them even if the user
+  // never edits the protagonist form.
+  useEffect(() => {
+    if (
+      !storedProtagonist ||
+      storedProtagonist.name !== protagonist.name ||
+      storedProtagonist.gender !== protagonist.gender
+    ) {
+      setAnswer("protagonist", protagonist);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step1Name, step1Gender]);
+
 
   // Enable continue always (validation happens on click via WizardShell)
   useEffect(() => { setCanContinue(true); }, [setCanContinue]);
@@ -654,7 +706,7 @@ export default function Step6() {
     <WizardShell onBeforeContinue={handleBeforeContinue}>
       <div className="space-y-6">
         {/* heading */}
-        <div className="text-center space-y-2">
+        <div className="space-y-2">
           <h1 className="font-heading text-3xl sm:text-4xl font-semibold" style={{ color: "hsl(var(--wizard-primary))" }}>
             Let's bring the characters to life
           </h1>

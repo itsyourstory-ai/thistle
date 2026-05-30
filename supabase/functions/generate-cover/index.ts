@@ -102,9 +102,8 @@ Deno.serve(async (req) => {
       userContent.push({ type: "image_url", image_url: { url } });
     }
 
-    const aiResp = await fetch(
-      "https://ai.gateway.lovable.dev/v1/chat/completions",
-      {
+    const callGateway = () =>
+      fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
         headers: {
           Authorization: `Bearer ${LOVABLE_API_KEY}`,
@@ -114,10 +113,15 @@ Deno.serve(async (req) => {
           model: MODELS.cover,
           messages: [{ role: "user", content: userContent }],
           modalities: ["image", "text"],
-          image_config: { aspect_ratio: "1:1", image_size: "2K" },
+          image_config: { aspect_ratio: "1:1", image_size: "1K" },
         }),
-      },
-    );
+      });
+
+    let aiResp = await callGateway();
+    // Retry once on empty/5xx — gateway occasionally drops the body.
+    if (!aiResp.ok && aiResp.status >= 500 && aiResp.status !== 502) {
+      aiResp = await callGateway();
+    }
 
     if (!aiResp.ok) {
       if (aiResp.status === 429) {
@@ -151,7 +155,34 @@ Deno.serve(async (req) => {
       });
     }
 
-    const data = await aiResp.json();
+    let rawText = await aiResp.text();
+    // Retry once if body came back empty or unparseable — the gateway occasionally truncates.
+    const looksBad = (t: string) => {
+      if (!t) return true;
+      try { JSON.parse(t); return false; } catch { return true; }
+    };
+    if (looksBad(rawText)) {
+      console.warn("Empty/malformed body from AI gateway (cover); retrying once. len=", rawText.length);
+      const retry = await callGateway();
+      if (retry.ok) rawText = await retry.text();
+    }
+    if (!rawText) {
+      console.error("Empty body from AI gateway (cover) after retry");
+      return new Response(
+        JSON.stringify({ error: "Image model returned an empty response. Please try again." }),
+        { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+    let data: any;
+    try {
+      data = JSON.parse(rawText);
+    } catch (parseErr) {
+      console.error("Failed to parse AI response (cover) after retry", parseErr, rawText.slice(0, 500));
+      return new Response(
+        JSON.stringify({ error: "Image model returned a malformed response. Please try again." }),
+        { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
     const imageDataUrl: string | undefined =
       data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
 

@@ -4,106 +4,124 @@ import { useNavigate } from "react-router-dom";
 import { useWizard } from "@/contexts/WizardContext";
 import WizardHeader from "@/components/WizardHeader";
 import { buildBrief } from "@/lib/buildBrief";
-import { coverMessages, useRotatingMessage } from "@/lib/loadingMessages";
+import { coverMessages, pipelineMessage, useRotatingMessage } from "@/lib/loadingMessages";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 
 const MIN_DURATION = 6000; // soft floor so animation doesn't feel cut short
 
-export default function Step11Generating() {
+export default function Step10Generating() {
   const { answers, setAnswer, setIsGenerating } = useWizard();
   const navigate = useNavigate();
   const name = (answers.childName || "your little one").trim();
+  const title = (answers.selectedConcept?.title || "").trim();
+  const plan = answers.selectedPlan === "digital" ? "Digital Book" : "Printed Hardcover + Digital";
 
   const [done, setDone] = useState(false);
-  const [coverDone, setCoverDone] = useState(false);
   const [errored, setErrored] = useState<string | null>(null);
   const [attempt, setAttempt] = useState(0);
+  const [progress, setProgress] = useState<{ stage: string; current: number; total: number } | null>(null);
+  const [bookId, setBookId] = useState<string | null>(null);
   const startedAt = useRef<number>(Date.now());
-
-  const title = (answers.selectedConcept?.title || "").trim();
+  const pollRef = useRef<number | null>(null);
 
   const message = useRotatingMessage(coverMessages(name), 2200);
+  const pipelineMsg = progress
+    ? pipelineMessage(progress.stage, progress.current, progress.total, name)
+    : `Writing ${name}'s story…`;
 
   const runGeneration = useCallback(async () => {
     setErrored(null);
-    setCoverDone(false);
     setDone(false);
+    setProgress(null);
+    setBookId(null);
     setIsGenerating(true);
     startedAt.current = Date.now();
 
-    const concept = answers.selectedConcept || {};
     try {
       const brief = buildBrief(answers);
-
-      // Load the picked art-style preview as a data URL so the cover model
-      // gets the same image the user picked on Step 6 as a visual reference.
-      let styleReferenceImage: string | undefined;
-      try {
-        const { ART_STYLES } = await import("@/lib/artStyles");
-        const style = ART_STYLES.find((s) => s.value === brief.artStyle);
-        if (style?.preview) {
-          const resp = await fetch(style.preview);
-          const blob = await resp.blob();
-          styleReferenceImage = await new Promise<string>((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onloadend = () => resolve(reader.result as string);
-            reader.onerror = reject;
-            reader.readAsDataURL(blob);
-          });
-        }
-      } catch (e) {
-        console.warn("Could not load style reference image", e);
-      }
-
-      const characterPortraitDataUrl =
-        (answers.characterPortrait as { dataUrl?: string } | undefined)?.dataUrl;
-
-      const { data, error: fnError } = await supabase.functions.invoke(
-        "generate-cover",
+      const seed = (answers.characterPortrait as { dataUrl?: string } | undefined)?.dataUrl || null;
+      const { data: bookResp, error: bookErr } = await supabase.functions.invoke(
+        "generate-book",
         {
           body: {
             brief,
-            title: concept.title || "",
-            summary: concept.summary || "",
-            styleReferenceImage,
-            characterPortraitDataUrl,
+            buyer_name: answers.buyer_name || "",
+            buyer_email: answers.buyer_email || "",
+            seed_portrait_data_url: seed,
           },
         },
       );
-      if (fnError) throw fnError;
-      if (data?.error) throw new Error(data.error);
-      const imageDataUrl = data?.imageDataUrl as string | undefined;
-      if (!imageDataUrl) throw new Error("No cover image returned.");
-
-      setAnswer("selectedConcept", {
-        ...concept,
-        coverImage: imageDataUrl,
-      });
-
-      setCoverDone(true);
-      const elapsed = Date.now() - startedAt.current;
-      const wait = Math.max(0, MIN_DURATION - elapsed);
-      setTimeout(() => {
-        setDone(true);
-        setIsGenerating(false);
-      }, wait);
+      if (bookErr) throw bookErr;
+      if (bookResp?.error) throw new Error(bookResp.error);
+      const id: string | undefined = bookResp?.id;
+      if (!id) throw new Error("Book id missing from response.");
+      setBookId(id);
+      setAnswer("bookId", id);
     } catch (e: any) {
-      const msg = e?.message || "Cover generation failed.";
+      const msg = e?.message || "Couldn't start the book.";
       setErrored(msg);
-      setCoverDone(false);
-      setDone(false);
-      setIsGenerating(false); // unlock nav so they can go Back if needed
-      toast({ title: "Cover hit a snag", description: msg });
+      setIsGenerating(false);
+      toast({ title: "Hit a snag", description: msg });
     }
   }, [answers, setAnswer, setIsGenerating]);
 
   useEffect(() => {
     runGeneration();
-    // Cleanup: if the user navigates away mid-flight, release the lock.
     return () => setIsGenerating(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [attempt]);
+
+  // Poll book progress
+  useEffect(() => {
+    if (!bookId) return;
+    let lastKey = "";
+    let lastAt = Date.now();
+    const tick = async () => {
+      const { data } = await supabase
+        .from("generated_books")
+        .select("pipeline_status,pipeline_progress,pipeline_error")
+        .eq("id", bookId)
+        .maybeSingle();
+      if (!data) return;
+      const status = (data.pipeline_status as string) || "idle";
+      const prog = (data.pipeline_progress as any) || null;
+      const err = (data.pipeline_error as string) || null;
+      if (prog) setProgress(prog);
+
+      const key = `${status}:${prog?.stage}:${prog?.current}/${prog?.total}`;
+      if (key !== lastKey) {
+        lastKey = key;
+        lastAt = Date.now();
+      } else if (
+        status !== "done" &&
+        status !== "failed" &&
+        status !== "story" &&
+        Date.now() - lastAt > 90_000
+      ) {
+        lastAt = Date.now();
+        void supabase.functions.invoke("generate-book-images", { body: { book_id: bookId } });
+      }
+
+      if (status === "done") {
+        if (pollRef.current) window.clearInterval(pollRef.current);
+        const elapsed = Date.now() - startedAt.current;
+        setTimeout(() => {
+          setDone(true);
+          setIsGenerating(false);
+        }, Math.max(0, MIN_DURATION - elapsed));
+      } else if (status === "failed") {
+        if (pollRef.current) window.clearInterval(pollRef.current);
+        setErrored(err || "Generation failed.");
+        setIsGenerating(false);
+      }
+    };
+    pollRef.current = window.setInterval(tick, 3000);
+    tick();
+    return () => {
+      if (pollRef.current) window.clearInterval(pollRef.current);
+    };
+  }, [bookId, setIsGenerating]);
 
   return (
     <div
@@ -150,7 +168,7 @@ export default function Step11Generating() {
             className="text-xs uppercase tracking-[0.18em] mb-1"
             style={{ color: "hsl(var(--wizard-primary) / 0.55)" }}
           >
-            Now making
+            Now crafting
           </p>
           <h1
             className="text-2xl leading-tight"
@@ -159,7 +177,7 @@ export default function Step11Generating() {
             {title ? `"${title}"` : "Your book"}
           </h1>
           <p className="text-sm mt-1" style={{ color: "hsl(var(--wizard-primary) / 0.7)" }}>
-            for {name}
+            for {name} · {plan}
           </p>
         </div>
 
@@ -218,8 +236,6 @@ export default function Step11Generating() {
               }}
             />
             <rect x="28" y="10" width="6" height="180" rx="2" fill="hsl(var(--wizard-primary) / 0.8)" />
-            <rect x="50" y="60" width="60" height="6" rx="3" fill="hsl(var(--wizard-primary-foreground, 0 0% 100%) / 0.6)" style={{ transformOrigin: "left center", animation: done ? "none" : "book-open 3s ease-in-out infinite alternate" }} />
-            <rect x="55" y="74" width="40" height="4" rx="2" fill="hsl(var(--wizard-primary-foreground, 0 0% 100%) / 0.35)" style={{ transformOrigin: "left center", animation: done ? "none" : "book-open 3s ease-in-out infinite alternate" }} />
           </svg>
 
           {done && (
@@ -241,14 +257,14 @@ export default function Step11Generating() {
 
         <div className="h-10 flex items-center justify-center mb-4 overflow-hidden">
           <p
-            key={message}
+            key={done ? "done" : pipelineMsg || message}
             className="text-lg font-medium text-center"
             style={{
               color: "hsl(var(--wizard-primary))",
               animation: "btn-fade 0.4s ease-out",
             }}
           >
-            ✨ {done ? "Your book is ready!" : message}
+            ✨ {done ? "Your book is ready!" : (pipelineMsg || message)}
           </p>
         </div>
 
@@ -256,31 +272,44 @@ export default function Step11Generating() {
           Every word, every illustration — made just for {name}.
         </p>
 
-        {/* Live checklist */}
-        <ul
-          className="w-full max-w-xs space-y-2 mb-8 rounded-2xl px-4 py-3"
-          style={{
-            backgroundColor: "hsl(var(--wizard-primary) / 0.05)",
-            border: "1px solid hsl(var(--wizard-primary) / 0.1)",
-          }}
-        >
-          <ChecklistRow state="done" label="Story written" />
-          <ChecklistRow state={coverDone ? "done" : "active"} label={coverDone ? "Cover painted" : "Painting the cover…"} />
-          <ChecklistRow state={done ? "done" : coverDone ? "active" : "pending"} label={done ? "Pages bound" : "Binding the pages"} />
-        </ul>
+        {/* Progress bar */}
+        {!done && !errored && progress && progress.total > 0 && (
+          <div className="w-full max-w-xs mb-6">
+            <div
+              className="h-2 rounded-full overflow-hidden"
+              style={{ backgroundColor: "hsl(var(--wizard-primary) / 0.15)" }}
+            >
+              <div
+                className="h-full transition-all duration-500"
+                style={{
+                  width: `${Math.min(100, Math.round((progress.current / progress.total) * 100))}%`,
+                  backgroundColor: "hsl(var(--wizard-primary))",
+                }}
+              />
+            </div>
+            <p className="text-xs text-center mt-2" style={{ color: "hsl(var(--wizard-primary) / 0.6)" }}>
+              {progress.stage === "pages"
+                ? `Page ${progress.current} of ${progress.total}`
+                : progress.stage === "portraits"
+                  ? `Portrait ${progress.current} of ${progress.total}`
+                  : "Getting started…"}
+            </p>
+          </div>
+        )}
 
         {done && !errored && (
-          <button
-            onClick={() => navigate(pathForStep(10))}
-            className="px-8 py-4 rounded-full text-base font-semibold"
-            style={{
-              backgroundColor: "hsl(var(--wizard-primary))",
-              color: "#fff",
-              animation: "btn-fade 0.6s ease-out",
-            }}
-          >
-            ✨ Your book is ready — take a look
-          </button>
+          <div className="flex flex-col items-center gap-3" style={{ animation: "btn-fade 0.6s ease-out" }}>
+            <p className="text-sm text-center max-w-sm" style={{ color: "hsl(var(--wizard-primary) / 0.75)" }}>
+              We'll email everything to <span className="font-semibold">{answers.buyer_email}</span> shortly.
+            </p>
+            <button
+              onClick={() => navigate(pathForStep(1))}
+              className="px-8 py-4 rounded-full text-base font-semibold"
+              style={{ backgroundColor: "hsl(var(--wizard-primary))", color: "#fff" }}
+            >
+              🎉 Back to start
+            </button>
+          </div>
         )}
 
         {errored && (
@@ -289,75 +318,24 @@ export default function Step11Generating() {
             style={{ animation: "btn-fade 0.4s ease-out" }}
           >
             <p className="text-sm text-[#2b4e18]/70">
-              We had a little trouble painting the cover. Let's try again —
-              your story is safe.
+              We had a little trouble crafting the book. Let's try again — your order is safe.
             </p>
             <button
               onClick={() => setAttempt((n) => n + 1)}
               className="px-6 py-3 rounded-full text-sm font-semibold"
-              style={{
-                backgroundColor: "hsl(var(--wizard-primary))",
-                color: "#fff",
-              }}
+              style={{ backgroundColor: "hsl(var(--wizard-primary))", color: "#fff" }}
             >
               ✨ Try again
             </button>
             <button
-              onClick={() => navigate(pathForStep(8))}
+              onClick={() => navigate(pathForStep(9))}
               className="text-xs underline text-[#2b4e18]/60"
             >
-              Back to the story
+              Back to checkout
             </button>
           </div>
         )}
       </div>
     </div>
-  );
-}
-
-type RowState = "done" | "active" | "pending";
-
-function ChecklistRow({ state, label }: { state: RowState; label: string }) {
-  return (
-    <li
-      className="flex items-center gap-3 text-sm transition-opacity"
-      style={{
-        color:
-          state === "pending"
-            ? "hsl(var(--wizard-primary) / 0.45)"
-            : "hsl(var(--wizard-primary))",
-        opacity: state === "pending" ? 0.7 : 1,
-      }}
-    >
-      <span
-        className="flex items-center justify-center w-5 h-5 rounded-full shrink-0"
-        style={{
-          backgroundColor:
-            state === "done"
-              ? "hsl(var(--wizard-primary))"
-              : "hsl(var(--wizard-primary) / 0.12)",
-          border:
-            state === "pending"
-              ? "1.5px solid hsl(var(--wizard-primary) / 0.3)"
-              : "none",
-        }}
-      >
-        {state === "done" && (
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="20 6 9 17 4 12" />
-          </svg>
-        )}
-        {state === "active" && (
-          <span
-            className="w-2 h-2 rounded-full"
-            style={{
-              backgroundColor: "hsl(var(--wizard-primary))",
-              animation: "pulse 1.4s ease-in-out infinite",
-            }}
-          />
-        )}
-      </span>
-      <span className={state === "active" ? "font-medium" : ""}>{label}</span>
-    </li>
   );
 }

@@ -47,7 +47,7 @@ export default function WizardShell({
       <WizardHeader currentStep={currentStep} />
 
       {/* Content */}
-      <main className="flex-1 flex justify-center px-4 pt-12 pb-8">
+      <main className="flex-1 flex justify-center px-4 pt-12 pb-20">
         <div className="w-full" style={{ maxWidth: `${maxWidth}px` }}>{children}</div>
       </main>
 

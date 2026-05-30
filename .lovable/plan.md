@@ -1,99 +1,60 @@
 ## Goal
 
-Make the wizard self-documenting: every step has a **number + semantic name** baked into both its filename and its URL slug. After the change:
+Unify the two "type-or-pick chip" pickers — Interests (Step 5) and Personality (Step 7 `MiniPersonality`, used for both protagonist and supporting characters) — so they share one visual language. Everything else about their behavior (editable interest inputs, FIFO cap, trait toggles) stays exactly as-is.
 
-- `src/pages/steps/Step1Name.tsx` is served at `/step/1-name`
-- `src/pages/steps/Step6ArtStyle.tsx` is served at `/step/6-art-style`
-- …etc. Top-to-bottom file listing reads as the wizard flow.
+## What changes visually
 
-## Final mapping
+Both pickers will use the same pill specs:
 
-| URL | Filename | Old filename | What it is |
-|---|---|---|---|
-| `/step/1-name` | `Step1Name.tsx` | `Step1.tsx` | Child's name |
-| `/step/2-buyer` | `Step2Buyer.tsx` | `StepWhoIsItFor.tsx` | Who's it for? |
-| `/step/3-genre` | `Step3Genre.tsx` | `Step2.tsx` | Genre / mood |
-| `/step/4-lesson` | `Step4Lesson.tsx` | `Step3.tsx` | Lesson / value |
-| `/step/5-interests` | `Step5Interests.tsx` | `Step4b.tsx` | Interests |
-| `/step/6-art-style` | `Step6ArtStyle.tsx` | `Step7.tsx` | Illustration style |
-| `/step/7-character` | `Step7Character.tsx` | `Step6.tsx` | Character / photo upload |
-| `/step/8-summary` | `Step8Summary.tsx` | `Step10Summary.tsx` | Story summary |
-| `/step/9-generating` | `Step9Generating.tsx` | `Step10.tsx` | Generating animation |
-| `/step/10-preview` | `Step10Preview.tsx` | `Step11.tsx` | Book preview |
-| `/step/secret-ingredient` | `StepSecretIngredient.tsx` | `Step5.tsx` | Hidden route (unchanged URL) |
-| *(fallback)* | `StepPlaceholder.tsx` | *(unchanged)* | Catch-all |
+**Selected pills (chosen items)**
+- 2px solid border in `hsl(var(--wizard-primary))` (same green outline used on all other standardized selection boxes from the previous pass).
+- Light tint background: `hsl(var(--wizard-primary) / 0.08)`.
+- Text in `hsl(var(--wizard-primary))`.
+- `X` remove icon in the same green (currently faded gray at 50% opacity → change to `hsl(var(--wizard-primary))` at ~70% opacity, full opacity on hover).
+- No checkmark badge (explicit per your ask).
 
-## Architecture change: single source of truth for step order
+**Suggestion pills (clickable to add)**
+- Keep dashed border (unchanged behavior).
+- Same green dashed border color, same green text — already the case.
+- Same hover: subtle tint background + `-translate-y-0.5` lift (same as Step 5 today; bring Step 7 in line).
 
-Right now, `WizardShell` and `ProgressBar` both parse `/^\/step\/(\d+)$/` and hard-code `TOTAL_STEPS = 10`, and several pages hard-code paths like `navigate("/step/9")`. We need to centralize this so slug URLs work and nothing drifts.
+**Size — all pills, both pickers, ~40px tall**
+- Single shared spec: `px-4 py-2 text-sm` with `border-2`, `rounded-full`, `gap-1.5`. With `text-sm` (line-height ~20px) + 8px top/bottom padding + 2px borders this lands at ~40px. No fixed `h-*` class.
+- Today Step 5 pills are bigger (`px-5 py-2.5 text-base`, ~44px) and Step 7 `MiniPersonality` pills are much smaller (`px-3 py-1 text-xs`, ~24px). Both get normalized to the same ~40px spec.
+- The dashed "+ Add interest" button in Step 5 uses the same shared spec so it visually matches.
+- Inline `<input>` inside an interest pill keeps `text-sm` so the row height stays consistent whether the chip is a suggestion or a filled entry.
 
-**New file: `src/lib/wizardSteps.ts`**
+## Where it applies
 
-```ts
-export const WIZARD_STEPS = [
-  { num: 1,  slug: "1-name",        path: "/step/1-name" },
-  { num: 2,  slug: "2-buyer",       path: "/step/2-buyer" },
-  { num: 3,  slug: "3-genre",       path: "/step/3-genre" },
-  { num: 4,  slug: "4-lesson",      path: "/step/4-lesson" },
-  { num: 5,  slug: "5-interests",   path: "/step/5-interests" },
-  { num: 6,  slug: "6-art-style",   path: "/step/6-art-style" },
-  { num: 7,  slug: "7-character",   path: "/step/7-character" },
-  { num: 8,  slug: "8-summary",     path: "/step/8-summary" },
-  { num: 9,  slug: "9-generating",  path: "/step/9-generating" },
-  { num: 10, slug: "10-preview",    path: "/step/10-preview" },
-] as const;
+| File | Component | What's normalized |
+|------|-----------|-------------------|
+| `src/pages/steps/Step5Interests.tsx` | filled interest pills, suggestion pills, "+ Add interest" button | size, selected border (was tinted background only — now also gets the 2px green border), X icon color |
+| `src/pages/steps/Step7Character.tsx` | `MiniPersonality` (used for protagonist + each supporting character) | size (was much smaller), green border on selected, X icon color, hover treatment on suggestions |
 
-export const TOTAL_STEPS = WIZARD_STEPS.length;
-export const pathForStep = (n: number) => WIZARD_STEPS[n - 1]?.path ?? "/step/1-name";
-export const stepNumFromSlug = (slug?: string) =>
-  WIZARD_STEPS.find(s => s.slug === slug)?.num ?? 1;
-```
+Out of scope (unchanged): Interests copy/warning, max-3 cap behavior, FIFO replacement, trait pool itself, the `SelectableTile` boxes from the previous pass, gender/hair pills.
 
-## Approach
+## Implementation approach
 
-**Pass 1 — Two-phase rename of step files** (must use `_tmp` intermediate because new names collide with old names):
-- Move each old file to `<NewName>_tmp.tsx`, then strip `_tmp`.
+1. **New tiny shared module** `src/components/pillStyles.ts` exporting three constants used by both pickers:
+   - `PILL_BASE = "inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-medium border-2 transition-all"`
+   - `PILL_SELECTED` → solid green border + tint bg + green text.
+   - `PILL_SUGGESTION` → dashed green border + green text + hover lift + hover tint.
+   - Plus a `PILL_REMOVE_BTN` class for the `X` button (green at ~70% opacity, hover 100%).
 
-**Pass 2 — `src/App.tsx`:** rewrite imports + routes in order. Routes use the new slug paths. Add **legacy redirects** so existing `/step/1`…`/step/10` URLs still work:
+   Keeping it as flat constants (not a wrapper component) so the two pickers — which differ in internals (Step 5 has an inline editable `<input>`, Step 7 is pure buttons) — can each keep their own JSX.
 
-```tsx
-<Route path="/step/1-name" element={<Step1Name />} />
-... (2-10 in order)
-<Route path="/step/secret-ingredient" element={<StepSecretIngredient />} />
-{/* Legacy numeric redirects */}
-{WIZARD_STEPS.map(s => (
-  <Route key={s.num} path={`/step/${s.num}`}
-         element={<Navigate to={s.path} replace />} />
-))}
-<Route path="/step/:step" element={<StepPlaceholder />} />
-```
+2. **`Step5Interests.tsx`** — swap `pillBase` + `pillFilledStyle` + the dashed-suggestion classNames for the shared constants. The `<input>` inside the filled pill becomes `text-sm` to match the new pill height. The X button uses `PILL_REMOVE_BTN`. "+ Add interest" button uses the shared suggestion classes (with `border-dashed` already in `PILL_SUGGESTION`, no extra work).
 
-**Pass 3 — Update all internal navigation** to use `pathForStep(n)` / step constants from `wizardSteps.ts`:
+3. **`Step7Character.tsx > MiniPersonality`** — replace the local filled-span classes and the suggestion-button classes with `PILL_SELECTED` and `PILL_SUGGESTION`. X icon picks up `PILL_REMOVE_BTN`. Header text + "pick up to N traits" caption stay as-is.
 
-- `src/components/WizardShell.tsx` — replace regex + hardcoded `TOTAL_STEPS = 10` with `stepNumFromSlug(useParams().step)` and `pathForStep(currentStep ± 1)`.
-- `src/components/ProgressBar.tsx` — drop local `TOTAL_STEPS`, import from `wizardSteps`, navigate via `pathForStep(stepNum)`.
-- `src/pages/Login.tsx` — `navigate("/step/1")` → `navigate(pathForStep(1))` (3 spots).
-- `src/pages/steps/Step10.tsx` (becomes `Step9Generating.tsx`) — `/step/10` → `pathForStep(10)`, `/step/8` → `pathForStep(8)`.
-- `src/pages/steps/Step10Summary.tsx` (becomes `Step8Summary.tsx`) — `/step/9` → `pathForStep(9)`, `/step/7` → `pathForStep(7)`.
-- `src/pages/steps/Step11.tsx` (becomes `Step10Preview.tsx`) — `/step/1` → `pathForStep(1)`.
+4. No state, validation, prompt, or schema changes. Pure presentation.
 
-## Why this works without breaking anything
+## Files touched
 
-- All component name references outside the step files are isolated to `src/App.tsx` (verified with grep).
-- All hard-coded `/step/N` URLs are in 6 known files (verified with grep) — every one gets replaced with `pathForStep()`.
-- The legacy `/step/N` → `/step/N-slug` redirects mean any bookmarked URL, deep link, or stale reference still lands on the right step.
-- The progress bar's "current step" math still works because it reads `currentStep` from a derived helper, not from a regex on the URL.
+- `src/components/pillStyles.ts` (new)
+- `src/pages/steps/Step5Interests.tsx`
+- `src/pages/steps/Step7Character.tsx`
 
-## Out of scope (per earlier answer)
+## One quick check before I build
 
-- Portrait deferral (removing `useCharacterPortrait` from Step 7 character). Will be handled in a follow-up.
-- Step content / behavior — pure rename + URL refactor.
-
-## Verification
-
-1. App builds.
-2. Visit each new URL (`/step/1-name` … `/step/10-preview`) — correct content renders.
-3. Visit legacy `/step/3` → URL bar updates to `/step/3-genre`.
-4. Progress-bar dots clickable & navigate to slug URLs.
-5. Login → continues to `/step/1-name`. Step 10 "start over" → `/step/1-name`.
-6. Step 8 approve → Step 9. Step 9 finish → Step 10. Back buttons work.
+The personality pills today are noticeably smaller than the interest pills (xs text vs base text). Sizing them up to ~40px will make the "Personality" section in Step 7 take more vertical space — that's the intended outcome of your "make them all the same size" ask, just flagging so it isn't a surprise.

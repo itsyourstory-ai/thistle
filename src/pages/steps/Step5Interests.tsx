@@ -2,6 +2,11 @@ import { useEffect, useMemo, useRef } from "react";
 import { Plus, X } from "lucide-react";
 import WizardShell from "@/components/WizardShell";
 import { useWizard } from "@/contexts/WizardContext";
+import {
+  PILL_SELECTED,
+  PILL_SUGGESTION,
+  PILL_REMOVE_BTN,
+} from "@/components/pillStyles";
 
 type AgeRange = "0-2" | "3-5" | "6-8" | "9-12";
 type Gender = "girl" | "boy" | "non-binary" | "surprise";
@@ -138,16 +143,12 @@ export default function Step4b() {
 
   const atCap = list.length >= MAX_INTERESTS;
 
-  const pillBase =
-    "inline-flex items-center gap-1.5 rounded-full px-5 py-2.5 text-base font-medium transition-all";
-  const pillFilledStyle = {
-    backgroundColor: "hsl(var(--wizard-primary) / 0.10)",
-    color: "hsl(var(--wizard-primary))",
-  } as const;
+  // Pill styles now live in @/components/pillStyles (shared with MiniPersonality).
+
 
   return (
     <WizardShell showSkip>
-      <div className="space-y-8">
+      <div className="space-y-10">
         <div className="space-y-2">
           <h1
             className="font-heading text-3xl sm:text-4xl font-semibold"
@@ -156,7 +157,7 @@ export default function Step4b() {
             What does {name} love?
           </h1>
           <p className="text-muted-foreground text-lg">
-            Add up to 3 things they're into.
+            Add up to three things they're interested in and we'll weave them into the story.
           </p>
         </div>
 
@@ -165,7 +166,7 @@ export default function Step4b() {
           {list.map((entry, idx) => {
             const size = entry.word ? Math.max(entry.word.length, 1) : PLACEHOLDER.length;
             return (
-              <div key={idx} className={pillBase} style={pillFilledStyle}>
+              <div key={idx} className={PILL_SELECTED}>
                 {entry.emoji && <span aria-hidden>{entry.emoji}</span>}
                 <input
                   ref={(el) => (inputRefs.current[idx] = el)}
@@ -173,14 +174,14 @@ export default function Step4b() {
                   onChange={(e) => updateEntry(idx, e.target.value)}
                   placeholder={PLACEHOLDER}
                   size={size}
-                  className="bg-transparent border-0 outline-none p-0 text-base font-medium placeholder:text-[hsl(var(--wizard-primary)/0.5)]"
+                  className="bg-transparent border-0 outline-none p-0 text-sm font-medium placeholder:text-[hsl(var(--wizard-primary)/0.5)]"
                   style={{ color: "hsl(var(--wizard-primary))" }}
                 />
                 <button
                   type="button"
                   onClick={() => removeEntry(idx)}
                   aria-label="Remove interest"
-                  className="-ml-1 opacity-50 hover:opacity-100 transition-opacity"
+                  className={PILL_REMOVE_BTN}
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -188,25 +189,19 @@ export default function Step4b() {
             );
           })}
 
+
+
           {!atCap && (
             <button
               type="button"
               onClick={() => addEntry("")}
-              className="inline-flex items-center gap-1.5 rounded-full px-5 py-2.5 text-base font-medium border-2 border-dashed transition-all hover:bg-[hsl(var(--wizard-primary)/0.05)]"
-              style={{
-                borderColor: "hsl(var(--wizard-primary) / 0.4)",
-                color: "hsl(var(--wizard-primary))",
-              }}
+              className={PILL_SUGGESTION}
             >
               <Plus className="w-4 h-4" />
               <span>Add interest</span>
             </button>
           )}
         </div>
-
-        <p className="text-xs text-muted-foreground">
-          ⚠️ Please don't reference copyrighted material (movies, TV shows, singers, brands, etc.) — we can't include them in your book.
-        </p>
 
         {!atCap && visibleChips.length > 0 && (
           <div className="space-y-3">
@@ -217,11 +212,7 @@ export default function Step4b() {
                   key={it.word}
                   type="button"
                   onClick={() => addEntry(it.word, it.emoji)}
-                  className="inline-flex items-center gap-1.5 rounded-full px-5 py-2.5 text-base font-medium border-2 border-dashed transition-all hover:bg-[hsl(var(--wizard-primary)/0.05)] hover:-translate-y-0.5"
-                  style={{
-                    borderColor: "hsl(var(--wizard-primary) / 0.4)",
-                    color: "hsl(var(--wizard-primary))",
-                  }}
+                  className={PILL_SUGGESTION}
                 >
                   <span aria-hidden>{it.emoji}</span>
                   <span>{it.word}</span>
@@ -237,8 +228,8 @@ export default function Step4b() {
           </p>
         )}
 
-        <p className="text-sm text-muted-foreground">
-          <span className="font-semibold">Why we ask:</span> {name}'s interests become woven into the story — making it uniquely theirs.
+        <p className="text-xs text-muted-foreground">
+          ⚠️ Please don't reference copyrighted material (movies, TV shows, singers, brands, etc.) — we can't include them in your book.
         </p>
       </div>
     </WizardShell>

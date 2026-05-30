@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import WizardShell from "@/components/WizardShell";
 import { useWizard } from "@/contexts/WizardContext";
+import { SelectableTile } from "@/components/SelectableTile";
 
 // Buyer relationships — matches engine's BookEngineInput["buyer_relationship"].
 const RELATIONSHIPS = [
@@ -35,18 +36,14 @@ export default function StepWhoIsItFor() {
     setCanContinue(buyerRelationship !== "" && occasion !== "");
   }, [buyerRelationship, occasion, setCanContinue]);
 
-  const tileClass = (selected: boolean) =>
-    `cursor-pointer rounded-2xl px-4 py-4 text-center transition-all border-2 shadow-sm ${
-      selected
-        ? "border-[hsl(var(--wizard-primary))] bg-[hsl(var(--wizard-primary)/0.08)] scale-[1.02]"
-        : "border-transparent bg-white hover:shadow-md hover:-translate-y-0.5"
-    }`;
+  const tileExtras = "px-4 py-4 text-center";
+
 
   return (
     <WizardShell>
       <div className="space-y-10">
         {/* Heading — warm, encouraging */}
-        <div className="text-center space-y-2">
+        <div className="space-y-2">
           <h1
             className="font-heading text-3xl sm:text-4xl font-semibold"
             style={{ color: "hsl(var(--wizard-primary))" }}
@@ -61,24 +58,21 @@ export default function StepWhoIsItFor() {
 
         {/* Buyer relationship */}
         <section className="space-y-3">
-          <div className="text-center space-y-1">
+          <div className="space-y-1">
             <h2
-              className="font-heading text-xl sm:text-2xl font-semibold"
+              className="font-heading text-xl sm:text-2xl font-semibold text-left"
               style={{ color: "hsl(var(--wizard-primary))" }}
             >
-              You are {childName}'s…
+              What is your relationship to {childName}?
             </h2>
-            <p className="text-sm text-muted-foreground">
-              This shapes the voice of the dedication.
-            </p>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 w-full">
             {RELATIONSHIPS.map((r) => (
-              <button
+              <SelectableTile
                 key={r.value}
-                type="button"
+                selected={buyerRelationship === r.value}
                 onClick={() => setAnswer("buyer_relationship", r.value)}
-                className={tileClass(buyerRelationship === r.value)}
+                className={tileExtras}
               >
                 <div className="text-2xl mb-1">{r.emoji}</div>
                 <div
@@ -87,31 +81,28 @@ export default function StepWhoIsItFor() {
                 >
                   {r.label}
                 </div>
-              </button>
+              </SelectableTile>
             ))}
           </div>
         </section>
 
         {/* Occasion */}
         <section className="space-y-3">
-          <div className="text-center space-y-1">
+          <div className="space-y-1">
             <h2
-              className="font-heading text-xl sm:text-2xl font-semibold"
+              className="font-heading text-xl sm:text-2xl font-semibold text-left"
               style={{ color: "hsl(var(--wizard-primary))" }}
             >
               What's the occasion?
             </h2>
-            <p className="text-sm text-muted-foreground">
-              A little flavor — never the central plot.
-            </p>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 w-full">
             {OCCASIONS.map((o) => (
-              <button
+              <SelectableTile
                 key={o.value}
-                type="button"
+                selected={occasion === o.value}
                 onClick={() => setAnswer("occasion", o.value)}
-                className={tileClass(occasion === o.value)}
+                className={tileExtras}
               >
                 <div className="text-2xl mb-1">{o.emoji}</div>
                 <div
@@ -120,14 +111,11 @@ export default function StepWhoIsItFor() {
                 >
                   {o.label}
                 </div>
-              </button>
+              </SelectableTile>
             ))}
           </div>
         </section>
 
-        <p className="text-center text-xs text-muted-foreground italic w-full">
-          You're already making something they'll keep forever ✨
-        </p>
       </div>
     </WizardShell>
   );
