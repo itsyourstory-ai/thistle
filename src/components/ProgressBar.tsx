@@ -8,7 +8,7 @@ import {
 import { useWizard } from "@/contexts/WizardContext";
 import { TOTAL_STEPS, pathForStep } from "@/lib/wizardSteps";
 
-// Short, accurate step names for tooltips. Matches the current 10-step flow.
+// Short, accurate step names for tooltips. Matches the current 11-step flow.
 const STEP_LABELS: Record<number, string> = {
   1: "Who's it for?",
   2: "From & Occasion",
@@ -17,9 +17,10 @@ const STEP_LABELS: Record<number, string> = {
   5: "Interests",
   6: "Art Style",
   7: "Characters",
-  8: "Preview",
-  9: "Checkout",
-  10: "Generating",
+  8: "Story",
+  9: "Cast & Cover",
+  10: "Checkout",
+  11: "Generating",
 };
 
 // Warm, child-focused encouragement that swaps as the user advances.
@@ -33,8 +34,9 @@ const PROGRESS_MESSAGES: Record<number, string> = {
   6: "Picking the perfect look 🎨",
   7: "Gathering their cast of friends 🧸",
   8: "Tada — meet your storybook 🎉",
-  9: "Almost ready to print 💌",
-  10: "Stitching every page together ✨",
+  9: "Your characters are coming to life 🎨",
+  10: "Almost ready to print 💌",
+  11: "Stitching every page together ✨",
 };
 
 export default function ProgressBar({ currentStep }: { currentStep: number }) {

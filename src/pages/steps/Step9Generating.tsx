@@ -128,7 +128,7 @@ export default function Step10Generating() {
       className="flex flex-col min-h-[100dvh]"
       style={{ backgroundColor: "hsl(var(--wizard-bg))" }}
     >
-      <WizardHeader currentStep={10} />
+      <WizardHeader currentStep={11} />
 
       <div className="flex-1 flex flex-col items-center justify-center px-4 relative">
         <style>{`
@@ -328,7 +328,7 @@ export default function Step10Generating() {
               ✨ Try again
             </button>
             <button
-              onClick={() => navigate(pathForStep(9))}
+              onClick={() => navigate(pathForStep(10))}
               className="text-xs underline text-[#2b4e18]/60"
             >
               Back to checkout

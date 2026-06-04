@@ -6,9 +6,10 @@ export const WIZARD_STEPS = [
   { num: 5, slug: "5-interests", path: "/step/5-interests" },
   { num: 6, slug: "6-art-style", path: "/step/6-art-style" },
   { num: 7, slug: "7-character", path: "/step/7-character" },
-  { num: 8, slug: "8-summary", path: "/step/8-summary" },
-  { num: 9, slug: "9-preview", path: "/step/9-preview" },
-  { num: 10, slug: "10-generating", path: "/step/10-generating" },
+  { num: 8, slug: "8-story", path: "/step/8-story" },
+  { num: 9, slug: "9-cast", path: "/step/9-cast" },
+  { num: 10, slug: "10-preview", path: "/step/10-preview" },
+  { num: 11, slug: "11-generating", path: "/step/11-generating" },
 ] as const;
 
 export const TOTAL_STEPS = WIZARD_STEPS.length;

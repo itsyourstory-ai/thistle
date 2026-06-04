@@ -55,7 +55,7 @@ export default function Step9Preview() {
     setAnswer("buyer_email", buyerEmail.trim());
     setAnswer("selectedPlan", selected);
 
-    navigate(pathForStep(10));
+    navigate(pathForStep(11));
   };
 
   return (
@@ -63,7 +63,7 @@ export default function Step9Preview() {
       className="flex flex-col min-h-[100dvh]"
       style={{ backgroundColor: "hsl(var(--wizard-bg))" }}
     >
-      <WizardHeader currentStep={9} />
+      <WizardHeader currentStep={10} />
 
       <main className="flex-1 flex justify-center px-4 pt-12 pb-20">
         <div className="w-full mx-auto" style={{ maxWidth: "700px" }}>
