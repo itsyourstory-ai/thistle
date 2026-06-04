@@ -1,13 +1,9 @@
 import React, { createContext, useContext, useState, useCallback, type ReactNode } from "react";
-
-interface WizardState {
-  answers: Record<string, any>;
-  canContinue: boolean;
-}
+import type { WizardAnswers } from "@/lib/wizardTypes";
 
 interface WizardContextType {
-  answers: Record<string, any>;
-  setAnswer: (key: string, value: any) => void;
+  answers: WizardAnswers;
+  setAnswer: <K extends keyof WizardAnswers>(key: K, value: WizardAnswers[K]) => void;
   canContinue: boolean;
   setCanContinue: (v: boolean) => void;
   /** True while a long-running generation (e.g. the cover) is in flight.
@@ -20,11 +16,11 @@ interface WizardContextType {
 const WizardContext = createContext<WizardContextType | null>(null);
 
 export function WizardProvider({ children }: { children: ReactNode }) {
-  const [answers, setAnswers] = useState<Record<string, any>>({});
+  const [answers, setAnswers] = useState<WizardAnswers>({});
   const [canContinue, setCanContinue] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
 
-  const setAnswer = useCallback((key: string, value: any) => {
+  const setAnswer = useCallback(<K extends keyof WizardAnswers>(key: K, value: WizardAnswers[K]) => {
     setAnswers((prev) => ({ ...prev, [key]: value }));
   }, []);
 

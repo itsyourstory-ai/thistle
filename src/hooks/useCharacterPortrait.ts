@@ -15,15 +15,10 @@ import { useWizard } from "@/contexts/WizardContext";
 import { buildBrief } from "@/lib/buildBrief";
 import { supabase } from "@/integrations/supabase/client";
 import { invokePortrait } from "./portraitApi";
+import type { CharacterPortraitState, PortraitStatus } from "@/lib/wizardTypes";
 
-export type PortraitStatus = "idle" | "loading" | "ready" | "error";
-
-export interface CharacterPortraitState {
-  status: PortraitStatus;
-  dataUrl?: string;
-  error?: string;
-  sourceHash?: string;
-}
+// Re-export so existing importers of this file keep working.
+export type { CharacterPortraitState, PortraitStatus } from "@/lib/wizardTypes";
 
 function computeSourceHash(
   firstPhoto: string | undefined,

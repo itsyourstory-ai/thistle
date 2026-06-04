@@ -11,18 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { useCharacterPortrait } from "@/hooks/useCharacterPortrait";
 import { useSupportingPortraits } from "@/hooks/useSupportingPortraits";
-
-type StoryConcept = {
-  title?: string;
-  summary?: string;
-  user_visible_summary?: string;
-  framework_id?: string;
-  framework_reason?: string;
-  story_seed?: Record<string, unknown>;
-  personalization_notes?: Record<string, unknown>;
-  full_book_instruction?: string;
-  user_edited?: boolean;
-};
+import type { StoryConcept } from "@/lib/wizardTypes";
 
 export default function Step10Summary() {
   const { answers, setAnswer } = useWizard();

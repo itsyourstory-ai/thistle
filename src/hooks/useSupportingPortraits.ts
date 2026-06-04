@@ -12,9 +12,10 @@ import { useCallback, useEffect, useRef } from "react";
 import { useWizard } from "@/contexts/WizardContext";
 import { buildBrief } from "@/lib/buildBrief";
 import { invokePortrait } from "./portraitApi";
-import type { CharacterPortraitState } from "./useCharacterPortrait";
+import type { CharacterPortraitState, SupportingPortraitsState } from "@/lib/wizardTypes";
 
-export type SupportingPortraitsState = Record<string, CharacterPortraitState>;
+// Re-export so existing importers keep working.
+export type { SupportingPortraitsState } from "@/lib/wizardTypes";
 
 function hashChar(c: any, artStyle: string | undefined): string {
   if (!c?.id) return "";
