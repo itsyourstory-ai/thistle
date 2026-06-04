@@ -115,7 +115,7 @@ function LayoutPreview({ layout }: { layout: PageLayout | undefined }) {
     content = (
       <>
         <div className={`absolute inset-1 rounded ${imgClass}`} />
-        {tp === "overlay-center" && <div className={`absolute inset-x-3 top-1/2 -translate-y-1/2 h-2 rounded ${txtClass}`} />}
+        {tp === "center" && <div className={`absolute inset-x-3 top-1/2 -translate-y-1/2 h-2 rounded ${txtClass}`} />}
       </>
     );
   } else if (cov === "spot") {
