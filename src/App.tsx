@@ -13,6 +13,7 @@ import Step5Interests from "./pages/steps/Step5Interests";
 import Step6ArtStyle from "./pages/steps/Step6ArtStyle";
 import Step7Character from "./pages/steps/Step7Character";
 import Step8Summary from "./pages/steps/Step8Summary";
+import Step9Cast from "./pages/steps/Step9Cast";
 import Step9Generating from "./pages/steps/Step9Generating";
 import Step10Preview from "./pages/steps/Step10Preview";
 import StepSecretIngredient from "./pages/steps/StepSecretIngredient";
@@ -40,9 +41,10 @@ const App = () => (
             <Route path="/step/5-interests" element={<Step5Interests />} />
             <Route path="/step/6-art-style" element={<Step6ArtStyle />} />
             <Route path="/step/7-character" element={<Step7Character />} />
-            <Route path="/step/8-summary" element={<Step8Summary />} />
-            <Route path="/step/9-preview" element={<Step10Preview />} />
-            <Route path="/step/10-generating" element={<Step9Generating />} />
+            <Route path="/step/8-story" element={<Step8Summary />} />
+            <Route path="/step/9-cast" element={<Step9Cast />} />
+            <Route path="/step/10-preview" element={<Step10Preview />} />
+            <Route path="/step/11-generating" element={<Step9Generating />} />
             {/* Secret Ingredient hidden — route preserved */}
             <Route path="/step/secret-ingredient" element={<StepSecretIngredient />} />
             {/* Legacy numeric redirects */}
