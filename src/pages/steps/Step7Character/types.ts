@@ -1,3 +1,7 @@
+// Re-export shared types from the central types file
+export type { Appearance, Protagonist, SupportingCharacter, ActiveTab } from "@/lib/wizardTypes";
+export { emptyAppearance, makeId } from "@/lib/wizardTypes";
+
 /* ── constants ───────────────────────────────────────────── */
 
 export const RELATIONSHIPS = [
@@ -22,45 +26,3 @@ export const SKIN_TONES = [
   "#FDEBD0", "#F5CBA7", "#E0B88A", "#C68E5B", "#A0724A",
   "#7D5A3C", "#5C3D2E", "#3E2723",
 ];
-
-/* ── interfaces ──────────────────────────────────────────── */
-
-export interface Appearance {
-  hairColor: string;
-  hairStyle: string;
-  skinTone: string;
-  glasses: boolean;
-  features: string;
-}
-
-export function emptyAppearance(): Appearance {
-  return { hairColor: "", hairStyle: "", skinTone: "", glasses: false, features: "" };
-}
-
-export interface Protagonist {
-  photos: string[];
-  name: string;
-  age: string;
-  gender: string;
-  special: string;
-  appearance: Appearance;
-  traits: Array<{ word: string; emoji?: string }>;
-}
-
-export interface SupportingCharacter {
-  id: string;
-  mode: "" | "ai" | "real";
-  name: string;
-  surpriseName: boolean;
-  relationship: string;
-  relationshipOther: string;
-  gender: string;
-  ageRange: string;
-  photos: string[];
-  appearance: Appearance;
-  traits: Array<{ word: string; emoji?: string }>;
-}
-
-export type ActiveTab = { kind: "protagonist" } | { kind: "supporting"; id: string };
-
-export function makeId() { return Math.random().toString(36).slice(2, 9); }

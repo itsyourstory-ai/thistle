@@ -9,6 +9,8 @@
  * Pure — no React, no side effects.
  */
 
+import type { WizardAnswers } from "@/lib/wizardTypes";
+
 export interface AppearanceLike {
   hairColor?: string;
   hairStyle?: string;
@@ -87,16 +89,16 @@ function wordsFromList(list: any): string[] {
     .filter(Boolean);
 }
 
-export function buildBrief(answers: Record<string, any>): StoryBrief {
-  const proto = (answers.protagonist as any) || {};
-  const supporting = (answers.supportingCharacters as any[]) || [];
+export function buildBrief(answers: WizardAnswers): StoryBrief {
+  const proto = answers.protagonist ?? ({} as NonNullable<WizardAnswers["protagonist"]>);
+  const supporting = answers.supportingCharacters ?? [];
 
   const interests = wordsFromList(answers.interestsList);
   const personality = wordsFromList(proto.traits).length
     ? wordsFromList(proto.traits)
     : wordsFromList(answers.personalityList);
 
-  const protoPhotos: string[] = Array.isArray(proto.photos) ? proto.photos : [];
+  const protoPhotos: string[] = proto.photos ?? [];
 
   return {
     child: {
