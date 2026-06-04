@@ -11,7 +11,7 @@
 import { useCallback, useEffect, useRef } from "react";
 import { useWizard } from "@/contexts/WizardContext";
 import { buildBrief } from "@/lib/buildBrief";
-import { supabase } from "@/integrations/supabase/client";
+import { invokePortrait } from "./portraitApi";
 import type { CharacterPortraitState } from "./useCharacterPortrait";
 
 export type SupportingPortraitsState = Record<string, CharacterPortraitState>;
@@ -85,14 +85,7 @@ export function useSupportingPortraits() {
           childName: c.name,
         };
         const brief = buildBrief(seed);
-        const { data, error: fnError } = await supabase.functions.invoke(
-          "generate-character-portrait",
-          { body: { brief } },
-        );
-        if (fnError) throw fnError;
-        if (data?.error) throw new Error(data.error);
-        const imageDataUrl = data?.imageDataUrl as string | undefined;
-        if (!imageDataUrl) throw new Error("No portrait image returned.");
+        const imageDataUrl = await invokePortrait(brief);
 
         const after: SupportingPortraitsState =
           (latestAnswersRef.current.supportingPortraits as SupportingPortraitsState) || {};
