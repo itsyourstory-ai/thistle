@@ -68,11 +68,8 @@ export default function Step1() {
         {/* Heading */}
         <div className="space-y-2">
           <h1
-            className="font-heading text-3xl sm:text-4xl font-semibold transition-opacity duration-300"
-            style={{
-              color: "hsl(var(--wizard-primary))",
-              opacity: headingVisible ? 1 : 0,
-            }}
+            className="font-heading text-3xl sm:text-4xl font-semibold text-wizard transition-opacity duration-300"
+            style={{ opacity: headingVisible ? 1 : 0 }}
           >
             {headingText}
           </h1>
@@ -85,7 +82,7 @@ export default function Step1() {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 w-full">
           {/* Name */}
           <div className="space-y-2">
-            <h2 className="font-heading text-xl sm:text-2xl font-semibold text-left text-[hsl(var(--wizard-primary))]">
+            <h2 className="font-heading text-xl sm:text-2xl font-semibold text-left text-wizard">
               Name
             </h2>
             <Input
@@ -98,7 +95,7 @@ export default function Step1() {
 
           {/* Gender */}
           <div className="space-y-2">
-            <h2 className="font-heading text-xl sm:text-2xl font-semibold text-left text-[hsl(var(--wizard-primary))]">
+            <h2 className="font-heading text-xl sm:text-2xl font-semibold text-left text-wizard">
               Gender
             </h2>
             <Select value={gender} onValueChange={(v) => setAnswer("gender", v)}>
@@ -118,7 +115,7 @@ export default function Step1() {
 
         {/* Book language — own row */}
         <div className="space-y-2 w-full pt-4">
-          <h2 className="font-heading text-xl sm:text-2xl font-semibold text-left text-[hsl(var(--wizard-primary))]">
+          <h2 className="font-heading text-xl sm:text-2xl font-semibold text-left text-wizard">
             What language do they speak?
           </h2>
           <div className="flex flex-wrap gap-3">
@@ -129,7 +126,7 @@ export default function Step1() {
                 onClick={() => setAnswer("language", l.value)}
                 className="px-5 py-3 text-center"
               >
-                <span className="block text-sm font-semibold" style={{ color: "hsl(var(--wizard-primary))" }}>
+                <span className="block text-sm font-semibold text-wizard">
                   {l.label}
                 </span>
               </SelectableTile>
@@ -142,7 +139,7 @@ export default function Step1() {
 
         {/* Book type tiles (drives age range) */}
         <div className="space-y-4 pt-4">
-          <h2 className="font-heading text-xl sm:text-2xl font-semibold text-left text-[hsl(var(--wizard-primary))]">
+          <h2 className="font-heading text-xl sm:text-2xl font-semibold text-left text-wizard">
             How old are they?
           </h2>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-5 w-full">
@@ -163,7 +160,7 @@ export default function Step1() {
                     className="w-full h-full object-cover transition-transform group-hover:scale-105"
                   />
                 </div>
-                <span className="block text-base sm:text-lg font-semibold leading-tight text-center" style={{ color: "hsl(var(--wizard-primary))" }}>
+                <span className="block text-base sm:text-lg font-semibold leading-tight text-center text-wizard">
                   {a.label}
                 </span>
                 <span className="block text-sm text-muted-foreground -mt-2 text-center">

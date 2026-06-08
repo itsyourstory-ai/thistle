@@ -70,7 +70,7 @@ export default function Step9Preview() {
 
           {/* Heading */}
           <div className="space-y-2 mb-8">
-            <h1 className="font-heading text-3xl sm:text-4xl font-semibold text-left text-[hsl(var(--wizard-primary))]">
+            <h1 className="font-heading text-3xl sm:text-4xl font-semibold text-left text-wizard">
               {name}'s book is ready.
             </h1>
             <p className="text-muted-foreground text-lg text-left">

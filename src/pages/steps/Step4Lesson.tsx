@@ -31,10 +31,7 @@ export default function Step3() {
     <WizardShell>
       <div className="space-y-10">
         <div className="space-y-2">
-          <h1
-            className="font-heading text-3xl sm:text-4xl font-semibold"
-            style={{ color: "hsl(var(--wizard-primary))" }}
-          >
+          <h1 className="font-heading text-3xl sm:text-4xl font-semibold text-wizard">
             Every great story has a heart.
           </h1>
           <p className="text-muted-foreground text-lg">
@@ -53,7 +50,7 @@ export default function Step3() {
               <span className="text-2xl">{l.emoji}</span>
               <span
                 className="block text-base font-semibold mt-1"
-                style={{ color: "hsl(var(--wizard-primary))" }}
+                className="text-wizard"
               >
                 {l.label}
               </span>

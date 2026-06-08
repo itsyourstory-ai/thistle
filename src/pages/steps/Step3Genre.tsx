@@ -44,10 +44,7 @@ export default function Step2() {
       <div className="space-y-10">
         {/* Heading */}
         <div className="space-y-2">
-          <h1
-            className="font-heading text-3xl sm:text-4xl font-semibold"
-            style={{ color: "hsl(var(--wizard-primary))" }}
-          >
+          <h1 className="font-heading text-3xl sm:text-4xl font-semibold text-wizard">
             What kind of story should this be?
           </h1>
           <p className="text-muted-foreground text-lg">
@@ -57,7 +54,7 @@ export default function Step2() {
 
         {/* Genre grid */}
         <div className="space-y-3">
-          <h2 className="font-heading text-xl sm:text-2xl font-semibold text-left text-[hsl(var(--wizard-primary))]">
+          <h2 className="font-heading text-xl sm:text-2xl font-semibold text-left text-wizard">
             Genre
           </h2>
           <div className="grid grid-cols-2 gap-3">
@@ -71,7 +68,7 @@ export default function Step2() {
                 <span className="text-2xl">{g.emoji}</span>
                 <span
                   className="block text-base font-semibold mt-1"
-                  style={{ color: "hsl(var(--wizard-primary))" }}
+                  className="text-wizard"
                 >
                   {g.label}
                 </span>
@@ -85,7 +82,7 @@ export default function Step2() {
 
         {/* Mood grid */}
         <div className="space-y-3">
-          <h2 className="font-heading text-xl sm:text-2xl font-semibold text-left text-[hsl(var(--wizard-primary))]">
+          <h2 className="font-heading text-xl sm:text-2xl font-semibold text-left text-wizard">
             Mood
           </h2>
           <div className="grid grid-cols-3 gap-3">
@@ -99,7 +96,7 @@ export default function Step2() {
                 <span className="text-2xl">{m.emoji}</span>
                 <span
                   className="block text-base font-semibold mt-1"
-                  style={{ color: "hsl(var(--wizard-primary))" }}
+                  className="text-wizard"
                 >
                   {m.label}
                 </span>

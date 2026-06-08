@@ -150,10 +150,7 @@ export default function Step4b() {
     <WizardShell showSkip>
       <div className="space-y-10">
         <div className="space-y-2">
-          <h1
-            className="font-heading text-3xl sm:text-4xl font-semibold"
-            style={{ color: "hsl(var(--wizard-primary))" }}
-          >
+          <h1 className="font-heading text-3xl sm:text-4xl font-semibold text-wizard">
             What does {name} love?
           </h1>
           <p className="text-muted-foreground text-lg">

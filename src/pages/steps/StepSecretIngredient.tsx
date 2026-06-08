@@ -158,10 +158,7 @@ export default function Step5() {
     <WizardShell showSkip>
       <div className="space-y-10">
         <div className="space-y-2">
-          <h1
-            className="font-heading text-3xl sm:text-4xl font-semibold"
-            style={{ color: "hsl(var(--wizard-primary))" }}
-          >
+          <h1 className="font-heading text-3xl sm:text-4xl font-semibold text-wizard">
             Sneak in a surprise
           </h1>
           <p className="text-muted-foreground text-lg">
@@ -178,10 +175,7 @@ export default function Step5() {
               className={cardClass(selectedCategory === cat.value)}
             >
               <span className="text-2xl">{cat.emoji}</span>
-              <span
-                className="block text-base font-semibold mt-1"
-                style={{ color: "hsl(var(--wizard-primary))" }}
-              >
+              <span className="block text-base font-semibold mt-1 text-wizard">
                 {cat.label}
               </span>
             </button>
@@ -190,15 +184,12 @@ export default function Step5() {
 
         {activeCategoryDef && (
           <div ref={followUpRef} className="space-y-4 animate-fade-in">
-            <h2
-              className="font-heading text-xl sm:text-2xl font-semibold text-left"
-              style={{ color: "hsl(var(--wizard-primary))" }}
-            >
+            <h2 className="font-heading text-xl sm:text-2xl font-semibold text-left text-wizard">
               Tell us about the {activeCategoryDef.label.toLowerCase()}
             </h2>
             {activeCategoryDef.fields.map((field) => (
               <div key={field.key} className="space-y-1.5">
-                <label className="block text-base font-semibold text-[hsl(var(--wizard-primary))]">
+                <label className="block text-base font-semibold text-wizard">
                   {field.label}
                 </label>
                 {field.type === "dropdown" ? (

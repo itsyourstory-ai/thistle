@@ -44,10 +44,7 @@ export default function StepWhoIsItFor() {
       <div className="space-y-10">
         {/* Heading — warm, encouraging */}
         <div className="space-y-2">
-          <h1
-            className="font-heading text-3xl sm:text-4xl font-semibold"
-            style={{ color: "hsl(var(--wizard-primary))" }}
-          >
+          <h1 className="font-heading text-3xl sm:text-4xl font-semibold text-wizard">
             What a thoughtful gift 💛
           </h1>
           <p className="text-muted-foreground text-lg">
@@ -59,10 +56,7 @@ export default function StepWhoIsItFor() {
         {/* Buyer relationship */}
         <section className="space-y-3">
           <div className="space-y-1">
-            <h2
-              className="font-heading text-xl sm:text-2xl font-semibold text-left"
-              style={{ color: "hsl(var(--wizard-primary))" }}
-            >
+            <h2 className="font-heading text-xl sm:text-2xl font-semibold text-left text-wizard">
               What is your relationship to {childName}?
             </h2>
           </div>
@@ -77,7 +71,7 @@ export default function StepWhoIsItFor() {
                 <div className="text-2xl mb-1">{r.emoji}</div>
                 <div
                   className="text-sm font-semibold leading-tight"
-                  style={{ color: "hsl(var(--wizard-primary))" }}
+                  className="text-wizard"
                 >
                   {r.label}
                 </div>
@@ -89,10 +83,7 @@ export default function StepWhoIsItFor() {
         {/* Occasion */}
         <section className="space-y-3">
           <div className="space-y-1">
-            <h2
-              className="font-heading text-xl sm:text-2xl font-semibold text-left"
-              style={{ color: "hsl(var(--wizard-primary))" }}
-            >
+            <h2 className="font-heading text-xl sm:text-2xl font-semibold text-left text-wizard">
               What's the occasion?
             </h2>
           </div>
@@ -107,7 +98,7 @@ export default function StepWhoIsItFor() {
                 <div className="text-2xl mb-1">{o.emoji}</div>
                 <div
                   className="text-sm font-semibold leading-tight"
-                  style={{ color: "hsl(var(--wizard-primary))" }}
+                  className="text-wizard"
                 >
                   {o.label}
                 </div>
