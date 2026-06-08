@@ -170,10 +170,7 @@ export default function Step10Generating() {
           >
             Now crafting
           </p>
-          <h1
-            className="text-2xl leading-tight"
-            style={{ color: "hsl(var(--wizard-primary))", fontFamily: "'Source Serif 4', serif" }}
-          >
+          <h1 className="font-heading text-2xl leading-tight text-wizard">
             {title ? `"${title}"` : "Your book"}
           </h1>
           <p className="text-sm mt-1" style={{ color: "hsl(var(--wizard-primary) / 0.7)" }}>

@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { pathForStep } from "@/lib/wizardSteps";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 
 export default function Login() {
@@ -32,10 +34,7 @@ export default function Login() {
         {/* Brand */}
         <div className="text-center space-y-2">
           <div className="text-4xl">📖✨</div>
-          <h1
-            className="font-heading text-3xl sm:text-4xl font-semibold"
-            style={{ color: "hsl(var(--wizard-primary))" }}
-          >
+          <h1 className="font-heading text-3xl sm:text-4xl font-semibold text-wizard">
             {mode === "signin" ? "Welcome back" : "Create your account"}
           </h1>
           <p className="text-muted-foreground">
@@ -45,8 +44,7 @@ export default function Login() {
           </p>
         </div>
 
-        {/* Card */}
-        <div className="bg-white rounded-3xl shadow-sm p-6 sm:p-8 space-y-5">
+        <Card className="rounded-3xl shadow-sm p-6 sm:p-8 space-y-5">
           {/* Google */}
           <button
             type="button"
@@ -97,32 +95,31 @@ export default function Login() {
               />
             </div>
 
-            <button
+            <Button
               type="submit"
+              variant="wizard"
+              size="pill"
               disabled={loading}
-              className="w-full py-3.5 rounded-full text-base font-semibold transition-all disabled:opacity-60 mt-2"
-              style={{
-                backgroundColor: "hsl(var(--wizard-primary))",
-                color: "#fff",
-              }}
+              className="w-full mt-2 disabled:opacity-60"
             >
               {loading ? "Just a moment…" : mode === "signin" ? "Sign in" : "Create account"}
-            </button>
+            </Button>
           </form>
 
           {/* Toggle mode */}
           <p className="text-center text-sm text-muted-foreground">
             {mode === "signin" ? "New here?" : "Already have an account?"}{" "}
-            <button
+            <Button
               type="button"
+              variant="wizardGhost"
+              size="sm"
               onClick={() => setMode(mode === "signin" ? "signup" : "signin")}
-              className="font-semibold underline-offset-2 hover:underline"
-              style={{ color: "hsl(var(--wizard-primary))" }}
+              className="font-semibold underline-offset-2 hover:underline p-0 h-auto"
             >
               {mode === "signin" ? "Create an account" : "Sign in"}
-            </button>
+            </Button>
           </p>
-        </div>
+        </Card>
 
         {/* Dev bypass */}
         <div className="text-center">

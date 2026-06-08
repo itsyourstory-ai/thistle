@@ -21,7 +21,7 @@ export default function StepPlaceholder() {
   return (
     <WizardShell>
       <div className="text-center space-y-4">
-        <h1 className="font-heading text-4xl font-semibold" style={{ color: "hsl(var(--wizard-primary))" }}>
+        <h1 className="font-heading text-3xl sm:text-4xl font-semibold text-wizard">
           {STEP_TITLES[n] ?? `Step ${n}`}
         </h1>
         <p className="text-muted-foreground text-lg">This step will be built soon.</p>

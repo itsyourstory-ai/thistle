@@ -139,10 +139,7 @@ export default function Step10Summary() {
         <div className="w-full" style={{ maxWidth: "700px" }}>
           <div className="space-y-10">
             <div className="space-y-2">
-              <h1
-                className="font-heading text-3xl sm:text-4xl font-semibold"
-                style={{ color: "hsl(var(--wizard-primary))" }}
-              >
+              <h1 className="font-heading text-3xl sm:text-4xl font-semibold text-wizard">
                 Here's {name}'s story
               </h1>
               <p className="text-muted-foreground text-lg">

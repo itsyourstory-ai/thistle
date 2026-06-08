@@ -47,6 +47,12 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        wizard: {
+          DEFAULT: "hsl(var(--wizard-primary) / <alpha-value>)",
+          bg: "hsl(var(--wizard-bg) / <alpha-value>)",
+          accent: "hsl(var(--wizard-accent) / <alpha-value>)",
+          "accent-foreground": "hsl(var(--wizard-accent-foreground) / <alpha-value>)",
+        },
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
           foreground: "hsl(var(--sidebar-foreground))",

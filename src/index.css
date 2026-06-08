@@ -48,7 +48,10 @@
     /* Wizard theme tokens */
     --wizard-bg: 39 60% 97.3%;
     --wizard-primary: 100 52% 20%;
-    --wizard-accent: 35 90% 55%;
+    /* Gold accent — used for the "Most popular" pricing highlight. Value matches
+       what the preview page renders so it can be referenced via the token. */
+    --wizard-accent: 45 93% 58%;
+    --wizard-accent-foreground: 45 93% 20%;
   }
 
   .dark {

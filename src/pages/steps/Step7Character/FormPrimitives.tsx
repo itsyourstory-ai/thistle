@@ -83,7 +83,7 @@ export function CharCounter({ current, max }: { current: number; max: number }) 
 
 export function FieldLabel({ children, optional }: { children: React.ReactNode; optional?: boolean }) {
   return (
-    <label className="block font-heading text-xl sm:text-2xl font-semibold text-left text-[hsl(var(--wizard-primary))]">
+    <label className="block font-heading text-xl sm:text-2xl font-semibold text-left text-wizard">
       {children}{optional && <span className="ml-1 text-xs opacity-60">(optional)</span>}
     </label>
   );

@@ -5,6 +5,7 @@ import { useWizard } from "@/contexts/WizardContext";
 
 import { Check } from "lucide-react";
 import WizardHeader from "@/components/WizardHeader";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
 type Plan = "digital" | "hardcover";
@@ -70,7 +71,7 @@ export default function Step9Preview() {
 
           {/* Heading */}
           <div className="space-y-2 mb-8">
-            <h1 className="font-heading text-3xl sm:text-4xl font-semibold text-left text-[hsl(var(--wizard-primary))]">
+            <h1 className="font-heading text-3xl sm:text-4xl font-semibold text-left text-wizard">
               {name}'s book is ready.
             </h1>
             <p className="text-muted-foreground text-lg text-left">
@@ -123,12 +124,12 @@ export default function Step9Preview() {
                     <span className="font-semibold">Digital Book</span>
                     <span className="ml-2 text-xs text-muted-foreground">Instant delivery</span>
                   </div>
-                  <span className="text-lg font-bold" style={{ color: "hsl(var(--wizard-primary))" }}>$9.99</span>
+                  <span className="text-lg font-bold text-wizard">$9.99</span>
                 </div>
                 <ul className="space-y-1.5">
                   {DIGITAL_FEATURES.map((f) => (
                     <li key={f} className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Check className="w-4 h-4 shrink-0" style={{ color: "hsl(var(--wizard-primary))" }} />
+                      <Check className="w-4 h-4 shrink-0 text-wizard" />
                       {f}
                     </li>
                   ))}
@@ -141,15 +142,12 @@ export default function Step9Preview() {
                 onClick={() => setSelected("hardcover")}
                 className="relative text-left rounded-2xl border-2 p-5 transition-all"
                 style={{
-                  borderColor: selected === "hardcover" ? "hsl(45 93% 58%)" : "hsl(45 93% 58% / 0.4)",
-                  boxShadow: selected === "hardcover" ? "0 0 0 2px hsl(45 93% 58% / 0.3)" : "none",
+                  borderColor: selected === "hardcover" ? "hsl(var(--wizard-accent))" : "hsl(var(--wizard-accent) / 0.4)",
+                  boxShadow: selected === "hardcover" ? "0 0 0 2px hsl(var(--wizard-accent) / 0.3)" : "none",
                   backgroundColor: "hsl(var(--card))",
                 }}
               >
-                <span
-                  className="absolute -top-3 right-4 text-xs font-semibold px-3 py-1 rounded-full"
-                  style={{ backgroundColor: "hsl(45 93% 58%)", color: "hsl(45 93% 20%)" }}
-                >
+                <span className="absolute -top-3 right-4 text-xs font-semibold px-3 py-1 rounded-full bg-wizard-accent text-wizard-accent-foreground">
                   ⭐ Most popular
                 </span>
 
@@ -157,12 +155,12 @@ export default function Step9Preview() {
                   <div>
                     <span className="font-semibold">Printed Hardcover + Digital</span>
                   </div>
-                  <span className="text-lg font-bold" style={{ color: "hsl(var(--wizard-primary))" }}>$44.99</span>
+                  <span className="text-lg font-bold text-wizard">$44.99</span>
                 </div>
                 <ul className="space-y-1.5">
                   {HARDCOVER_FEATURES.map((f) => (
                     <li key={f} className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Check className="w-4 h-4 shrink-0" style={{ color: "hsl(var(--wizard-primary))" }} />
+                      <Check className="w-4 h-4 shrink-0 text-wizard" />
                       {f}
                     </li>
                   ))}
@@ -180,8 +178,7 @@ export default function Step9Preview() {
             {/* Buyer details + order */}
             <div className="flex flex-col gap-3">
               <div className="flex flex-col gap-2">
-                <label className="text-xs font-semibold uppercase tracking-widest"
-                       style={{ color: "hsl(var(--wizard-primary) / 0.7)" }}>
+                <label className="text-xs font-semibold uppercase tracking-widest text-wizard/70">
                   Your name
                 </label>
                 <Input
@@ -194,8 +191,7 @@ export default function Step9Preview() {
                 {buyerErrors.name && (
                   <p className="text-xs text-destructive">{buyerErrors.name}</p>
                 )}
-                <label className="text-xs font-semibold uppercase tracking-widest mt-2"
-                       style={{ color: "hsl(var(--wizard-primary) / 0.7)" }}>
+                <label className="text-xs font-semibold uppercase tracking-widest mt-2 text-wizard/70">
                   Email
                 </label>
                 <Input
@@ -213,22 +209,17 @@ export default function Step9Preview() {
                 </p>
               </div>
 
-              <button
+              <Button
+                variant="wizard"
+                size="pill"
                 onClick={handlePay}
-                className="w-full h-12 rounded-full text-base font-semibold transition-opacity mt-2"
-                style={{ backgroundColor: "#2B4E18", color: "#fff" }}
+                className="w-full mt-2"
               >
                 Pay {price} & start crafting
-              </button>
-              <div
-                className="mt-2 rounded-2xl p-4 border flex gap-3 items-start"
-                style={{
-                  backgroundColor: "#2B4E18" + "14",
-                  borderColor: "#2B4E18" + "33",
-                }}
-              >
+              </Button>
+              <div className="mt-2 rounded-2xl p-4 border border-wizard/20 bg-wizard/8 flex gap-3 items-start">
                 <span className="text-xl leading-none">✏️</span>
-                <p className="text-sm leading-relaxed" style={{ color: "#2B4E18" }}>
+                <p className="text-sm leading-relaxed text-wizard">
                   <span className="font-semibold">You'll get to review your book before it's actually sent to you.</span> After checkout, preview every page and request edits or revisions before it's finalized.
                 </p>
               </div>
@@ -249,16 +240,10 @@ export default function Step9Preview() {
               >
                 “
               </span>
-              <blockquote
-                className="text-sm md:text-base font-serif italic leading-relaxed"
-                style={{ color: "hsl(var(--wizard-primary) / 0.9)" }}
-              >
+              <blockquote className="text-sm md:text-base font-serif italic leading-relaxed text-wizard/90">
                 She opened the first page and whispered, "Grandma, it's me." I still can't stop thinking about that moment.
               </blockquote>
-              <figcaption
-                className="mt-3 text-xs font-medium"
-                style={{ color: "hsl(var(--wizard-primary) / 0.65)" }}
-              >
+              <figcaption className="mt-3 text-xs font-medium text-wizard/65">
                 — Carol, grandmother
               </figcaption>
             </figure>

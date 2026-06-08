@@ -1,3 +1,4 @@
+import { Button } from "@/components/ui/button";
 import ProgressBar from "./ProgressBar";
 
 export default function WizardHeader({
@@ -10,8 +11,7 @@ export default function WizardHeader({
 }) {
   return (
     <header
-      className="sticky top-0 z-30 relative flex items-center justify-between px-4 py-3 border-b border-black/10 w-full"
-      style={{ backgroundColor: "hsl(var(--wizard-bg))" }}
+      className="sticky top-0 z-30 relative flex items-center justify-between px-4 py-3 border-b border-black/10 w-full bg-wizard-bg"
     >
       <div className="w-[70px]" />
 
@@ -30,12 +30,9 @@ export default function WizardHeader({
             ⚙ dev: skip step
           </button>
         )}
-        <button
-          className="text-sm font-medium px-3 py-1.5 rounded-xl transition-colors hover:bg-black/5"
-          style={{ color: "hsl(var(--wizard-primary))" }}
-        >
+        <Button variant="wizardGhost" size="sm" className="rounded-xl font-medium">
           Save &amp; exit
-        </button>
+        </Button>
       </div>
     </header>
   );

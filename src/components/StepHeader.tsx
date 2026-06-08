@@ -16,10 +16,7 @@ export default function StepHeader({
 }) {
   return (
     <div className={`space-y-2 ${className}`}>
-      <h1
-        className="font-heading text-3xl sm:text-4xl font-semibold text-left"
-        style={{ color: "hsl(var(--wizard-primary))" }}
-      >
+      <h1 className="font-heading text-3xl sm:text-4xl font-semibold text-left text-wizard">
         {title}
       </h1>
       {subtitle && (

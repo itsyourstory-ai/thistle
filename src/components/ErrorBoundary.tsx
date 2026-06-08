@@ -1,4 +1,5 @@
 import { Component, type ErrorInfo, type ReactNode } from "react";
+import { Button } from "@/components/ui/button";
 import FullScreenMessage from "@/components/FullScreenMessage";
 
 interface Props {
@@ -36,14 +37,9 @@ export default class ErrorBoundary extends Component<Props, State> {
         title="Something went wrong"
         description="An unexpected error stopped this page from loading. Reloading usually fixes it."
         action={
-          <button
-            type="button"
-            onClick={() => window.location.reload()}
-            className="inline-flex items-center justify-center rounded-full px-6 py-3 text-base font-semibold text-white transition-all"
-            style={{ backgroundColor: "hsl(var(--wizard-primary))" }}
-          >
+          <Button variant="wizard" size="pill" onClick={() => window.location.reload()}>
             Reload page
-          </button>
+          </Button>
         }
       />
     );
