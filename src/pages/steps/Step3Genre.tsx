@@ -65,11 +65,8 @@ export default function Step2() {
                 onClick={() => setAnswer("genre", g.value)}
                 className={cardExtras}
               >
-                <span className="text-2xl">{g.emoji}</span>
-                <span
-                  className="block text-base font-semibold mt-1"
-                  className="text-wizard"
-                >
+                <span className="flex items-center gap-1.5 text-base font-bold text-wizard">
+                  <span>{g.emoji}</span>
                   {g.label}
                 </span>
                 <span className="block text-xs text-muted-foreground mt-0.5">
@@ -93,11 +90,8 @@ export default function Step2() {
                 onClick={() => setAnswer("mood", m.value)}
                 className={cardExtras}
               >
-                <span className="text-2xl">{m.emoji}</span>
-                <span
-                  className="block text-base font-semibold mt-1"
-                  className="text-wizard"
-                >
+                <span className="flex items-center gap-1.5 text-base font-bold text-wizard">
+                  <span>{m.emoji}</span>
                   {m.label}
                 </span>
               </SelectableTile>

@@ -68,11 +68,8 @@ export default function StepWhoIsItFor() {
                 onClick={() => setAnswer("buyer_relationship", r.value)}
                 className={tileExtras}
               >
-                <div className="text-2xl mb-1">{r.emoji}</div>
-                <div
-                  className="text-sm font-semibold leading-tight"
-                  className="text-wizard"
-                >
+                <div className="flex items-center gap-1.5 text-sm font-bold leading-tight text-wizard">
+                  <span>{r.emoji}</span>
                   {r.label}
                 </div>
               </SelectableTile>
@@ -95,11 +92,8 @@ export default function StepWhoIsItFor() {
                 onClick={() => setAnswer("occasion", o.value)}
                 className={tileExtras}
               >
-                <div className="text-2xl mb-1">{o.emoji}</div>
-                <div
-                  className="text-sm font-semibold leading-tight"
-                  className="text-wizard"
-                >
+                <div className="flex items-center gap-1.5 text-sm font-bold leading-tight text-wizard">
+                  <span>{o.emoji}</span>
                   {o.label}
                 </div>
               </SelectableTile>
