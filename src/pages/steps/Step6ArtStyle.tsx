@@ -56,7 +56,7 @@ export default function Step7() {
                   className="w-full h-full object-cover"
                 />
               </div>
-              <span className="block text-base font-bold text-wizard">
+              <span className="block text-base font-semibold text-wizard">
                 <span aria-hidden className="mr-1">{s.emoji}</span>{s.label}
               </span>
               <span className="block text-xs text-muted-foreground mt-0.5">{s.desc}</span>

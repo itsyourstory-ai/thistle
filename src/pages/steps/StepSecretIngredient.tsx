@@ -174,10 +174,8 @@ export default function Step5() {
               onClick={() => selectCategory(cat.value)}
               className={cardClass(selectedCategory === cat.value)}
             >
-              <span className="flex items-center gap-1.5 text-base font-bold text-wizard">
-                <span>{cat.emoji}</span>
-                {cat.label}
-              </span>
+              <span className="text-2xl">{cat.emoji}</span>
+              <span className="block text-base font-semibold mt-1 text-wizard">{cat.label}</span>
             </button>
           ))}
         </div>

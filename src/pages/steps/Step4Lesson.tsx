@@ -47,10 +47,8 @@ export default function Step3() {
               onClick={() => setAnswer("lesson", l.value)}
               className="p-4 text-left"
             >
-              <span className="flex items-center gap-1.5 text-base font-bold text-wizard">
-                <span>{l.emoji}</span>
-                {l.label}
-              </span>
+              <span className="text-2xl">{l.emoji}</span>
+              <span className="block text-base font-semibold mt-1 text-wizard">{l.label}</span>
               <span className="block text-xs text-muted-foreground mt-0.5">
                 {l.desc}
               </span>
