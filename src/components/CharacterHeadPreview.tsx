@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { RefreshCw, User } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 export interface PreviewSnapshot {
   hairColor: string;
@@ -154,13 +155,9 @@ export default function CharacterHeadPreview({
       </div>
 
       <div
-        className={`relative w-40 h-40 rounded-full overflow-hidden border-4 transition-transform ${
+        className={`relative w-40 h-40 rounded-full overflow-hidden border-4 border-wizard bg-wizard/[.06] transition-transform ${
           pulse ? "scale-105" : "scale-100"
         }`}
-        style={{
-          borderColor: "hsl(var(--wizard-primary))",
-          backgroundColor: "hsl(var(--wizard-primary) / 0.06)",
-        }}
       >
         {hasPhoto ? (
           <img src={snap.photo} alt={displayName} className="w-full h-full object-cover" />
@@ -173,22 +170,20 @@ export default function CharacterHeadPreview({
         )}
       </div>
 
-      <div className="text-sm font-semibold text-center" style={{ color: "hsl(var(--wizard-primary))" }}>
+      <div className="text-sm font-semibold text-center text-wizard">
         {displayName}
       </div>
 
-      <button
+      <Button
         type="button"
+        variant="wizardOutline"
+        size="sm"
         onClick={update}
-        className="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold transition-all border-2 bg-transparent"
-        style={{
-          borderColor: "hsl(var(--wizard-primary))",
-          color: "hsl(var(--wizard-primary))",
-        }}
+        className="gap-2"
       >
         <RefreshCw className={`w-4 h-4 ${pulse ? "animate-spin" : ""}`} />
         {isStale ? "Update preview" : "Up to date"}
-      </button>
+      </Button>
 
       <p className="text-[11px] text-muted-foreground text-center italic max-w-[200px]">
         A rough sketch — your final illustrations will be much more detailed.

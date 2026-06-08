@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { Button } from "@/components/ui/button";
 import EmptyState from "@/components/EmptyState";
 
 /**
@@ -32,14 +33,9 @@ export default function AsyncError({
       className={className}
       action={
         onRetry && (
-          <button
-            type="button"
-            onClick={onRetry}
-            className="inline-flex items-center justify-center rounded-full px-5 py-2.5 text-sm font-semibold text-white transition-all"
-            style={{ backgroundColor: "hsl(var(--wizard-primary))" }}
-          >
+          <Button variant="wizard" onClick={onRetry}>
             {retryLabel}
-          </button>
+          </Button>
         )
       }
     />

@@ -1,6 +1,7 @@
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { ChevronLeft } from "lucide-react";
 import WizardHeader from "./WizardHeader";
+import { Button } from "@/components/ui/button";
 import { useWizard } from "@/contexts/WizardContext";
 import { TOTAL_STEPS, pathForStep, stepNumFromSlug } from "@/lib/wizardSteps";
 import type { ReactNode } from "react";
@@ -43,7 +44,7 @@ export default function WizardShell({
   };
 
   return (
-    <div className="flex flex-col min-h-[100dvh]" style={{ backgroundColor: "hsl(var(--wizard-bg))" }}>
+    <div className="flex flex-col min-h-[100dvh] bg-wizard-bg">
       <WizardHeader currentStep={currentStep} onDevSkip={goNext} />
 
       {/* Content */}
@@ -52,44 +53,40 @@ export default function WizardShell({
       </main>
 
       {/* Bottom bar */}
-      <div className="sticky bottom-0 z-30 px-4 py-4 flex flex-col items-center gap-2 border-t border-black/10" style={{ backgroundColor: "hsl(var(--wizard-bg))" }}>
+      <div className="sticky bottom-0 z-30 px-4 py-4 flex flex-col items-center gap-2 border-t border-black/10 bg-wizard-bg">
         <div className="flex justify-center items-center gap-3 w-full" style={{ maxWidth: "700px" }}>
           {currentStep > 1 && (
-            <button
+            <Button
               type="button"
+              variant="wizardOutline"
+              size="pill"
               onClick={goBack}
-              className="flex-1 basis-0 py-4 rounded-full text-base font-semibold transition-all border-2"
-              style={{
-                borderColor: "hsl(var(--wizard-primary))",
-                color: "hsl(var(--wizard-primary))",
-                backgroundColor: "transparent",
-              }}
+              className="flex-1 basis-0 transition-all"
             >
               ← Back
-            </button>
+            </Button>
           )}
           {showSkip && (
-            <button
+            <Button
               type="button"
+              variant="wizardGhost"
+              size="pill"
               onClick={goNext}
-              className="py-4 px-6 rounded-full text-base font-semibold transition-all hover:bg-black/5"
-              style={{ color: "hsl(var(--wizard-primary))" }}
+              className="transition-all"
             >
               Skip
-            </button>
+            </Button>
           )}
-          <button
+          <Button
             type="button"
+            variant="wizard"
+            size="pill"
             onClick={handleContinue}
             disabled={!canContinue}
-            className="flex-1 basis-0 py-4 rounded-full text-base font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-            style={{
-              backgroundColor: "hsl(var(--wizard-primary))",
-              color: "#fff",
-            }}
+            className="flex-1 basis-0 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
           >
             Continue →
-          </button>
+          </Button>
         </div>
       </div>
     </div>

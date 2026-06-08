@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import WizardShell from "@/components/WizardShell";
 import { useWizard } from "@/contexts/WizardContext";
 import { useCharacterPortrait } from "@/hooks/useCharacterPortrait";
+import { Button } from "@/components/ui/button";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
@@ -220,14 +221,12 @@ export default function Step6() {
             <DialogDescription>This can't be undone. You can always add a new one.</DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2 sm:gap-0">
-            <button type="button" onClick={() => setShowRemoveDialog(null)}
-              className="px-4 py-2 rounded-xl text-sm font-medium border border-border hover:bg-muted transition-colors">
+            <Button type="button" variant="outline" size="sm" onClick={() => setShowRemoveDialog(null)}>
               Cancel
-            </button>
-            <button type="button" onClick={doRemove}
-              className="px-4 py-2 rounded-xl text-sm font-medium bg-destructive text-destructive-foreground hover:bg-destructive/90 transition-colors">
+            </Button>
+            <Button type="button" variant="destructive" size="sm" onClick={doRemove}>
               Remove
-            </button>
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -242,15 +241,12 @@ export default function Step6() {
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2 sm:gap-0">
-            <button type="button" onClick={() => setShowUpsell(false)}
-              className="px-4 py-2 rounded-xl text-sm font-medium border border-border hover:bg-muted transition-colors">
+            <Button type="button" variant="outline" size="sm" onClick={() => setShowUpsell(false)}>
               No thanks
-            </button>
-            <button type="button" onClick={addPaidCharacter}
-              className="px-4 py-2 rounded-xl text-sm font-medium text-white transition-colors"
-              style={{ backgroundColor: "hsl(var(--wizard-primary))" }}>
+            </Button>
+            <Button type="button" variant="wizard" size="sm" onClick={addPaidCharacter}>
               Add for $3.00
-            </button>
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -267,16 +263,13 @@ export default function Step6() {
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2 sm:gap-0">
-            <button type="button" onClick={() => resolveNoChars(true)}
-              className="px-4 py-2 rounded-xl text-sm font-medium border border-border hover:bg-muted transition-colors">
+            <Button type="button" variant="outline" size="sm" onClick={() => resolveNoChars(true)}>
               Continue anyway
-            </button>
-            <button type="button"
-              onClick={() => { resolveNoChars(false); addSupporting(); }}
-              className="px-4 py-2 rounded-xl text-sm font-medium text-white transition-colors"
-              style={{ backgroundColor: "hsl(var(--wizard-primary))" }}>
+            </Button>
+            <Button type="button" variant="wizard" size="sm"
+              onClick={() => { resolveNoChars(false); addSupporting(); }}>
               Add a character
-            </button>
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
