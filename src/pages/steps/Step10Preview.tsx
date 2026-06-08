@@ -142,15 +142,12 @@ export default function Step9Preview() {
                 onClick={() => setSelected("hardcover")}
                 className="relative text-left rounded-2xl border-2 p-5 transition-all"
                 style={{
-                  borderColor: selected === "hardcover" ? "hsl(45 93% 58%)" : "hsl(45 93% 58% / 0.4)",
-                  boxShadow: selected === "hardcover" ? "0 0 0 2px hsl(45 93% 58% / 0.3)" : "none",
+                  borderColor: selected === "hardcover" ? "hsl(var(--wizard-accent))" : "hsl(var(--wizard-accent) / 0.4)",
+                  boxShadow: selected === "hardcover" ? "0 0 0 2px hsl(var(--wizard-accent) / 0.3)" : "none",
                   backgroundColor: "hsl(var(--card))",
                 }}
               >
-                <span
-                  className="absolute -top-3 right-4 text-xs font-semibold px-3 py-1 rounded-full"
-                  style={{ backgroundColor: "hsl(45 93% 58%)", color: "hsl(45 93% 20%)" }}
-                >
+                <span className="absolute -top-3 right-4 text-xs font-semibold px-3 py-1 rounded-full bg-wizard-accent text-wizard-accent-foreground">
                   ⭐ Most popular
                 </span>
 

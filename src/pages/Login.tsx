@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { pathForStep } from "@/lib/wizardSteps";
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 
 export default function Login() {
@@ -43,8 +44,7 @@ export default function Login() {
           </p>
         </div>
 
-        {/* Card */}
-        <div className="bg-white rounded-3xl shadow-sm p-6 sm:p-8 space-y-5">
+        <Card className="rounded-3xl shadow-sm p-6 sm:p-8 space-y-5">
           {/* Google */}
           <button
             type="button"
@@ -119,7 +119,7 @@ export default function Login() {
               {mode === "signin" ? "Create an account" : "Sign in"}
             </Button>
           </p>
-        </div>
+        </Card>
 
         {/* Dev bypass */}
         <div className="text-center">

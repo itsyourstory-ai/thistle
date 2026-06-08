@@ -147,13 +147,12 @@ export default function Step9Cast() {
             <div className="flex flex-col gap-10">
               {/* Cover preview */}
               <div className="flex flex-col items-start">
-                <p className="text-[10px] uppercase tracking-widest font-semibold text-[hsl(var(--wizard-primary))]/55 mb-2 text-left">
+                <p className="text-[10px] uppercase tracking-widest font-semibold text-wizard/55 mb-2 text-left">
                   Cover preview
                 </p>
                 <div
-                  className="rounded-2xl overflow-hidden border bg-white shadow-md"
+                  className="rounded-2xl overflow-hidden border border-wizard/[.18] bg-white shadow-md"
                   style={{
-                    borderColor: "hsl(var(--wizard-primary) / 0.18)",
                     width: 260,
                     aspectRatio: "1 / 1",
                   }}
@@ -233,9 +232,8 @@ export default function Step9Cast() {
                     {cast.map((m) => (
                       <div key={m.key} className="flex flex-col items-center">
                         <div
-                          className="rounded-2xl overflow-hidden border bg-white shadow-sm"
+                          className="rounded-2xl overflow-hidden border border-wizard/[.18] bg-white shadow-sm"
                           style={{
-                            borderColor: "hsl(var(--wizard-primary) / 0.18)",
                             width: 140,
                             aspectRatio: "2 / 3",
                           }}
