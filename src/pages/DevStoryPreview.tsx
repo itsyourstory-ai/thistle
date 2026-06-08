@@ -13,6 +13,8 @@ import { useParams, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { getLayout, PageLayout } from "@/lib/pageLayouts";
 import { Copy, Check, Download } from "lucide-react";
+import LoadingScreen from "@/components/LoadingScreen";
+import AsyncError from "@/components/AsyncError";
 
 // ---- V2 types --------------------------------------------------------------
 interface BookPageV2 {
@@ -217,14 +219,18 @@ export default function DevStoryPreview() {
 
   if (error) {
     return (
-      <div className="p-8 max-w-3xl mx-auto">
-        <p className="text-destructive">Error: {error}</p>
-        <Link to="/" className="underline">← Home</Link>
+      <div className="min-h-[100dvh] grid place-items-center px-4" style={{ backgroundColor: "hsl(var(--wizard-bg))" }}>
+        <div className="w-full max-w-md space-y-4">
+          <AsyncError message={error} onRetry={() => window.location.reload()} />
+          <p className="text-center">
+            <Link to="/" className="text-sm underline text-muted-foreground">← Home</Link>
+          </p>
+        </div>
       </div>
     );
   }
   if (!row) {
-    return <div className="p-8 text-center text-muted-foreground">Loading…</div>;
+    return <LoadingScreen />;
   }
 
   const parsed = row.parsed;

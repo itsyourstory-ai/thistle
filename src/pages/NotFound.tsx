@@ -1,5 +1,6 @@
 import { useLocation } from "react-router-dom";
 import { useEffect } from "react";
+import FullScreenMessage from "@/components/FullScreenMessage";
 
 const NotFound = () => {
   const location = useLocation();
@@ -9,15 +10,20 @@ const NotFound = () => {
   }, [location.pathname]);
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-muted">
-      <div className="text-center">
-        <h1 className="mb-4 text-4xl font-bold">404</h1>
-        <p className="mb-4 text-xl text-muted-foreground">Oops! Page not found</p>
-        <a href="/" className="text-primary underline hover:text-primary/90">
-          Return to Home
+    <FullScreenMessage
+      emoji="🧭"
+      title="Page not found"
+      description="We couldn't find the page you were looking for."
+      action={
+        <a
+          href="/"
+          className="inline-flex items-center justify-center rounded-full px-6 py-3 text-base font-semibold text-white transition-all"
+          style={{ backgroundColor: "hsl(var(--wizard-primary))" }}
+        >
+          Back to start
         </a>
-      </div>
-    </div>
+      }
+    />
   );
 };
 

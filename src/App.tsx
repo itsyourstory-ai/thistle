@@ -4,6 +4,8 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { WizardProvider } from "@/contexts/WizardContext";
+import ErrorBoundary from "@/components/ErrorBoundary";
+import OfflineBanner from "@/components/OfflineBanner";
 import { WIZARD_STEPS } from "@/lib/wizardSteps";
 import Step1Name from "./pages/steps/Step1Name";
 import Step2Buyer from "./pages/steps/Step2Buyer";
@@ -29,7 +31,9 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
+      <OfflineBanner />
       <BrowserRouter>
+        <ErrorBoundary>
         <WizardProvider>
           <Routes>
             <Route path="/" element={<Login />} />
@@ -61,6 +65,7 @@ const App = () => (
             <Route path="*" element={<NotFound />} />
           </Routes>
         </WizardProvider>
+        </ErrorBoundary>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
