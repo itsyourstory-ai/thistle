@@ -44,7 +44,7 @@ export default function WizardShell({
 
   return (
     <div className="flex flex-col min-h-[100dvh]" style={{ backgroundColor: "hsl(var(--wizard-bg))" }}>
-      <WizardHeader currentStep={currentStep} />
+      <WizardHeader currentStep={currentStep} onDevSkip={goNext} />
 
       {/* Content */}
       <main className="flex-1 flex justify-center px-4 pt-12 pb-20">
@@ -91,15 +91,6 @@ export default function WizardShell({
             Continue →
           </button>
         </div>
-        {/* Dev-only bypass: ignores validation, always advances */}
-        <button
-          type="button"
-          onClick={goNext}
-          title="Developer bypass — skips validation"
-          className="text-[11px] font-mono uppercase tracking-wider px-3 py-1 rounded-full border border-dashed border-muted-foreground/40 text-muted-foreground/70 hover:text-muted-foreground hover:border-muted-foreground/70 transition-colors"
-        >
-          ⚙ dev: skip step
-        </button>
       </div>
     </div>
   );
