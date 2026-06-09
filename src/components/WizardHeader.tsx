@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import ProgressBar from "./ProgressBar";
+import DevTestPanel from "./DevTestPanel";
 
 export default function WizardHeader({
   currentStep,
@@ -30,6 +31,7 @@ export default function WizardHeader({
             ⚙ dev: skip step
           </button>
         )}
+        {import.meta.env.DEV && <DevTestPanel />}
         <Button variant="wizardGhost" size="sm" className="rounded-xl font-medium">
           Save &amp; exit
         </Button>

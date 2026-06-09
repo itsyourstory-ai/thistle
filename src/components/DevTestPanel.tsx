@@ -1,0 +1,239 @@
+/**
+ * Dev-only test mode control panel.
+ *
+ * Rendered next to the "⚙ dev: skip step" button in WizardHeader.
+ * Opens a popover with controls for toggling mock-AI mode, selecting a seed
+ * profile, adjusting fake latency, forcing errors, and running specific
+ * functions live instead of mocked.
+ *
+ * AIDEV-NOTE: This component is only rendered when import.meta.env.DEV is
+ * true. Never import this in production paths.
+ */
+
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Switch } from "@/components/ui/switch";
+import { useTestMode } from "@/lib/testMode";
+import type { ProfileId, CacheMode } from "@/lib/testMode";
+import { SEED_PROFILES, getSeedProfile } from "@/lib/devSeeds";
+import { WIZARD_STEPS, pathForStep } from "@/lib/wizardSteps";
+import { useWizard } from "@/contexts/WizardContext";
+
+const FN_NAMES = [
+  "generate-summary",
+  "generate-cover",
+  "generate-character-portrait",
+  "extract-appearance-traits",
+  "generate-book",
+  "generate-book-images",
+] as const;
+
+type FnName = (typeof FN_NAMES)[number];
+
+export default function DevTestPanel() {
+  const [mode, update] = useTestMode();
+  const { seedAnswers } = useWizard();
+  const navigate = useNavigate();
+  const [jumpStep, setJumpStep] = useState(8);
+
+  const handleLoad = () => {
+    const profile = getSeedProfile(mode.profileId as ProfileId);
+    if (!profile) return;
+    seedAnswers(profile.answers);
+    navigate(pathForStep(jumpStep));
+  };
+
+  // forceErrorFns is ["*"] for all, [fnName] for one, or [] for none.
+  const forceErrorValue = mode.forceErrorFns.includes("*")
+    ? "*"
+    : (mode.forceErrorFns[0] ?? "");
+
+  const setForceError = (val: string) => {
+    update({ forceErrorFns: val ? [val] : [] });
+  };
+
+  const togglePerFnLive = (fn: FnName, checked: boolean) => {
+    const live = checked
+      ? [...mode.perFnLive, fn]
+      : mode.perFnLive.filter((f) => f !== fn);
+    update({ perFnLive: live });
+  };
+
+  const activeProfile = SEED_PROFILES.find((p) => p.id === mode.profileId);
+
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          title="Dev test mode — returns fake AI responses instead of calling Supabase"
+          className={[
+            "text-[11px] font-mono uppercase tracking-wider px-3 py-1 rounded-full border border-dashed transition-colors",
+            mode.enabled
+              ? "border-amber-400 text-amber-600 bg-amber-50 hover:bg-amber-100"
+              : "border-muted-foreground/40 text-muted-foreground/70 hover:text-muted-foreground hover:border-muted-foreground/70",
+          ].join(" ")}
+        >
+          🧪 {mode.enabled ? "test: on" : "test: off"}
+        </button>
+      </PopoverTrigger>
+
+      <PopoverContent align="end" sideOffset={8} className="w-80 p-4 space-y-4">
+        {/* ── Master toggle ─────────────────────────────────────── */}
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-sm font-semibold leading-none">Test mode</p>
+            <p className="text-[11px] text-muted-foreground mt-0.5">
+              {mode.enabled ? "Returning fake AI responses" : "Using real Supabase functions"}
+            </p>
+          </div>
+          <Switch
+            checked={mode.enabled}
+            onCheckedChange={(v) => update({ enabled: v })}
+          />
+        </div>
+
+        {mode.enabled && (
+          <>
+            <hr className="border-black/10" />
+
+            {/* ── Seed profile ──────────────────────────────────── */}
+            <div className="space-y-2">
+              <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                Seed profile
+              </label>
+              <select
+                className="w-full text-xs rounded-lg border border-input px-2 py-1.5 bg-white focus:outline-none focus:ring-1 focus:ring-ring"
+                value={mode.profileId}
+                onChange={(e) => update({ profileId: e.target.value as ProfileId })}
+              >
+                {SEED_PROFILES.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.label}
+                  </option>
+                ))}
+              </select>
+              {activeProfile && (
+                <p className="text-[10px] text-muted-foreground italic">
+                  {activeProfile.description}
+                </p>
+              )}
+            </div>
+
+            {/* ── Load + jump ───────────────────────────────────── */}
+            <div className="flex items-center gap-2">
+              <select
+                className="flex-1 text-xs rounded-lg border border-input px-2 py-1.5 bg-white focus:outline-none focus:ring-1 focus:ring-ring"
+                value={jumpStep}
+                onChange={(e) => setJumpStep(Number(e.target.value))}
+              >
+                {WIZARD_STEPS.map((s) => (
+                  <option key={s.num} value={s.num}>
+                    Step {s.num}: {s.slug.replace(/^\d+-/, "")}
+                  </option>
+                ))}
+              </select>
+              <button
+                type="button"
+                onClick={handleLoad}
+                className="shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+              >
+                Load &amp; go →
+              </button>
+            </div>
+
+            <hr className="border-black/10" />
+
+            {/* ── Fake delay ────────────────────────────────────── */}
+            <div className="flex items-center justify-between gap-2">
+              <div>
+                <p className="text-xs font-medium">Fake delay</p>
+                <p className="text-[10px] text-muted-foreground">
+                  Added to every mocked call so loading states are visible
+                </p>
+              </div>
+              <div className="flex items-center gap-1 shrink-0">
+                <input
+                  type="number"
+                  min={0}
+                  max={5000}
+                  step={100}
+                  value={mode.delayMs}
+                  onChange={(e) => update({ delayMs: Math.max(0, Number(e.target.value)) })}
+                  className="w-16 text-xs rounded border border-input px-1.5 py-1 text-center focus:outline-none focus:ring-1 focus:ring-ring"
+                />
+                <span className="text-xs text-muted-foreground">ms</span>
+              </div>
+            </div>
+
+            {/* ── Force error ───────────────────────────────────── */}
+            <div className="space-y-1.5">
+              <div>
+                <p className="text-xs font-medium">Force error on</p>
+                <p className="text-[10px] text-muted-foreground">
+                  Returns an error instead of a fixture to test error UI
+                </p>
+              </div>
+              <select
+                className="w-full text-xs rounded-lg border border-input px-2 py-1.5 bg-white focus:outline-none focus:ring-1 focus:ring-ring"
+                value={forceErrorValue}
+                onChange={(e) => setForceError(e.target.value)}
+              >
+                <option value="">(none — normal mock)</option>
+                <option value="*">All functions</option>
+                {FN_NAMES.map((fn) => (
+                  <option key={fn} value={fn}>
+                    {fn}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* ── Per-function live overrides ───────────────────── */}
+            <div className="space-y-1.5">
+              <div>
+                <p className="text-xs font-medium">Run live (overrides mock)</p>
+                <p className="text-[10px] text-muted-foreground">
+                  Calls real Supabase for these functions even in test mode
+                </p>
+              </div>
+              <div className="grid grid-cols-1 gap-1 pl-1">
+                {FN_NAMES.map((fn) => (
+                  <label key={fn} className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={mode.perFnLive.includes(fn)}
+                      onChange={(e) => togglePerFnLive(fn, e.target.checked)}
+                      className="rounded border-input"
+                    />
+                    <span className="font-mono text-[10px] text-muted-foreground">{fn}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* ── Response cache (Phase E) ──────────────────────── */}
+            <div className="space-y-1.5">
+              <div>
+                <p className="text-xs font-medium">Response cache</p>
+                <p className="text-[10px] text-muted-foreground">
+                  Record snapshots of real responses; replay them later for free
+                </p>
+              </div>
+              <select
+                className="w-full text-xs rounded-lg border border-input px-2 py-1.5 bg-white focus:outline-none focus:ring-1 focus:ring-ring"
+                value={mode.cacheMode}
+                onChange={(e) => update({ cacheMode: e.target.value as CacheMode })}
+              >
+                <option value="off">Off</option>
+                <option value="record">Record real responses</option>
+                <option value="replay">Replay cached responses</option>
+              </select>
+            </div>
+          </>
+        )}
+      </PopoverContent>
+    </Popover>
+  );
+}

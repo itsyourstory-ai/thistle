@@ -16,7 +16,6 @@ import {
   COVER_MINIMAL,
   COVER_EDGE,
   COVER_SPECIAL,
-  PORTRAIT_HERO,
   FAKE_PHOTO,
 } from "@/test/fixtures/images";
 
@@ -159,13 +158,6 @@ const PROFILE_CLASSIC: WizardAnswers = {
     }),
   ],
 
-  // Pre-filled portrait so Step 9 (cast) doesn't auto-trigger generation
-  characterPortrait: {
-    status: "ready",
-    dataUrl: PORTRAIT_HERO,
-    sourceHash: "seed-classic",
-  },
-
   // Pre-filled concept + cover so you can jump to preview
   selectedConcept: CONCEPT_CLASSIC,
   selectedPlan: "digital",
@@ -207,8 +199,6 @@ const PROFILE_MINIMAL: WizardAnswers = {
     traits: [{ word: "creative" }, { word: "dreamy" }],
   },
   supportingCharacters: [],
-
-  characterPortrait: { status: "idle" },
 
   selectedConcept: CONCEPT_MINIMAL,
   selectedPlan: "digital",
@@ -285,8 +275,6 @@ const PROFILE_EDGE: WizardAnswers = {
     }),
   ],
 
-  characterPortrait: { status: "idle" },
-
   selectedConcept: CONCEPT_EDGE,
   selectedPlan: "digital",
 };
@@ -351,8 +339,6 @@ const PROFILE_SPECIAL: WizardAnswers = {
       traits: [{ word: "wise" }, { word: "mischievous" }],
     }),
   ],
-
-  characterPortrait: { status: "idle" },
 
   selectedConcept: CONCEPT_SPECIAL,
   selectedPlan: "digital",
