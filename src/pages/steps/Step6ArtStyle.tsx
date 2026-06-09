@@ -17,11 +17,16 @@ export default function Step7() {
   const name = (answers.childName as string) || "your little one";
   const artStyle = (answers.artStyle as string) || "";
 
+  // Auto-default the art style on mount so the page never starts with nothing selected.
   useEffect(() => {
-    setCanContinue(true);
     if (!answers.artStyle) setAnswer("artStyle", getDefaultArtStyle(answers.genre || ""));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Gate Continue on the user (or the auto-default) having set a style.
+  useEffect(() => {
+    setCanContinue(artStyle !== "");
+  }, [artStyle, setCanContinue]);
 
   return (
     <WizardShell>

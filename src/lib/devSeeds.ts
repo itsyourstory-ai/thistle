@@ -90,6 +90,7 @@ const PROFILE_CLASSIC: WizardAnswers = {
   childName: "Leo",
   ageRange: "6-8",
   gender: "boy",
+  language: "english",
 
   // Step 2
   buyer_relationship: "parent",
@@ -175,6 +176,7 @@ const PROFILE_MINIMAL: WizardAnswers = {
   childName: "Priya",
   ageRange: "3-5",
   gender: "girl",
+  language: "english",
 
   buyer_relationship: "grandparent",
   buyer_name: "Raj",
@@ -220,6 +222,7 @@ const PROFILE_EDGE: WizardAnswers = {
   childName: "Bartholomew-James",
   ageRange: "9-12",
   gender: "boy",
+  language: "english",
 
   buyer_relationship: "other",
   buyer_name: "Priscilla-Anne",
@@ -295,6 +298,7 @@ const PROFILE_SPECIAL: WizardAnswers = {
   childName: "River",
   ageRange: "3-5",
   gender: "non-binary",
+  language: "english",
 
   buyer_relationship: "parent",
   buyer_name: "Alex",

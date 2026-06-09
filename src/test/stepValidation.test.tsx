@@ -12,8 +12,10 @@ import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent, act } from "@testing-library/react";
 import React from "react";
 import { MemoryRouter, Routes, Route } from "react-router-dom";
-import { WizardProvider } from "@/contexts/WizardContext";
+import { WizardProvider, useWizard } from "@/contexts/WizardContext";
+import { emptyAppearance } from "@/lib/wizardTypes";
 import Step3Genre from "@/pages/steps/Step3Genre";
+import Step7Character from "@/pages/steps/Step7Character";
 
 // ── Mocks ─────────────────────────────────────────────────────────────────────
 
@@ -32,6 +34,11 @@ vi.mock("@/integrations/supabase/client", () => ({
       maybeSingle: vi.fn().mockResolvedValue({ data: null }),
     }),
   },
+}));
+
+// Step 7 fires useCharacterPortrait as a background side-effect.
+vi.mock("@/hooks/useCharacterPortrait", () => ({
+  useCharacterPortrait: vi.fn(),
 }));
 
 // ── Wrapper ───────────────────────────────────────────────────────────────────
@@ -105,5 +112,65 @@ describe("Step3Genre — canContinue gating", () => {
     const heartBtn = screen.getByRole("button", { name: /heartwarming/i });
     await act(async () => { fireEvent.click(heartBtn); });
     expect(screen.getByRole("button", { name: /continue/i })).not.toBeDisabled();
+  });
+});
+
+// ── Step 7: Character — protagonist name / age / gender gating ────────────────
+
+// Helper: captures the WizardContext API from inside the provider tree.
+function makeContextSpy() {
+  let api: ReturnType<typeof useWizard> | null = null;
+  const Spy = () => { api = useWizard(); return null; };
+  return { Spy, get: () => api! };
+}
+
+function renderStep7() {
+  const { Spy, get } = makeContextSpy();
+  render(
+    <MemoryRouter initialEntries={["/step/7-character"]}>
+      <WizardProvider>
+        <Spy />
+        <Routes>
+          <Route path="/step/:step" element={<Step7Character />} />
+        </Routes>
+      </WizardProvider>
+    </MemoryRouter>,
+  );
+  return { getApi: get };
+}
+
+const fullProtagonist = {
+  photos: [], name: "Leo", age: "6", gender: "Boy",
+  special: "", appearance: emptyAppearance(), traits: [],
+};
+
+describe("Step7Character — canContinue gating", () => {
+  it("disables Continue when protagonist is empty", () => {
+    renderStep7();
+    expect(screen.getByRole("button", { name: /continue/i })).toBeDisabled();
+  });
+
+  it("enables Continue when name, age, and gender are all set", async () => {
+    const { getApi } = renderStep7();
+    await act(async () => {
+      getApi().seedAnswers({ protagonist: fullProtagonist });
+    });
+    expect(screen.getByRole("button", { name: /continue/i })).not.toBeDisabled();
+  });
+
+  it("keeps Continue disabled when age is blank", async () => {
+    const { getApi } = renderStep7();
+    await act(async () => {
+      getApi().seedAnswers({ protagonist: { ...fullProtagonist, age: "" } });
+    });
+    expect(screen.getByRole("button", { name: /continue/i })).toBeDisabled();
+  });
+
+  it("keeps Continue disabled when gender is blank", async () => {
+    const { getApi } = renderStep7();
+    await act(async () => {
+      getApi().seedAnswers({ protagonist: { ...fullProtagonist, gender: "" } });
+    });
+    expect(screen.getByRole("button", { name: /continue/i })).toBeDisabled();
   });
 });
