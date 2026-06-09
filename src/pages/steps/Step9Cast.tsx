@@ -6,7 +6,7 @@ import { useWizard } from "@/contexts/WizardContext";
 import WizardHeader from "@/components/WizardHeader";
 import { buildBrief } from "@/lib/buildBrief";
 import { coverMessages, portraitMessages, useRotatingMessage } from "@/lib/loadingMessages";
-import { supabase } from "@/integrations/supabase/client";
+import { callEdge } from "@/lib/edgeFunctions";
 import { toast } from "@/hooks/use-toast";
 import { useCharacterPortrait } from "@/hooks/useCharacterPortrait";
 import { useSupportingPortraits } from "@/hooks/useSupportingPortraits";
@@ -61,13 +61,11 @@ export default function Step9Cast() {
     setCover({ status: "loading" });
     try {
       const brief = buildBrief(answers);
-      const { data, error: fnError } = await supabase.functions.invoke("generate-cover", {
-        body: {
-          brief,
-          title,
-          summary,
-          characterPortraitDataUrl: portrait.dataUrl,
-        },
+      const { data, error: fnError } = await callEdge("generate-cover", {
+        brief: brief as unknown as Record<string, unknown>,
+        title,
+        summary,
+        characterPortraitDataUrl: portrait.dataUrl,
       });
       if (fnError) throw fnError;
       if (data?.error) throw new Error(data.error);
@@ -108,7 +106,7 @@ export default function Step9Cast() {
           ...answers,
           selectedConcept: approvedConcept,
         });
-        const { data, error: fnError } = await supabase.functions.invoke("generate-book", { body: { brief } });
+        const { data, error: fnError } = await callEdge("generate-book", { brief: brief as unknown as Record<string, unknown> });
         if (fnError) throw fnError;
         if (data?.error) throw new Error(data.error);
         if (!data?.id) throw new Error("No book id returned.");

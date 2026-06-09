@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import ProgressBar from "./ProgressBar";
+import DevTestPanel from "./DevTestPanel";
 
 export default function WizardHeader({
   currentStep,
@@ -27,9 +28,10 @@ export default function WizardHeader({
             title="Developer bypass — skips validation"
             className="text-[11px] font-mono uppercase tracking-wider px-3 py-1 rounded-full border border-dashed border-muted-foreground/40 text-muted-foreground/70 hover:text-muted-foreground hover:border-muted-foreground/70 transition-colors"
           >
-            ⚙ dev: skip step
+            Skip step
           </button>
         )}
+        {import.meta.env.DEV && <DevTestPanel />}
         <Button variant="wizardGhost" size="sm" className="rounded-xl font-medium">
           Save &amp; exit
         </Button>

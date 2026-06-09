@@ -35,7 +35,6 @@ export interface StoryConceptPromptCtx {
   supportingLine?: string;
   supportingBehaviorNotes?: string;
   forbiddenTraitWords?: string;
-  specialThing?: string;
   heroQuirk?: string;
   thingsAlreadyGoodAt?: string;
   thingsCurrentlyTricky?: string;
@@ -270,7 +269,6 @@ export function STORY_CONCEPT_USER_TEMPLATE(ctx: StoryConceptPromptCtx): string 
     ctx.thingsCurrentlyTricky ? `Things currently tricky, good source for the emotional choice: ${ctx.thingsCurrentlyTricky}` : "",
     ctx.recentMeaningfulMoment ? `Recent meaningful moment: ${ctx.recentMeaningfulMoment}` : "",
     ctx.supportingLine ? `Supporting characters available if they strengthen the premise. Do not repeat their adjectives in visible text: ${ctx.supportingLine}` : "Supporting characters: none provided",
-    ctx.specialThing ? `Companion/object/pet/toy available if it strengthens the premise: ${ctx.specialThing}` : "",
     ctx.heroBehaviorNotes || ctx.personalityLine
       ? (ctx.heroBehaviorNotes || `Hero behavior notes:\nUse these only to decide actions. Do not repeat these words in the visible summary: ${ctx.personalityLine}`)
       : "Hero behavior notes: none provided",

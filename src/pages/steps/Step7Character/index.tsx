@@ -79,8 +79,15 @@ export default function Step6() {
   }, [step1Name, step1Gender]);
 
 
-  // Enable continue always (validation happens on click via WizardShell)
-  useEffect(() => { setCanContinue(true); }, [setCanContinue]);
+  // Require protagonist name, age, and gender before continuing.
+  // Name and gender backfill from Step 1 so they're usually pre-set; age always needs input.
+  useEffect(() => {
+    setCanContinue(
+      protagonist.name.trim() !== "" &&
+      protagonist.age.trim() !== "" &&
+      protagonist.gender !== ""
+    );
+  }, [protagonist.name, protagonist.age, protagonist.gender, setCanContinue]);
 
   // Kick off the background portrait the moment the first protagonist photo
   // is uploaded. No visible UI on this step — result is shown on Step 8.

@@ -62,11 +62,6 @@ export interface StoryBrief {
   };
   supportingCharacters: SupportingBriefChar[];
   artStyle?: string;
-  specialThing?: {
-    category?: string;
-    /** Free-form details (animal type, color, name, photo, etc.). */
-    details?: Record<string, string>;
-  };
   /** The approved title/summary plus hidden story_seed metadata from generate-summary. */
   approvedConcept?: any;
   /** Buyer's relationship to the child — flavors the dedication voice. */
@@ -141,12 +136,6 @@ export function buildBrief(answers: WizardAnswers): StoryBrief {
         c.mode === "real" && Array.isArray(c.photos) ? c.photos : undefined,
     })),
     artStyle: answers.artStyle,
-    specialThing: answers.specialThing
-      ? {
-          category: answers.specialThing.category,
-          details: answers.specialThing.details,
-        }
-      : undefined,
     approvedConcept: answers.selectedConcept,
     buyer_relationship: answers.buyer_relationship,
     occasion: answers.occasion,

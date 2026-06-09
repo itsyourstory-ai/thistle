@@ -1,7 +1,7 @@
 // Shared helper for invoking the generate-character-portrait edge function.
 // Used by useCharacterPortrait and useSupportingPortraits.
 
-import { supabase } from "@/integrations/supabase/client";
+import { callEdge } from "@/lib/edgeFunctions";
 import type { StoryBrief } from "@/lib/buildBrief";
 
 /**
@@ -15,9 +15,9 @@ export async function invokePortrait(
 ): Promise<string> {
   if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
 
-  const { data, error: fnError } = await supabase.functions.invoke(
+  const { data, error: fnError } = await callEdge(
     "generate-character-portrait",
-    { body: { brief } },
+    { brief: brief as unknown as Record<string, unknown> },
   );
 
   if (signal?.aborted) throw new DOMException("Aborted", "AbortError");

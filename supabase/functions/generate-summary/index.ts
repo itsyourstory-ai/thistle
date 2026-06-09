@@ -309,7 +309,6 @@ Deno.serve(async (req) => {
       supportingLine: supporting,
       supportingBehaviorNotes: buildSupportingBehaviorNotes(brief.supportingCharacters || []),
       forbiddenTraitWords: forbiddenTraitWords.join(", "),
-      specialThing: describeSpecialThing(brief.specialThing),
       heroQuirk: brief.protagonist?.special as string | undefined,
       thingsAlreadyGoodAt: brief.story?.thingsAlreadyGoodAt,
       thingsCurrentlyTricky: brief.story?.thingsCurrentlyTricky,

@@ -4,6 +4,8 @@ import type { WizardAnswers } from "@/lib/wizardTypes";
 interface WizardContextType {
   answers: WizardAnswers;
   setAnswer: <K extends keyof WizardAnswers>(key: K, value: WizardAnswers[K]) => void;
+  /** Bulk-load a partial set of answers (used by dev seed profiles). */
+  seedAnswers: (partial: Partial<WizardAnswers>) => void;
   canContinue: boolean;
   setCanContinue: (v: boolean) => void;
   /** True while a long-running generation (e.g. the cover) is in flight.
@@ -24,11 +26,16 @@ export function WizardProvider({ children }: { children: ReactNode }) {
     setAnswers((prev) => ({ ...prev, [key]: value }));
   }, []);
 
+  const seedAnswers = useCallback((partial: Partial<WizardAnswers>) => {
+    setAnswers((prev) => ({ ...prev, ...partial }));
+  }, []);
+
   return (
     <WizardContext.Provider
       value={{
         answers,
         setAnswer,
+        seedAnswers,
         canContinue,
         setCanContinue,
         isGenerating,

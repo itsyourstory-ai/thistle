@@ -36,6 +36,9 @@ export default function Step1() {
 
   useEffect(() => {
     setAnswer("bookBelongsTo", true);
+    // Initialize language to "english" so it's stored in context, not just a display default.
+    if (!answers.language) setAnswer("language", "english");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const [headingVisible, setHeadingVisible] = useState(true);
@@ -58,8 +61,8 @@ export default function Step1() {
   }, [name]);
 
   useEffect(() => {
-    setCanContinue(name.trim().length > 0 && age !== "" && gender !== "");
-  }, [name, age, gender, setCanContinue]);
+    setCanContinue(name.trim().length > 0 && age !== "" && gender !== "" && language !== "");
+  }, [name, age, gender, language, setCanContinue]);
 
 
   return (

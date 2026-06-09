@@ -177,7 +177,6 @@ function mapBriefToEngineInput(brief: any): BookEngineInput {
   const child = brief.child || {};
   const story = brief.story || {};
   const protagonist = brief.protagonist || {};
-  const special = flattenSpecialThing(brief.specialThing);
   const artStyle = brief.artStyle || "storybook-soft";
 
   const age = parseAgeInt(child.ageRange) ?? 6;
@@ -192,16 +191,6 @@ function mapBriefToEngineInput(brief: any): BookEngineInput {
       .join("; "),
   }));
 
-  const specialAsCompanion = special.detail
-    ? [{
-        name: special.detail,
-        role: COMPANION_CATEGORIES.has((brief.specialThing?.category || "").toString())
-          ? "companion" as const
-          : "character" as const,
-        description: special.detail,
-      }]
-    : [];
-
   return {
     child_name: child.name || "the child",
     age,
@@ -213,8 +202,7 @@ function mapBriefToEngineInput(brief: any): BookEngineInput {
     value: mapValue(story.lesson),
     genre: mapGenre(story.genre),
     mood_tags: [story.mood].filter(Boolean),
-    supporting_cast: [...supportingFromWizard, ...specialAsCompanion],
-    special_item: special.detail,
+    supporting_cast: supportingFromWizard,
     art_style: artStyle,
     buyer_relationship: brief.buyer_relationship || brief.buyerRelationship,
     occasion: brief.occasion,

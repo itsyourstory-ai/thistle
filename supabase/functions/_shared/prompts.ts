@@ -69,7 +69,6 @@ export function SUMMARY_USER_TEMPLATE({
   lesson,
   interestsLine,
   personalityLine,
-  specialThing,
   supportingLine,
   heroQuirk,
   buyerRelationship,
@@ -83,7 +82,6 @@ export function SUMMARY_USER_TEMPLATE({
   lesson?: string;
   interestsLine?: string;
   personalityLine?: string;
-  specialThing?: string;
   supportingLine?: string;
   heroQuirk?: string;
   buyerRelationship?: string;
@@ -101,7 +99,6 @@ export function SUMMARY_USER_TEMPLATE({
     lesson ? `Theme: ${lesson}` : "",
     interestsLine ? `Optional background interests: ${interestsLine}` : "",
     personalityLine ? `Private behavior direction only: ${personalityLine}` : "",
-    specialThing ? `Optional special thing: ${specialThing}` : "",
     supportingLine ? `Optional supporting characters: ${supportingLine}` : "",
     heroQuirk ? `Appearance/signature detail: ${heroQuirk}` : "",
     buyerRelationship ? `Buyer relationship: ${buyerRelationship}` : "",
