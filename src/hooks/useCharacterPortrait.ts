@@ -13,7 +13,7 @@
 import { useCallback, useEffect, useRef } from "react";
 import { useWizard } from "@/contexts/WizardContext";
 import { buildBrief } from "@/lib/buildBrief";
-import { supabase } from "@/integrations/supabase/client";
+import { callEdge } from "@/lib/edgeFunctions";
 import { invokePortrait } from "./portraitApi";
 import type { CharacterPortraitState, PortraitStatus } from "@/lib/wizardTypes";
 
@@ -117,9 +117,9 @@ export function useCharacterPortrait() {
 
           if (cachedHash !== baseHash) {
             try {
-              const { data: traitData } = await supabase.functions.invoke(
+              const { data: traitData } = await callEdge(
                 "extract-appearance-traits",
-                { body: { photoDataUrl: firstPhotoNow } },
+                { photoDataUrl: firstPhotoNow },
               );
               if (ctrl.signal.aborted) return;
               const t = (traitData?.traits ?? {}) as Record<string, any>;

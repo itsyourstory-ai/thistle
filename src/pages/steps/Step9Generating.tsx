@@ -6,6 +6,7 @@ import WizardHeader from "@/components/WizardHeader";
 import { buildBrief } from "@/lib/buildBrief";
 import { coverMessages, pipelineMessage, useRotatingMessage } from "@/lib/loadingMessages";
 import { supabase } from "@/integrations/supabase/client";
+import { callEdge } from "@/lib/edgeFunctions";
 import { toast } from "@/hooks/use-toast";
 
 const MIN_DURATION = 6000; // soft floor so animation doesn't feel cut short
@@ -41,17 +42,12 @@ export default function Step10Generating() {
     try {
       const brief = buildBrief(answers);
       const seed = (answers.characterPortrait as { dataUrl?: string } | undefined)?.dataUrl || null;
-      const { data: bookResp, error: bookErr } = await supabase.functions.invoke(
-        "generate-book",
-        {
-          body: {
-            brief,
-            buyer_name: answers.buyer_name || "",
-            buyer_email: answers.buyer_email || "",
-            seed_portrait_data_url: seed,
-          },
-        },
-      );
+      const { data: bookResp, error: bookErr } = await callEdge("generate-book", {
+        brief: brief as unknown as Record<string, unknown>,
+        buyer_name: answers.buyer_name || "",
+        buyer_email: answers.buyer_email || "",
+        seed_portrait_data_url: seed ?? undefined,
+      });
       if (bookErr) throw bookErr;
       if (bookResp?.error) throw new Error(bookResp.error);
       const id: string | undefined = bookResp?.id;
@@ -100,7 +96,7 @@ export default function Step10Generating() {
         Date.now() - lastAt > 90_000
       ) {
         lastAt = Date.now();
-        void supabase.functions.invoke("generate-book-images", { body: { book_id: bookId } });
+        void callEdge("generate-book-images", { book_id: bookId });
       }
 
       if (status === "done") {

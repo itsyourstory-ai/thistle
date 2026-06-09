@@ -11,6 +11,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { callEdge } from "@/lib/edgeFunctions";
 import { getLayout, PageLayout } from "@/lib/pageLayouts";
 import { Copy, Check, Download } from "lucide-react";
 import LoadingScreen from "@/components/LoadingScreen";
@@ -205,8 +206,8 @@ export default function DevStoryPreview() {
     if (!row) return;
     setRegenerating(true);
     try {
-      const { data, error } = await supabase.functions.invoke("generate-book", {
-        body: { brief: row.brief },
+      const { data, error } = await callEdge("generate-book", {
+        brief: row.brief as Record<string, unknown>,
       });
       if (error) throw error;
       if (data?.id) window.location.assign(`/dev/story-preview/${data.id}`);

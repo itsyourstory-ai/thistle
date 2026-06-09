@@ -7,7 +7,7 @@ import WizardHeader from "@/components/WizardHeader";
 import StoryDetailsRecap from "@/components/StoryDetailsRecap";
 import { buildBrief } from "@/lib/buildBrief";
 import { summaryMessages, useRotatingMessage } from "@/lib/loadingMessages";
-import { supabase } from "@/integrations/supabase/client";
+import { callEdge } from "@/lib/edgeFunctions";
 import { toast } from "@/hooks/use-toast";
 import { useCharacterPortrait } from "@/hooks/useCharacterPortrait";
 import { useSupportingPortraits } from "@/hooks/useSupportingPortraits";
@@ -42,11 +42,9 @@ export default function Step10Summary() {
     setError(null);
     try {
       const brief = buildBrief(answers);
-      const { data, error: fnError } = await supabase.functions.invoke("generate-summary", {
-        body: {
-          brief,
-          previousSummary: previousSummaryRef.current || undefined,
-        },
+      const { data, error: fnError } = await callEdge("generate-summary", {
+        brief: brief as unknown as Record<string, unknown>,
+        previousSummary: previousSummaryRef.current || undefined,
       });
       if (fnError) throw fnError;
       if (data?.error) throw new Error(data.error);
