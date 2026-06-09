@@ -10,7 +10,6 @@
  * true. Never import this in production paths.
  */
 
-import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Switch } from "@/components/ui/switch";
@@ -18,7 +17,7 @@ import { useTestMode } from "@/lib/testMode";
 import type { ProfileId, CacheMode } from "@/lib/testMode";
 import { cacheClear } from "@/lib/edgeCache";
 import { SEED_PROFILES, getSeedProfile } from "@/lib/devSeeds";
-import { WIZARD_STEPS, pathForStep } from "@/lib/wizardSteps";
+import { pathForStep } from "@/lib/wizardSteps";
 import { useWizard } from "@/contexts/WizardContext";
 
 const FN_NAMES = [
@@ -36,13 +35,12 @@ export default function DevTestPanel() {
   const [mode, update] = useTestMode();
   const { seedAnswers } = useWizard();
   const navigate = useNavigate();
-  const [jumpStep, setJumpStep] = useState(8);
 
   const handleLoad = () => {
     const profile = getSeedProfile(mode.profileId as ProfileId);
     if (!profile) return;
     seedAnswers(profile.answers);
-    navigate(pathForStep(jumpStep));
+    navigate(pathForStep(1));
   };
 
   // forceErrorFns is ["*"] for all, [fnName] for one, or [] for none.
@@ -122,27 +120,14 @@ export default function DevTestPanel() {
               )}
             </div>
 
-            {/* ── Load + jump ───────────────────────────────────── */}
-            <div className="flex items-center gap-2">
-              <select
-                className="flex-1 text-xs rounded-lg border border-input px-2 py-1.5 bg-white focus:outline-none focus:ring-1 focus:ring-ring"
-                value={jumpStep}
-                onChange={(e) => setJumpStep(Number(e.target.value))}
-              >
-                {WIZARD_STEPS.map((s) => (
-                  <option key={s.num} value={s.num}>
-                    Step {s.num}: {s.slug.replace(/^\d+-/, "")}
-                  </option>
-                ))}
-              </select>
-              <button
-                type="button"
-                onClick={handleLoad}
-                className="shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
-              >
-                Load &amp; go →
-              </button>
-            </div>
+            {/* ── Load ─────────────────────────────────────────── */}
+            <button
+              type="button"
+              onClick={handleLoad}
+              className="w-full px-3 py-1.5 rounded-lg text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+            >
+              Load → (goes to Step 1)
+            </button>
 
             <hr className="border-black/10" />
 

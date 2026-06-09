@@ -10,7 +10,7 @@ The wizard has a **🧪 test: off** pill in the header next to "⚙ dev: skip st
 |---|---|
 | **Test mode toggle (on/off)** | When ON, all 6 AI edge functions return instant fake responses instead of calling Supabase. Walk the entire wizard for $0. |
 | **Seed profile dropdown** | Picks which of the 4 pre-filled child profiles to load. Each has very different shape: photo vs no-photo, supporting characters, edge-case names, special pet. |
-| **Load & go → (step picker + button)** | Fills all wizard answers from the selected profile AND navigates to the chosen step. Start at any step instantly without re-typing anything. |
+| **Load → (button)** | Fills all wizard answers from the selected profile and goes to Step 1. Navigate normally from there — every step will already show the seeded selections. |
 | **Fake delay (ms)** | Adds artificial latency to every mocked call. Set > 0 so loading states and animations actually play. Set to 0 for instant results. |
 | **Force error on** | Makes the selected function (or all) return an error instead of a fixture. Use this to trigger the "Try again" / error UI on demand without breaking anything. |
 | **Run live (checkboxes)** | Per-function override: keeps test mode on globally but calls Supabase for real on the checked functions. Useful for testing one specific AI call while the rest stay free. |
@@ -25,9 +25,9 @@ The wizard has a **🧪 test: off** pill in the header next to "⚙ dev: skip st
 2. Open any wizard step in the browser
 3. Click "🧪 test: off" → toggle ON
 4. Pick a seed profile (start with "Classic — Leo")
-5. Pick a step (e.g. Step 8: story)
-6. Click "Load & go →"  — the wizard jumps to Step 8 with all answers filled
-7. Click through to the end — cover, cast, generating, preview all work with fake data
+5. Click "Load →"  — the wizard jumps to Step 1 with all answers pre-filled
+6. Click Continue through the steps — every page shows the seeded selections
+7. All AI calls (summary, cover, portrait, book) return fake data instantly
 8. Toggle test mode OFF to run a real generation when you need it
 ```
 
@@ -35,10 +35,10 @@ The wizard has a **🧪 test: off** pill in the header next to "⚙ dev: skip st
 
 | Profile | Child | Shape |
 |---|---|---|
-| **Classic — Leo** | Boy, 6, watercolor | Photo uploaded, 2 supporting chars (Mom + dog), full traits |
-| **Minimal — Priya** | Girl, 4, cartoon | No photo, no supporting cast, sparse fields |
-| **Edge text — Bartholomew-James** | Boy, 8 | Long names, 8 interests, surprise-name supporting char, fox pet |
-| **Special pet — River** | Non-binary, 5 | Magic cat (Mochi), grandma supporting char, soft painterly style |
+| **Classic — Leo** | Boy, 6, cozy-gouache | Photo uploaded, 2 supporting chars (Mom + dog), full traits |
+| **Minimal — Priya** | Girl, 4, geometric-pop | No photo, no supporting cast, sparse fields |
+| **Edge text — Bartholomew-James** | Boy, 8, hand-drawn-charm | Long names, 8 interests, surprise-name supporting char, fox pet |
+| **Special pet — River** | Non-binary, 5, cozy-gouache | Magic cat (Mochi), grandma supporting char |
 
 ---
 

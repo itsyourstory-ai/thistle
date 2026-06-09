@@ -49,13 +49,13 @@ describe("buildBrief — Classic seed (Leo)", () => {
   });
 
   it("maps child.ageRange and child.gender", () => {
-    expect(brief.child.ageRange).toBe("5-7");
+    expect(brief.child.ageRange).toBe("6-8");
     expect(brief.child.gender).toBe("boy");
   });
 
   it("maps story.genre and story.lesson", () => {
     expect(brief.story.genre).toBe("adventure");
-    expect(brief.story.lesson).toBe("bravery");
+    expect(brief.story.lesson).toBe("courage");
   });
 
   it("maps story.interests from interestsList[].word", () => {
@@ -104,7 +104,7 @@ describe("buildBrief — Classic seed (Leo)", () => {
   });
 
   it("maps artStyle", () => {
-    expect(brief.artStyle).toBe("watercolor");
+    expect(brief.artStyle).toBe("cozy-gouache");
   });
 });
 

@@ -96,7 +96,7 @@ describe("WizardContext — seedAnswers", () => {
     act(() => get().seedAnswers(profile.answers));
 
     expect(get().answers.childName).toBe("Leo");
-    expect(get().answers.artStyle).toBe("watercolor");
+    expect(get().answers.artStyle).toBe("cozy-gouache");
     expect(get().answers.supportingCharacters).toHaveLength(2);
     expect(get().answers.protagonist?.name).toBe("Leo");
   });

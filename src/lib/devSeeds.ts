@@ -88,7 +88,7 @@ function makeSupportingChar(overrides: Partial<SupportingCharacter> & { id: stri
 const PROFILE_CLASSIC: WizardAnswers = {
   // Step 1
   childName: "Leo",
-  ageRange: "5-7",
+  ageRange: "6-8",
   gender: "boy",
 
   // Step 2
@@ -100,10 +100,10 @@ const PROFILE_CLASSIC: WizardAnswers = {
 
   // Step 3
   genre: "adventure",
-  mood: "exciting",
+  mood: "brave",
 
   // Step 4
-  lesson: "bravery",
+  lesson: "courage",
 
   // Step 5
   interestsList: [
@@ -114,7 +114,7 @@ const PROFILE_CLASSIC: WizardAnswers = {
   ],
 
   // Step 6
-  artStyle: "watercolor",
+  artStyle: "cozy-gouache",
 
   // Step 7
   protagonist: {
@@ -173,21 +173,21 @@ const PROFILE_CLASSIC: WizardAnswers = {
 
 const PROFILE_MINIMAL: WizardAnswers = {
   childName: "Priya",
-  ageRange: "3-4",
+  ageRange: "3-5",
   gender: "girl",
 
   buyer_relationship: "grandparent",
   buyer_name: "Raj",
   buyer_email: "raj@example.com",
 
-  genre: "magical",
+  genre: "fantasy",
   mood: "whimsical",
 
-  lesson: "imagination",
+  lesson: "curiosity",
 
   interestsList: [{ word: "dancing" }, { word: "butterflies" }],
 
-  artStyle: "cartoon",
+  artStyle: "geometric-pop",
 
   protagonist: {
     photos: [],
@@ -210,19 +210,19 @@ const PROFILE_MINIMAL: WizardAnswers = {
 
 const PROFILE_EDGE: WizardAnswers = {
   childName: "Bartholomew-James",
-  ageRange: "8-10",
+  ageRange: "9-12",
   gender: "boy",
 
-  buyer_relationship: "uncle/aunt",
+  buyer_relationship: "other",
   buyer_name: "Priscilla-Anne",
   buyer_email: "priscilla.anne@example.com",
   occasion: "graduation",
   bookBelongsTo: false,
 
   genre: "adventure",
-  mood: "epic",
+  mood: "mysterious",
 
-  lesson: "perseverance",
+  lesson: "resilience",
 
   interestsList: [
     { word: "maps" },
@@ -241,7 +241,7 @@ const PROFILE_EDGE: WizardAnswers = {
     details: { type: "fox", name: "Rusty", color: "orange with white paws" },
   },
 
-  artStyle: "classic illustration",
+  artStyle: "hand-drawn-charm",
 
   protagonist: {
     photos: [],
@@ -285,17 +285,17 @@ const PROFILE_EDGE: WizardAnswers = {
 
 const PROFILE_SPECIAL: WizardAnswers = {
   childName: "River",
-  ageRange: "5-7",
+  ageRange: "3-5",
   gender: "non-binary",
 
   buyer_relationship: "parent",
   buyer_name: "Alex",
   buyer_email: "alex@example.com",
-  occasion: "just because",
+  occasion: "just_because",
   bookBelongsTo: true,
 
-  genre: "magical",
-  mood: "warm and cosy",
+  genre: "fantasy",
+  mood: "heartwarming",
 
   lesson: "friendship",
 
@@ -311,7 +311,7 @@ const PROFILE_SPECIAL: WizardAnswers = {
     details: { type: "cat", name: "Mochi", color: "black and white" },
   },
 
-  artStyle: "soft painterly",
+  artStyle: "cozy-gouache",
 
   protagonist: {
     photos: [],
