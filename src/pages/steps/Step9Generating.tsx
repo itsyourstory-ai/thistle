@@ -5,8 +5,8 @@ import { useWizard } from "@/contexts/WizardContext";
 import WizardHeader from "@/components/WizardHeader";
 import { buildBrief } from "@/lib/buildBrief";
 import { coverMessages, pipelineMessage, useRotatingMessage } from "@/lib/loadingMessages";
-import { supabase } from "@/integrations/supabase/client";
 import { callEdge } from "@/lib/edgeFunctions";
+import { getBookStatus } from "@/lib/bookStatus";
 import { toast } from "@/hooks/use-toast";
 
 const MIN_DURATION = 6000; // soft floor so animation doesn't feel cut short
@@ -74,15 +74,11 @@ export default function Step10Generating() {
     let lastKey = "";
     let lastAt = Date.now();
     const tick = async () => {
-      const { data } = await supabase
-        .from("generated_books")
-        .select("pipeline_status,pipeline_progress,pipeline_error")
-        .eq("id", bookId)
-        .maybeSingle();
+      const data = await getBookStatus(bookId);
       if (!data) return;
-      const status = (data.pipeline_status as string) || "idle";
-      const prog = (data.pipeline_progress as any) || null;
-      const err = (data.pipeline_error as string) || null;
+      const status = data.pipeline_status || "idle";
+      const prog = data.pipeline_progress || null;
+      const err = data.pipeline_error || null;
       if (prog) setProgress(prog);
 
       const key = `${status}:${prog?.stage}:${prog?.current}/${prog?.total}`;
