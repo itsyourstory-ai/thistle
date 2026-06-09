@@ -14,6 +14,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { getTestMode, isForcedError, isPerFnLive } from "./testMode";
+import { getFixture } from "@/test/fixtures";
 
 export type EdgeFnName =
   | "generate-summary"
@@ -55,11 +56,9 @@ export async function callEdge(
         };
       }
 
-      // Phase B will add fixture lookup here:
-      //   const fixture = getMockResponse(name, mode.profileId);
-      //   if (fixture !== null) return fixture;
-      //
-      // Until fixtures exist, fall through to live.
+      // Return a fixture if one is defined for this function + profile.
+      const fixture = getFixture(name, mode.profileId);
+      if (fixture !== null) return fixture;
     }
   }
 
