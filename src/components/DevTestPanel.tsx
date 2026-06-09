@@ -16,6 +16,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Switch } from "@/components/ui/switch";
 import { useTestMode } from "@/lib/testMode";
 import type { ProfileId, CacheMode } from "@/lib/testMode";
+import { cacheClear } from "@/lib/edgeCache";
 import { SEED_PROFILES, getSeedProfile } from "@/lib/devSeeds";
 import { WIZARD_STEPS, pathForStep } from "@/lib/wizardSteps";
 import { useWizard } from "@/contexts/WizardContext";
@@ -230,6 +231,15 @@ export default function DevTestPanel() {
                 <option value="record">Record real responses</option>
                 <option value="replay">Replay cached responses</option>
               </select>
+              {mode.cacheMode !== "off" && (
+                <button
+                  type="button"
+                  onClick={() => void cacheClear()}
+                  className="text-[10px] text-muted-foreground underline hover:text-destructive transition-colors"
+                >
+                  Clear cache
+                </button>
+              )}
             </div>
           </>
         )}

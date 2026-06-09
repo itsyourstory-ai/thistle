@@ -15,6 +15,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { getTestMode, isForcedError, isPerFnLive } from "./testMode";
 import { getFixture } from "@/test/fixtures";
+import { cacheGet, cachePut } from "./edgeCache";
 
 export type EdgeFnName =
   | "generate-summary"
@@ -62,6 +63,26 @@ export async function callEdge(
     }
   }
 
+  // ── Cache — replay hit (test mode off also benefits from this) ─────────────
+  if (import.meta.env.DEV) {
+    const { cacheMode } = getTestMode();
+    if (cacheMode === "replay") {
+      const hit = await cacheGet(name, body);
+      if (hit) return hit;
+      // Miss: fall through to live and record.
+    }
+  }
+
   // ── Live call ───────────────────────────────────────────────────────────────
-  return supabase.functions.invoke(name, { body });
+  const result = await supabase.functions.invoke(name, { body });
+
+  // ── Cache — record (store the response for future replay) ──────────────────
+  if (import.meta.env.DEV) {
+    const { cacheMode } = getTestMode();
+    if (cacheMode === "record" || cacheMode === "replay") {
+      void cachePut(name, body, result);
+    }
+  }
+
+  return result;
 }
