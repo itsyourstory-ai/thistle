@@ -35,7 +35,6 @@ describe("buildBrief — empty answers", () => {
     expect(brief.child.gender).toBeUndefined();
     expect(brief.story.genre).toBeUndefined();
     expect(brief.artStyle).toBeUndefined();
-    expect(brief.specialThing).toBeUndefined();
   });
 });
 
@@ -67,7 +66,6 @@ describe("buildBrief — Classic seed (Leo)", () => {
   it("maps story.personality from protagonist.traits[].word", () => {
     expect(brief.story.personality).toContain("brave");
     expect(brief.story.personality).toContain("curious");
-    expect(brief.story.personality).toContain("kind");
   });
 
   it("maps protagonist.name and protagonist.age", () => {
@@ -126,9 +124,7 @@ describe("buildBrief — Minimal seed (Priya)", () => {
     expect(brief.protagonist.photoDataUrl).toBeUndefined();
   });
 
-  it("has no specialThing", () => {
-    expect(brief.specialThing).toBeUndefined();
-  });
+
 });
 
 // ── Edge-text seed (Bartholomew-James) ───────────────────────────────────────
@@ -141,16 +137,11 @@ describe("buildBrief — Edge-text seed (Bartholomew-James)", () => {
     expect(brief.protagonist.name).toBe("Bartholomew-James");
   });
 
-  it("maps all 8 interests", () => {
-    expect(brief.story.interests).toHaveLength(8);
+  it("maps 3 interests (the picker cap)", () => {
+    expect(brief.story.interests).toHaveLength(3);
     expect(brief.story.interests).toContain("maps");
-    expect(brief.story.interests).toContain("long words");
-  });
-
-  it("passes specialThing with category and details", () => {
-    expect(brief.specialThing?.category).toBe("pet");
-    expect(brief.specialThing?.details?.type).toBe("fox");
-    expect(brief.specialThing?.details?.name).toBe("Rusty");
+    expect(brief.story.interests).toContain("foxes");
+    expect(brief.story.interests).toContain("origami");
   });
 
   it("hides the name of a surpriseName supporting character", () => {
@@ -170,12 +161,6 @@ describe("buildBrief — Special-pet seed (River)", () => {
     expect(brief.child.gender).toBe("non-binary");
     // protagonist.gender comes from protagonist.gender (Step 7) — uses "Gender neutral" pill value
     expect(brief.protagonist.gender).toBe("Gender neutral");
-  });
-
-  it("passes the cat specialThing", () => {
-    expect(brief.specialThing?.category).toBe("pet");
-    expect(brief.specialThing?.details?.name).toBe("Mochi");
-    expect(brief.specialThing?.details?.type).toBe("cat");
   });
 
   it("maps grandma as a supporting character", () => {

@@ -111,7 +111,6 @@ const PROFILE_CLASSIC: WizardAnswers = {
     { word: "dragons" },
     { word: "climbing trees" },
     { word: "dinosaurs" },
-    { word: "building things" },
   ],
 
   // Step 6
@@ -134,7 +133,6 @@ const PROFILE_CLASSIC: WizardAnswers = {
     traits: [
       { word: "brave", emoji: "🦁" },
       { word: "curious", emoji: "🔍" },
-      { word: "kind", emoji: "💛" },
     ],
   },
   supportingCharacters: [
@@ -215,8 +213,8 @@ const PROFILE_MINIMAL: WizardAnswers = {
 };
 
 // ── Profile 3: Edge text ──────────────────────────────────────────────────────
-// Long/unusual name, many interests, special-thing pet, a surprise-name
-// supporting character. Stress-tests text overflow and the specialThing path.
+// Long/unusual name, 3 interests, special-thing pet, a surprise-name
+// supporting character. Stress-tests text overflow and unusual values.
 
 const PROFILE_EDGE: WizardAnswers = {
   childName: "Bartholomew-James",
@@ -239,11 +237,6 @@ const PROFILE_EDGE: WizardAnswers = {
     { word: "maps" },
     { word: "foxes" },
     { word: "origami" },
-    { word: "history" },
-    { word: "chess" },
-    { word: "star-gazing" },
-    { word: "collecting rocks" },
-    { word: "long words" },
   ],
 
   // Secret ingredient
@@ -270,7 +263,6 @@ const PROFILE_EDGE: WizardAnswers = {
     traits: [
       { word: "methodical" },
       { word: "loyal" },
-      { word: "quietly adventurous" },
     ],
   },
   supportingCharacters: [
@@ -315,7 +307,6 @@ const PROFILE_SPECIAL: WizardAnswers = {
     { word: "cats" },
     { word: "gardening" },
     { word: "painting" },
-    { word: "cloud-watching" },
   ],
 
   specialThing: {
@@ -338,7 +329,7 @@ const PROFILE_SPECIAL: WizardAnswers = {
       glasses: false,
       features: "Very expressive dark eyes",
     },
-    traits: [{ word: "gentle" }, { word: "imaginative" }, { word: "stubborn (in a good way)" }],
+    traits: [{ word: "gentle" }, { word: "imaginative" }],
   },
   supportingCharacters: [
     makeSupportingChar({
