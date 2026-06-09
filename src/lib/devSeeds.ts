@@ -168,8 +168,8 @@ const PROFILE_CLASSIC: WizardAnswers = {
 };
 
 // ── Profile 2: Minimal ────────────────────────────────────────────────────────
-// Girl, 4, no photo, no supporting cast, sparse fields. Exercises the no-photo
-// imagined-hero code path and the minimal-brief edge of buildBrief.
+// Girl, 4, no photo, no supporting cast. Exercises the no-photo imagined-hero
+// code path.
 
 const PROFILE_MINIMAL: WizardAnswers = {
   childName: "Priya",
@@ -179,6 +179,8 @@ const PROFILE_MINIMAL: WizardAnswers = {
   buyer_relationship: "grandparent",
   buyer_name: "Raj",
   buyer_email: "raj@example.com",
+  occasion: "first_day",
+  bookBelongsTo: true,
 
   genre: "fantasy",
   mood: "whimsical",
@@ -194,8 +196,14 @@ const PROFILE_MINIMAL: WizardAnswers = {
     name: "Priya",
     age: "4",
     gender: "Girl",
-    special: "",
-    appearance: emptyAppearance(),
+    special: "Missing a front tooth, always wearing something with butterflies on it",
+    appearance: {
+      hairColor: "Black",
+      hairStyle: "Long",
+      skinTone: "#E0B88A",
+      glasses: false,
+      features: "Big dark eyes, very bright smile",
+    },
     traits: [{ word: "creative" }, { word: "dreamy" }],
   },
   supportingCharacters: [],
