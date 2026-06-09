@@ -88,7 +88,7 @@ describe("buildBrief — Classic seed (Leo)", () => {
     const mom = brief.supportingCharacters.find((c) => c.name === "Mom");
     expect(mom).toBeDefined();
     expect(mom?.relationship).toBe("Mom");
-    expect(mom?.gender).toBe("woman");
+    expect(mom?.gender).toBe("Girl/Woman");
   });
 
   it("resolves Buddy's 'Other' relationship via relationshipOther", () => {
@@ -166,8 +166,10 @@ describe("buildBrief — Special-pet seed (River)", () => {
   const brief = buildBrief(seedFor("special-pet"));
 
   it("maps non-binary gender through correctly", () => {
+    // child.gender comes from answers.gender (Step 1) — value is "non-binary"
     expect(brief.child.gender).toBe("non-binary");
-    expect(brief.protagonist.gender).toBe("non-binary");
+    // protagonist.gender comes from protagonist.gender (Step 7) — uses "Gender neutral" pill value
+    expect(brief.protagonist.gender).toBe("Gender neutral");
   });
 
   it("passes the cat specialThing", () => {
@@ -179,7 +181,7 @@ describe("buildBrief — Special-pet seed (River)", () => {
   it("maps grandma as a supporting character", () => {
     expect(brief.supportingCharacters).toHaveLength(1);
     expect(brief.supportingCharacters[0].name).toBe("Grandma Yuki");
-    expect(brief.supportingCharacters[0].relationship).toBe("grandparent");
+    expect(brief.supportingCharacters[0].relationship).toBe("Grandma");
   });
 });
 
