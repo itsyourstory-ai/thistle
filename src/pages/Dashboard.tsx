@@ -29,13 +29,15 @@ export default function Dashboard() {
   const { data: drafts = [], isLoading: draftsLoading } = useQuery({
     queryKey: ["book_drafts"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("book_drafts")
         .select("id, child_name, current_step, updated_at, answers")
         .order("updated_at", { ascending: false });
-      if (error) throw error;
+      if (error) { console.error("Drafts query error:", error); return []; }
       return data ?? [];
     },
+    staleTime: 1000 * 30,
+    retry: 1,
   });
 
   const { data: books = [], isLoading: booksLoading } = useQuery({
@@ -46,9 +48,11 @@ export default function Dashboard() {
         .select("id, created_at, brief, parsed, status")
         .eq("status", "ok")
         .order("created_at", { ascending: false });
-      if (error) throw error;
+      if (error) { console.error("Books query error:", error); return []; }
       return data ?? [];
     },
+    staleTime: 1000 * 30,
+    retry: 1,
   });
 
   async function resumeDraft(draft: {
@@ -63,71 +67,72 @@ export default function Dashboard() {
   }
 
   async function deleteDraft(id: string) {
-    await supabase.from("book_drafts").delete().eq("id", id);
+    await (supabase as any).from("book_drafts").delete().eq("id", id);
     queryClient.invalidateQueries({ queryKey: ["book_drafts"] });
   }
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: "hsl(var(--wizard-bg))" }}>
+    <div className="min-h-screen bg-wizard-bg">
       <DashboardHeader />
-      <main className="max-w-3xl mx-auto px-4 py-8 space-y-10">
+      <main className="max-w-2xl mx-auto px-4 py-10 space-y-10">
+
         {/* Create new */}
-        <section>
+        <div>
           <Button
-            onClick={() => {
-              resetWizard();
-              navigate("/step/1-name");
-            }}
+            variant="wizard"
+            size="pill"
+            onClick={() => { resetWizard(); navigate("/step/1-name"); }}
           >
             + Create a new book
           </Button>
-        </section>
+        </div>
 
-        {/* In Progress drafts */}
+        {/* In Progress */}
         <section>
-          <h2 className="text-lg font-semibold mb-4">In Progress</h2>
+          <h2 className="font-heading text-2xl font-semibold text-wizard mb-4">In Progress</h2>
           {draftsLoading ? (
-            <div>Loading...</div>
+            <p className="text-sm text-muted-foreground">Loading…</p>
           ) : drafts.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              No drafts yet. Start creating your first book!
-            </p>
+            <p className="text-sm text-muted-foreground">No drafts yet. Start creating your first book!</p>
           ) : (
-            drafts.map((d) => (
-              <DraftCard
-                key={d.id}
-                id={d.id}
-                childName={d.child_name || "Unnamed draft"}
-                currentStep={d.current_step}
-                updatedAt={d.updated_at}
-                onResume={() => resumeDraft(d)}
-                onDelete={() => deleteDraft(d.id)}
-              />
-            ))
+            <div className="space-y-3">
+              {drafts.map((d: any) => (
+                <DraftCard
+                  key={d.id}
+                  id={d.id}
+                  childName={d.child_name || "Unnamed draft"}
+                  currentStep={d.current_step}
+                  updatedAt={d.updated_at}
+                  onResume={() => resumeDraft(d)}
+                  onDelete={() => deleteDraft(d.id)}
+                />
+              ))}
+            </div>
           )}
         </section>
 
         {/* My Books */}
         <section>
-          <h2 className="text-lg font-semibold mb-4">My Books</h2>
+          <h2 className="font-heading text-2xl font-semibold text-wizard mb-4">My Books</h2>
           {booksLoading ? (
-            <div>Loading...</div>
+            <p className="text-sm text-muted-foreground">Loading…</p>
           ) : books.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              No books yet. Create your first one above!
-            </p>
+            <p className="text-sm text-muted-foreground">No books yet. Create your first one above!</p>
           ) : (
-            books.map((b) => (
-              <BookCard
-                key={b.id}
-                id={b.id}
-                title={getBookTitle(b)}
-                childName={getChildName(b)}
-                createdAt={b.created_at}
-              />
-            ))
+            <div className="space-y-3">
+              {books.map((b: any) => (
+                <BookCard
+                  key={b.id}
+                  id={b.id}
+                  title={getBookTitle(b)}
+                  childName={getChildName(b)}
+                  createdAt={b.created_at}
+                />
+              ))}
+            </div>
           )}
         </section>
+
       </main>
     </div>
   );

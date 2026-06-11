@@ -6,7 +6,6 @@ import { toast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -18,6 +17,15 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="bg-white rounded-2xl border border-black/10 shadow-sm p-6">
+      <h2 className="font-heading text-xl font-semibold text-wizard mb-5">{title}</h2>
+      {children}
+    </div>
+  );
+}
 
 export default function Account() {
   const { user, signOut } = useAuth();
@@ -56,18 +64,18 @@ export default function Account() {
     if (error) {
       toast({ title: "Error", description: error.message });
     } else {
-      toast({ title: "Profile saved", description: "Your display name has been updated." });
+      toast({ title: "Profile saved" });
     }
   }
 
   async function handleSavePassword(e: React.FormEvent) {
     e.preventDefault();
     if (newPassword !== confirmPassword) {
-      toast({ title: "Passwords don't match", description: "Please make sure both passwords are the same." });
+      toast({ title: "Passwords don't match" });
       return;
     }
     if (newPassword.length < 8) {
-      toast({ title: "Password too short", description: "Password must be at least 8 characters." });
+      toast({ title: "Password too short", description: "Must be at least 8 characters." });
       return;
     }
     setSavingPassword(true);
@@ -76,7 +84,7 @@ export default function Account() {
     if (error) {
       toast({ title: "Error", description: error.message });
     } else {
-      toast({ title: "Password updated", description: "Your password has been changed." });
+      toast({ title: "Password updated" });
       setNewPassword("");
       setConfirmPassword("");
     }
@@ -98,120 +106,107 @@ export default function Account() {
   }
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: "hsl(var(--wizard-bg))" }}>
+    <div className="min-h-screen bg-wizard-bg">
       <header className="sticky top-0 z-30 flex items-center justify-between px-4 py-3 border-b border-black/10 bg-wizard-bg">
-        <Link to="/dashboard" className="text-sm font-medium">← Back</Link>
-        <span className="font-bold">Account</span>
+        <Link to="/dashboard" className="text-sm font-medium text-wizard/70 hover:text-wizard transition-colors">
+          ← Back
+        </Link>
+        <span className="font-heading font-semibold text-wizard">Account</span>
         <div className="w-16" />
       </header>
 
-      <main className="max-w-xl mx-auto px-4 py-8 space-y-8">
-        {/* Profile section */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Profile</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSaveProfile} className="space-y-4">
-              <div className="space-y-1">
-                <Label htmlFor="email">Email</Label>
+      <main className="max-w-xl mx-auto px-4 py-10 space-y-4">
+
+        <Section title="Profile">
+          <form onSubmit={handleSaveProfile} className="space-y-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="email" className="text-sm font-medium text-muted-foreground">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                value={user?.email ?? ""}
+                readOnly
+                disabled
+                className="rounded-xl bg-muted/40"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="display-name" className="text-sm font-medium text-muted-foreground">Display name</Label>
+              <Input
+                id="display-name"
+                type="text"
+                value={displayName}
+                onChange={(e) => setDisplayName(e.target.value)}
+                placeholder="Your name"
+                className="rounded-xl bg-white"
+              />
+            </div>
+            <Button type="submit" variant="wizard" size="sm" disabled={savingProfile}>
+              {savingProfile ? "Saving…" : "Save"}
+            </Button>
+          </form>
+        </Section>
+
+        {isEmailUser && (
+          <Section title="Password">
+            <form onSubmit={handleSavePassword} className="space-y-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="new-password" className="text-sm font-medium text-muted-foreground">New password</Label>
                 <Input
-                  id="email"
-                  type="email"
-                  value={user?.email ?? ""}
-                  readOnly
-                  disabled
+                  id="new-password"
+                  type="password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder="Min 8 characters"
+                  className="rounded-xl bg-white"
                 />
               </div>
-              <div className="space-y-1">
-                <Label htmlFor="display-name">Display name</Label>
+              <div className="space-y-1.5">
+                <Label htmlFor="confirm-password" className="text-sm font-medium text-muted-foreground">Confirm new password</Label>
                 <Input
-                  id="display-name"
-                  type="text"
-                  value={displayName}
-                  onChange={(e) => setDisplayName(e.target.value)}
-                  placeholder="Your name"
+                  id="confirm-password"
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="Repeat new password"
+                  className="rounded-xl bg-white"
                 />
               </div>
-              <Button type="submit" disabled={savingProfile}>
-                {savingProfile ? "Saving…" : "Save"}
+              <Button type="submit" variant="wizard" size="sm" disabled={savingPassword}>
+                {savingPassword ? "Saving…" : "Update password"}
               </Button>
             </form>
-          </CardContent>
-        </Card>
-
-        {/* Password section — email users only */}
-        {isEmailUser && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Password</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleSavePassword} className="space-y-4">
-                <div className="space-y-1">
-                  <Label htmlFor="new-password">New password</Label>
-                  <Input
-                    id="new-password"
-                    type="password"
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                    placeholder="Min 8 characters"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label htmlFor="confirm-password">Confirm new password</Label>
-                  <Input
-                    id="confirm-password"
-                    type="password"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    placeholder="Repeat new password"
-                  />
-                </div>
-                <Button type="submit" disabled={savingPassword}>
-                  {savingPassword ? "Saving…" : "Update password"}
-                </Button>
-              </form>
-            </CardContent>
-          </Card>
+          </Section>
         )}
 
-        {/* Sign out */}
-        <Card>
-          <CardContent className="pt-6">
-            <Button variant="outline" onClick={handleSignOut} className="w-full">
-              Sign out
-            </Button>
-          </CardContent>
-        </Card>
+        <Section title="Sign out">
+          <Button variant="wizardOutline" size="pill" onClick={handleSignOut} className="w-full">
+            Sign out
+          </Button>
+        </Section>
 
-        {/* Danger zone */}
-        <Card className="border-destructive/50">
-          <CardHeader>
-            <CardTitle className="text-destructive">Danger zone</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button variant="destructive">Delete account</Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Delete your account</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    This will permanently delete your account and all your books and drafts. This cannot be undone.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction onClick={handleDeleteAccount}>
-                    Delete account
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          </CardContent>
-        </Card>
+        <div className="bg-white rounded-2xl border border-destructive/30 shadow-sm p-6">
+          <h2 className="font-heading text-xl font-semibold text-destructive mb-2">Danger zone</h2>
+          <p className="text-sm text-muted-foreground mb-5">Permanently delete your account and all your books and drafts.</p>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="destructive" size="sm">Delete account</Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete your account</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This will permanently delete your account and all your books and drafts. This cannot be undone.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDeleteAccount}>Delete account</AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
+
       </main>
     </div>
   );

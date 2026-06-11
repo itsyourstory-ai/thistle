@@ -1,12 +1,11 @@
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { stepNumFromSlug, TOTAL_STEPS } from "@/lib/wizardSteps";
 
 interface DraftCardProps {
   id: string;
   childName: string;
-  currentStep: string; // e.g. "/step/3-genre"
-  updatedAt: string; // ISO date string
+  currentStep: string;
+  updatedAt: string;
   onResume: () => void;
   onDelete: () => void;
 }
@@ -24,7 +23,6 @@ function relativeTime(isoString: string): string {
 }
 
 function stepLabelFromPath(currentStep: string): string {
-  // Extract slug from e.g. "/step/3-genre" → "3-genre"
   const slug = currentStep.split("/step/")[1] ?? currentStep;
   const num = stepNumFromSlug(slug);
   return `Step ${num} of ${TOTAL_STEPS}`;
@@ -38,13 +36,13 @@ export default function DraftCard({
   onDelete,
 }: DraftCardProps) {
   return (
-    <Card>
-      <CardContent className="pt-6">
-        <p className="text-sm text-muted-foreground">{stepLabelFromPath(currentStep)}</p>
-        <h3 className="font-bold text-lg mt-1">{childName}</h3>
-        <p className="text-sm text-muted-foreground mt-1">{relativeTime(updatedAt)}</p>
-      </CardContent>
-      <CardFooter className="gap-2">
+    <div className="bg-white rounded-2xl border border-black/10 shadow-sm p-5">
+      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+        {stepLabelFromPath(currentStep)}
+      </p>
+      <h3 className="font-heading text-xl font-semibold text-wizard mt-1">{childName}</h3>
+      <p className="text-sm text-muted-foreground mt-1">{relativeTime(updatedAt)}</p>
+      <div className="flex items-center gap-2 mt-4">
         <Button variant="wizard" size="sm" onClick={onResume}>
           Resume
         </Button>
@@ -52,7 +50,7 @@ export default function DraftCard({
           type="button"
           onClick={onDelete}
           aria-label="Delete draft"
-          className="ml-auto inline-flex items-center justify-center h-8 w-8 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+          className="ml-auto inline-flex items-center justify-center h-8 w-8 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -73,7 +71,7 @@ export default function DraftCard({
             <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
           </svg>
         </button>
-      </CardFooter>
-    </Card>
+      </div>
+    </div>
   );
 }
