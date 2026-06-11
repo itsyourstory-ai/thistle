@@ -42,6 +42,17 @@ The wizard has a **🧪 test: off** pill in the header next to "⚙ dev: skip st
 
 ---
 
+## Test user (local login)
+
+- **Email:** test@itsyourstory.ai
+- **Password:** testtest123
+
+Created in Supabase (project `uglsyitjasajubfvbiry`) with email auto-confirmed. Session persists in localStorage — log in once per browser and reloads/dev-server restarts won't require signing in again.
+
+**Note:** Don't click "Delete account" on the Account page with this user — it will actually delete the Supabase user record and you'd need to recreate it.
+
+---
+
 ## Automated tests
 
 ```bash

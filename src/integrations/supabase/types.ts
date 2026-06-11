@@ -110,6 +110,36 @@ export type Database = {
         }
         Relationships: []
       }
+      book_drafts: {
+        Row: {
+          answers: Json
+          child_name: string | null
+          created_at: string
+          current_step: string
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          answers?: Json
+          child_name?: string | null
+          created_at?: string
+          current_step?: string
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          answers?: Json
+          child_name?: string | null
+          created_at?: string
+          current_step?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       generated_books: {
         Row: {
           brief: Json
@@ -133,6 +163,7 @@ export type Database = {
           prompt_hash: string | null
           raw_output: string | null
           status: string
+          user_id: string | null
         }
         Insert: {
           brief: Json
@@ -156,6 +187,7 @@ export type Database = {
           prompt_hash?: string | null
           raw_output?: string | null
           status?: string
+          user_id?: string | null
         }
         Update: {
           brief?: Json
@@ -179,6 +211,28 @@ export type Database = {
           prompt_hash?: string | null
           raw_output?: string | null
           status?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          display_name: string | null
+          email: string | null
+          id: string
+        }
+        Insert: {
+          created_at?: string
+          display_name?: string | null
+          email?: string | null
+          id: string
+        }
+        Update: {
+          created_at?: string
+          display_name?: string | null
+          email?: string | null
+          id?: string
         }
         Relationships: []
       }
