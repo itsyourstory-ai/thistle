@@ -1,66 +1,65 @@
 # What's Next
 
-## Work completed and current state
+_Updated 2026-06-11 — security review done, PR open_
 
-Branch: `feature/real-auth` — all work below is committed in `e2c9f00`.
+## Current state
 
-**What's done:**
-- **Phase 0** (external setup): New Supabase project `uglsyitjasajubfvbiry` created, full schema applied via SQL editor, Email + Google auth providers enabled, redirect URLs set, Google OAuth credentials pasted (user completed this).
-- **Phase 1** (auth foundation): `AuthContext.tsx`, `ProtectedRoute.tsx`, `RootRedirect.tsx` all created. `Login.tsx` wired to real Supabase handlers (signIn, signUp, signInWithGoogle, resetPassword). Dev-bypass button removed. `App.tsx` has `AuthProvider` wrapping `WizardProvider`, root `"/"` uses `RootRedirect`, all `/step/*` routes gated by `ProtectedRoute`. `/dashboard` is a placeholder (`<div>Dashboard coming soon</div>`).
-- **Phase 2** (DB ownership): Migration `20260610000001_add_auth_ownership.sql` applied — `profiles` table, `handle_new_user` trigger, `user_id` column on `generated_books`, per-user RLS replacing the open read policy. Supabase types regenerated. `generate-book/index.ts` has JWT auth gate (401 if no session) and stamps `user_id` on the book row insert.
-- **OpenRouter**: All 6 AI edge functions (`generate-book`, `generate-book-images`, `generate-character-portrait`, `generate-cover`, `generate-summary`, `extract-appearance-traits`) switched from `ai.gateway.lovable.dev` to `openrouter.ai/api/v1/chat/completions`. Key renamed `LOVABLE_API_KEY` → `OPENROUTER_API_KEY`. Secret set in Supabase dashboard, all functions redeployed.
-- **Tests**: 86/86 passing (1 pre-existing flaky timeout in `stepValidation.test.tsx:99` — unrelated to auth).
-- **Google Drive plan**: `docs/plan-google-drive-fix.md` — documents the broken Lovable connector and the service-account replacement approach. Deferred to a separate PR.
+**Branch:** `fix/edge-function-auth` — pushed, PR open.
 
----
+**PR:** [#21 — fix: add auth & ownership gates to edge functions](https://github.com/itsyourstory-ai/thistle/pull/21)
 
-## Work Remaining
+**Notion ticket:** TIC-2 "Fix auth on AI calls" — status: In review
 
-The big master plan lives at `/Users/jordan/.claude/plans/i-want-to-develop-encapsulated-bentley.md`. The phases below map to it.
-
-### Phase 3 — Resumable Drafts
-
-**Blocker decision first:** How to handle image data in drafts. `WizardAnswers` stores base64 data URLs for uploaded photos and generated portraits — naively dumping them to a `jsonb` column can be many MB per row. Two options:
-- **Option A (recommended):** Upload user photos to a Supabase Storage private bucket on capture; store only the storage path. Strip generated images (portraits, cover) before persisting — the existing `useCharacterPortrait`/`useSupportingPortraits` hooks will regenerate them on resume.
-- **Option B (simpler):** Persist text fields only; have users re-upload photos on resume. Worse UX but zero infrastructure.
-
-**Once decided, build:**
-1. Migration: `book_drafts` table — `id`, `user_id → auth.users ON DELETE CASCADE`, `answers jsonb`, `current_step int`, `child_name text` (denormalized for dashboard), `updated_at`, `created_at`. RLS: full CRUD on own rows.
-2. `src/hooks/useDraftPersistence.ts` — debounced upsert once `childName` is set; exposes `saveNow()` and tracks `dirty` flag.
-3. `src/components/WizardHeader.tsx` — wire "Save & exit" button to `saveNow()` → navigate to `/dashboard` (currently the button does nothing; it was not wired in this PR).
-4. `beforeunload` guard in wizard when `dirty`.
-5. Resume flow: dashboard draft card → `/step/<current_step>` with draft loaded into `WizardContext` via `seedAnswers()`. On book generation success, delete the draft.
-
-### Phase 4 — Dashboard
-
-Currently a placeholder div at `/dashboard`. Build:
-1. `src/pages/Dashboard.tsx` — two sections: "In progress" (drafts) and "My books" (generated). Query `book_drafts` and `generated_books` for current user via RLS. "Create a new book" → reset `WizardContext` + navigate to `/step/1-name`. Empty state via existing `EmptyState` component.
-2. `src/components/BookCard.tsx` and `DraftCard.tsx` — cover thumbnail, title/child name, status. BookCard opens preview; DraftCard resumes wizard.
-3. App shell/header for `/dashboard` + `/account` — account link + sign out. Match wizard green/cream branding. (The wizard steps have `WizardHeader`; dashboard/account need their own simpler header.)
-
-### Phase 5 — Account page
-
-New route `/account` (protected):
-1. `src/pages/Account.tsx` — profile section (show email, edit `display_name` → update `profiles`), sign out, set/change password (`supabase.auth.updateUser({ password })`), delete account (confirmation dialog → call `delete-account` edge function), order history placeholder.
-2. `supabase/functions/delete-account/index.ts` — resolve user from JWT, `supabase.auth.admin.deleteUser(user.id)` via service role. `ON DELETE CASCADE` on `profiles`, `generated_books`, `book_drafts` handles cleanup.
-
-### Phase 6 — Apple Sign-In (deferred)
-
-Waiting on Apple Developer account. When ready: add Apple button to `Login.tsx` calling `signInWithProvider('apple')`. The `signInWithProvider` generic helper in `AuthContext.tsx` is already structured for this.
+All 116 vitest tests pass. Changes are server-side Deno only (no frontend).
 
 ---
 
-## Dead Ends
+## To ship
 
-- **`supabase db push`** — don't use it on this project. The remote migration history is completely out of sync with the local `supabase/migrations/` directory (Lovable created the old project's schema outside of CLI migrations). Apply all migrations via the Supabase SQL editor instead.
-- **Old Supabase project `coiobrdbqledpzvcttto`** — this belongs to the `its-your-story` app, not Thistle. Do not use it.
-- **LOVABLE_API_KEY** — Lovable-managed, inaccessible outside Lovable. Fully replaced by `OPENROUTER_API_KEY`.
-- **Google Drive connector (`connector-gateway.lovable.dev`)** — Lovable-proprietary, no key available. Export functions silently fail. See `docs/plan-google-drive-fix.md` for the replacement approach.
+1. Wait for "Lint & Test" CI to go green on PR #21
+2. Merge on GitHub
+3. Vercel auto-deploys `main` to staging (`thistle-sepia.vercel.app`)
+4. Promote to production: Vercel dashboard → latest `main` deployment → `⋯` → **Promote to Production**
+
+**Optional before merge:** install Deno (`brew install deno`) and run the new edge function tests:
+```
+deno test supabase/functions/_shared/auth.test.ts
+```
 
 ---
 
-## Open Questions
+## What's on this branch
 
-1. **Draft image handling** (Phase 3 blocker): Option A (Supabase Storage) or Option B (text-only, re-upload on resume)? Decide before building Phase 3.
-2. **`/dev/story-preview/:id`** — currently a public route with no auth. After RLS swap, it only works for the book's owner. Should it be gated by `ProtectedRoute` or stay open for owner-only access?
-3. **Dashboard redirect after book generation** — currently Step 9 (generating) navigates somewhere after completion. Should it go to `/dashboard` now that one exists, or stay on the preview step?
+- **New `supabase/functions/_shared/auth.ts`** — `requireAuthedUser`, `isServiceRoleRequest`, `unauthorized` helpers
+- **Auth gate on 4 client-facing AI functions** — `generate-cover`, `generate-summary`, `generate-character-portrait`, `extract-appearance-traits` → 401 for unauthenticated callers
+- **Service-role gate on 2 internal export functions** — `export-book-to-drive`, `export-book-images-to-drive` → 403 for non-internal callers
+- **Dual-path auth on `generate-book-images`** — service-role bearer passes through; user JWT requires auth + ownership check (`generated_books.user_id`)
+- **11 Deno unit tests** in `_shared/auth.test.ts`
+
+---
+
+## Gotchas
+
+**Don't run `supabase db push` on the live project.** The migration history is out of sync (schema was built outside the CLI). Apply any new migrations via the Supabase SQL editor.
+
+**`book_drafts` migration gap:** The table was created manually in a prior session. Migration `20260611000001_add_book_drafts.sql` captures it in source but the live DB already has it — skip if applying to live project.
+
+**Supabase URL allow-list** includes `/account` for `http://localhost:8080` and `https://thistle-sepia.vercel.app`. Add a custom domain entry if production moves off Vercel.
+
+**Deno not installed locally** — the new `_shared/auth.test.ts` tests can't run until you `brew install deno`.
+
+---
+
+## What's next (Phase 6+)
+
+- **Apple Sign-In** — waiting on Apple Developer account. `signInWithProvider('apple')` is already wired in AuthContext; just needs the button in Login.tsx and Supabase config.
+- **Google Drive export fix** — see `docs/plan-google-drive-fix.md`. The Lovable connector is gone; needs a service-account replacement.
+- **Post-generation redirect** — currently stays on the preview step. Consider navigating to `/dashboard` after book generation completes.
+
+---
+
+## Dead ends
+
+- `supabase db push` — don't use on live project (migration history mismatch)
+- Old Supabase project `coiobrdbqledpzvcttto` — belongs to `its-your-story`, not Thistle
+- `LOVABLE_API_KEY` / `connector-gateway.lovable.dev` — Lovable-proprietary, fully replaced
