@@ -17,6 +17,7 @@
 // timeout in production we'll shard into per-page invocations.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
+import { isServiceRoleRequest, requireAuthedUser, unauthorized } from "../_shared/auth.ts";
 import {
   CHARACTER_PORTRAIT_PROMPT_TEMPLATE,
   getArtStylePrompt,
@@ -545,6 +546,16 @@ function summarizeGaps(gaps: VerdictGap[]): string {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
+  // Trusted internal calls (generate-book self-chain) carry the service-role key.
+  // Browser polling calls carry a user JWT and must pass an ownership check.
+  const isInternal = isServiceRoleRequest(req);
+  let callerUserId: string | null = null;
+  if (!isInternal) {
+    const user = await requireAuthedUser(req);
+    if (!user) return unauthorized(corsHeaders, 401, "Authentication required.");
+    callerUserId = user.id;
+  }
+
   let bookId: string | null = null;
   let supabase: any = null;
   try {
@@ -561,11 +572,14 @@ Deno.serve(async (req) => {
 
     const { data: row, error } = await supabase
       .from("generated_books")
-      .select("id,brief,parsed")
+      .select("id,user_id,brief,parsed")
       .eq("id", bookId)
       .maybeSingle();
     if (error) throw new Error(`DB read failed: ${error.message}`);
     if (!row) throw new Error(`Book ${bookId} not found`);
+    if (!isInternal && row.user_id !== callerUserId) {
+      return unauthorized(corsHeaders, 403, "Forbidden.");
+    }
     if (!row.parsed) {
       // Premature invocation (e.g. watchdog firing while generate-book is still
       // writing the story, or a stale tab/retry). Do NOT mark the book failed —

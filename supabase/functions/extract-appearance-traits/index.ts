@@ -5,6 +5,8 @@
 // "hair color: Blonde" reinforcing the photo. Without this, the model
 // frequently drifts to default cartoon brown hair.
 
+import { requireAuthedUser, unauthorized } from "../_shared/auth.ts";
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
@@ -34,6 +36,9 @@ Deno.serve(async (req) => {
   }
 
   try {
+    const user = await requireAuthedUser(req);
+    if (!user) return unauthorized(corsHeaders, 401, "Authentication required.");
+
     const OPENROUTER_API_KEY = Deno.env.get("OPENROUTER_API_KEY");
     if (!OPENROUTER_API_KEY) throw new Error("OPENROUTER_API_KEY is not configured");
 

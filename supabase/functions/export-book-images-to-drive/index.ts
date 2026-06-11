@@ -6,6 +6,7 @@
 // progressive upload skipped (subfolder wasn't ready, retries exhausted).
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
+import { isServiceRoleRequest, unauthorized } from "../_shared/auth.ts";
 import {
   ensureBookImagesSubfolder,
   uploadAndStampImage,
@@ -62,6 +63,7 @@ async function exportImages(bookId: string, supabase: any) {
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  if (!isServiceRoleRequest(req)) return unauthorized(corsHeaders, 403, "Forbidden.");
 
   let bookId: string | null = null;
   try {
