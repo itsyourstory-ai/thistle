@@ -21,6 +21,12 @@ dist-ssr
 .vercel
 .vercel.token
 
+# Claude Code local settings (may contain tokens)
+.claude/settings.local.json
+
+# Supabase CLI temp state
+supabase/.temp/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

@@ -72,7 +72,7 @@ async function callImageModel(
   userContent: any[],
   imageConfig: ImageConfig,
 ): Promise<string> {
-  const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+  const resp = await fetch("https://openrouter.ai/api/v1/chat/completions", {
     method: "POST",
     headers: {
       Authorization: `Bearer ${apiKey}`,
@@ -548,7 +548,7 @@ Deno.serve(async (req) => {
   let bookId: string | null = null;
   let supabase: any = null;
   try {
-    const apiKey = getEnv("LOVABLE_API_KEY");
+    const apiKey = getEnv("OPENROUTER_API_KEY");
     const body = await req.json();
     bookId = body.book_id || body.bookId;
     const seedPortrait: string | null = body.seed_portrait_data_url || null;

@@ -133,6 +133,7 @@ export type Database = {
           prompt_hash: string | null
           raw_output: string | null
           status: string
+          user_id: string | null
         }
         Insert: {
           brief: Json
@@ -156,6 +157,7 @@ export type Database = {
           prompt_hash?: string | null
           raw_output?: string | null
           status?: string
+          user_id?: string | null
         }
         Update: {
           brief?: Json
@@ -179,6 +181,28 @@ export type Database = {
           prompt_hash?: string | null
           raw_output?: string | null
           status?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          display_name: string | null
+          email: string | null
+          id: string
+        }
+        Insert: {
+          created_at?: string
+          display_name?: string | null
+          email?: string | null
+          id: string
+        }
+        Update: {
+          created_at?: string
+          display_name?: string | null
+          email?: string | null
+          id?: string
         }
         Relationships: []
       }

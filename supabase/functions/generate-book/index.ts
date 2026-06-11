@@ -328,8 +328,25 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
+    const OPENROUTER_API_KEY = Deno.env.get("OPENROUTER_API_KEY");
+    if (!OPENROUTER_API_KEY) throw new Error("OPENROUTER_API_KEY is not configured");
+
+    // Resolve the caller from the forwarded JWT. Login is required.
+    // SUPABASE_ANON_KEY is deprecated in newer projects; fall back to parsing
+    // SUPABASE_PUBLISHABLE_KEYS (a JSON dict) if the legacy key is absent.
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const anonKey = Deno.env.get("SUPABASE_ANON_KEY") ||
+      (JSON.parse(Deno.env.get("SUPABASE_PUBLISHABLE_KEYS") ?? "{}").default ?? "");
+    const userClient = createClient(supabaseUrl, anonKey, {
+      global: { headers: { Authorization: req.headers.get("Authorization") ?? "" } },
+    });
+    const { data: { user } } = await userClient.auth.getUser();
+    if (!user) {
+      return new Response(
+        JSON.stringify({ error: "Authentication required." }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
 
     const body = await req.json();
     const rawBrief = stripDataUrls(body.brief || {});
@@ -370,7 +387,6 @@ Deno.serve(async (req) => {
       revision_note ? `Revision note: ${revision_note}` : "",
     ].filter(Boolean).join("\n\n");
 
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
@@ -385,6 +401,7 @@ Deno.serve(async (req) => {
         status: "pending",
         buyer_name: buyer_name || null,
         buyer_email: buyer_email || null,
+        user_id: user.id,
         pipeline_status: "story",
         pipeline_progress: {
           stage: "story",
@@ -411,10 +428,10 @@ Deno.serve(async (req) => {
       const startedAt = Date.now();
       try {
         const schema = buildBookJsonSchema();
-        const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        const aiResp = await fetch("https://openrouter.ai/api/v1/chat/completions", {
           method: "POST",
           headers: {
-            Authorization: `Bearer ${LOVABLE_API_KEY}`,
+            Authorization: `Bearer ${OPENROUTER_API_KEY}`,
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
