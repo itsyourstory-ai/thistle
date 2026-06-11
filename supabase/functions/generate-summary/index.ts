@@ -270,10 +270,10 @@ function cleanTitleFallback(title: string, firstName: string, frameworkId: Summa
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
-  const user = await requireAuthedUser(req);
-  if (!user) return unauthorized(corsHeaders, 401, "Authentication required.");
-
   try {
+    const user = await requireAuthedUser(req);
+    if (!user) return unauthorized(corsHeaders, 401, "Authentication required.");
+
     const OPENROUTER_API_KEY = Deno.env.get("OPENROUTER_API_KEY");
     if (!OPENROUTER_API_KEY) throw new Error("OPENROUTER_API_KEY is not configured");
 
