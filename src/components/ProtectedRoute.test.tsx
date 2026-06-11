@@ -68,6 +68,27 @@ describe("ProtectedRoute", () => {
     expect(screen.queryByText("SECRET")).not.toBeInTheDocument();
     expect(screen.getByText("LOGIN PAGE")).toBeInTheDocument();
   });
+
+  it("redirects /dev/story-preview/:id to /login when signed out", () => {
+    mockUseAuth.mockReturnValue({ session: null, loading: false });
+    render(
+      <MemoryRouter initialEntries={["/dev/story-preview/abc-123"]}>
+        <Routes>
+          <Route path="/login" element={<div>LOGIN PAGE</div>} />
+          <Route
+            path="/dev/story-preview/:id"
+            element={
+              <ProtectedRoute>
+                <div>DEV PREVIEW</div>
+              </ProtectedRoute>
+            }
+          />
+        </Routes>
+      </MemoryRouter>
+    );
+    expect(screen.queryByText("DEV PREVIEW")).not.toBeInTheDocument();
+    expect(screen.getByText("LOGIN PAGE")).toBeInTheDocument();
+  });
 });
 
 describe("RootRedirect", () => {

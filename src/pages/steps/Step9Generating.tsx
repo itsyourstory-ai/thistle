@@ -8,11 +8,12 @@ import { coverMessages, pipelineMessage, useRotatingMessage } from "@/lib/loadin
 import { callEdge } from "@/lib/edgeFunctions";
 import { getBookStatus } from "@/lib/bookStatus";
 import { toast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 const MIN_DURATION = 6000; // soft floor so animation doesn't feel cut short
 
 export default function Step10Generating() {
-  const { answers, setAnswer, setIsGenerating } = useWizard();
+  const { answers, setAnswer, setIsGenerating, draftId, setDraftId } = useWizard();
   const navigate = useNavigate();
   const name = (answers.childName || "your little one").trim();
   const title = (answers.selectedConcept?.title || "").trim();
@@ -54,13 +55,17 @@ export default function Step10Generating() {
       if (!id) throw new Error("Book id missing from response.");
       setBookId(id);
       setAnswer("bookId", id);
+      if (draftId) {
+        await supabase.from('book_drafts').delete().eq('id', draftId);
+        setDraftId(null);
+      }
     } catch (e: any) {
       const msg = e?.message || "Couldn't start the book.";
       setErrored(msg);
       setIsGenerating(false);
       toast({ title: "Hit a snag", description: msg });
     }
-  }, [answers, setAnswer, setIsGenerating]);
+  }, [answers, setAnswer, setIsGenerating, draftId, setDraftId]);
 
   useEffect(() => {
     runGeneration();

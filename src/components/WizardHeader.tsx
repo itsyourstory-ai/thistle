@@ -1,6 +1,8 @@
 import { Button } from "@/components/ui/button";
 import ProgressBar from "./ProgressBar";
 import DevTestPanel from "./DevTestPanel";
+import { useNavigate } from "react-router-dom";
+import { useDraft } from "@/contexts/DraftContext";
 
 export default function WizardHeader({
   currentStep,
@@ -10,6 +12,14 @@ export default function WizardHeader({
   /** Dev-only bypass: ignores validation, always advances to the next step. */
   onDevSkip?: () => void;
 }) {
+  const { saveNow } = useDraft();
+  const navigate = useNavigate();
+
+  async function handleSaveExit() {
+    await saveNow();
+    navigate('/dashboard');
+  }
+
   return (
     <header
       className="sticky top-0 z-30 relative flex items-center justify-between px-4 py-3 border-b border-black/10 w-full bg-wizard-bg"
@@ -32,7 +42,7 @@ export default function WizardHeader({
           </button>
         )}
         {import.meta.env.DEV && <DevTestPanel />}
-        <Button variant="wizardGhost" size="sm" className="rounded-xl font-medium">
+        <Button variant="wizardGhost" size="sm" className="rounded-xl font-medium" onClick={handleSaveExit}>
           Save &amp; exit
         </Button>
       </div>
