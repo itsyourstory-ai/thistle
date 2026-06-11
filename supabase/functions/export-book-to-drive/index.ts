@@ -11,6 +11,7 @@
 // Best-effort: invoked by generate-book; never blocks the user-facing flow.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
+import { isServiceRoleRequest, unauthorized } from "../_shared/auth.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -366,6 +367,7 @@ async function exportBook(bookId: string, supabase: any) {
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  if (!isServiceRoleRequest(req)) return unauthorized(corsHeaders, 403, "Forbidden.");
 
   let bookId: string | null = null;
   let supabase: any = null;

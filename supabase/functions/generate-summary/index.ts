@@ -17,6 +17,7 @@ import {
   type SummaryPatternId,
   type TitlePatternId,
 } from "../_shared/storyConceptPrompt.ts";
+import { requireAuthedUser, unauthorized } from "../_shared/auth.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -268,6 +269,9 @@ function cleanTitleFallback(title: string, firstName: string, frameworkId: Summa
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+
+  const user = await requireAuthedUser(req);
+  if (!user) return unauthorized(corsHeaders, 401, "Authentication required.");
 
   try {
     const OPENROUTER_API_KEY = Deno.env.get("OPENROUTER_API_KEY");
