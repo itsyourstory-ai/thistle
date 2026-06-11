@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -9,6 +10,7 @@ type Mode = "signin" | "signup" | "forgot";
 
 export default function Login() {
   const { signIn, signUp, signInWithGoogle, resetPassword } = useAuth();
+  const navigate = useNavigate();
   const [mode, setMode] = useState<Mode>("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -38,7 +40,7 @@ export default function Login() {
 
     setLoading(false);
     if (error) toast.error(error.message);
-    // On success, onAuthStateChange fires and App.tsx routes to /dashboard.
+    else navigate("/step/1-name");
   };
 
   const handleGoogle = async () => {
