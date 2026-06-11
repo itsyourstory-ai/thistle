@@ -110,6 +110,36 @@ export type Database = {
         }
         Relationships: []
       }
+      book_drafts: {
+        Row: {
+          answers: Json
+          child_name: string | null
+          created_at: string
+          current_step: string
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          answers?: Json
+          child_name?: string | null
+          created_at?: string
+          current_step?: string
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          answers?: Json
+          child_name?: string | null
+          created_at?: string
+          current_step?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       generated_books: {
         Row: {
           brief: Json

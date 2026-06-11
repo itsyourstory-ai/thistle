@@ -29,7 +29,7 @@ export default function Dashboard() {
   const { data: drafts = [], isLoading: draftsLoading } = useQuery({
     queryKey: ["book_drafts"],
     queryFn: async () => {
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from("book_drafts")
         .select("id, child_name, current_step, updated_at, answers")
         .order("updated_at", { ascending: false });
@@ -67,7 +67,7 @@ export default function Dashboard() {
   }
 
   async function deleteDraft(id: string) {
-    await (supabase as any).from("book_drafts").delete().eq("id", id);
+    await supabase.from("book_drafts").delete().eq("id", id);
     queryClient.invalidateQueries({ queryKey: ["book_drafts"] });
   }
 
@@ -99,7 +99,6 @@ export default function Dashboard() {
               {drafts.map((d: any) => (
                 <DraftCard
                   key={d.id}
-                  id={d.id}
                   childName={d.child_name || "Unnamed draft"}
                   currentStep={d.current_step}
                   updatedAt={d.updated_at}

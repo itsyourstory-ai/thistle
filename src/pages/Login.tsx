@@ -16,6 +16,7 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [resetSent, setResetSent] = useState(false);
+  const [signupPending, setSignupPending] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,14 +34,18 @@ export default function Login() {
       return;
     }
 
-    const { error } =
-      mode === "signin"
-        ? await signIn(email.trim(), password)
-        : await signUp(email.trim(), password);
-
-    setLoading(false);
-    if (error) toast.error(error.message);
-    else navigate("/step/1-name");
+    if (mode === "signin") {
+      const { error } = await signIn(email.trim(), password);
+      setLoading(false);
+      if (error) toast.error(error.message);
+      else navigate("/dashboard");
+    } else {
+      const { error, session } = await signUp(email.trim(), password);
+      setLoading(false);
+      if (error) toast.error(error.message);
+      else if (session) navigate("/step/1-name");
+      else setSignupPending(true);
+    }
   };
 
   const handleGoogle = async () => {
@@ -109,6 +114,10 @@ export default function Login() {
           {resetSent ? (
             <p className="text-center text-sm text-muted-foreground py-4">
               Check your inbox — we sent a reset link to <strong>{email}</strong>.
+            </p>
+          ) : signupPending ? (
+            <p className="text-center text-sm text-muted-foreground py-4">
+              Almost there! Check your inbox and click the confirmation link for <strong>{email}</strong>.
             </p>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-3">

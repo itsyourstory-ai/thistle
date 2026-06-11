@@ -2,7 +2,6 @@ import { Button } from "@/components/ui/button";
 import { stepNumFromSlug, TOTAL_STEPS } from "@/lib/wizardSteps";
 
 interface DraftCardProps {
-  id: string;
   childName: string;
   currentStep: string;
   updatedAt: string;

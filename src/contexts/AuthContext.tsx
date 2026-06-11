@@ -16,6 +16,7 @@ import { supabase } from "@/integrations/supabase/client";
  */
 
 type ActionResult = { error: AuthError | null };
+type SignUpResult = { error: AuthError | null; session: Session | null };
 
 interface AuthContextType {
   session: Session | null;
@@ -24,7 +25,9 @@ interface AuthContextType {
    *  an authenticated user to /login on a cold load. */
   loading: boolean;
   signIn: (email: string, password: string) => Promise<ActionResult>;
-  signUp: (email: string, password: string) => Promise<ActionResult>;
+  /** Returns session when email confirmation is disabled (user is logged in
+   *  immediately); returns null session when confirmation is required. */
+  signUp: (email: string, password: string) => Promise<SignUpResult>;
   /** Generic OAuth entry point. Google today; Apple is a drop-in later. */
   signInWithProvider: (provider: Provider) => Promise<ActionResult>;
   signInWithGoogle: () => Promise<ActionResult>;
@@ -53,8 +56,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+    } = supabase.auth.onAuthStateChange((event, nextSession) => {
       setSession(nextSession);
+      // After clicking a password-reset email link, Supabase fires
+      // PASSWORD_RECOVERY and sets a short-lived session. Redirect to /account
+      // where the password change form lives. Guard against loops if already there.
+      if (event === "PASSWORD_RECOVERY" && window.location.pathname !== "/account") {
+        window.location.replace("/account");
+      }
     });
 
     return () => {
@@ -70,12 +79,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   const signUp = useCallback(
-    (email: string, password: string) =>
-      supabase.auth.signUp({
+    async (email: string, password: string): Promise<SignUpResult> => {
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: { emailRedirectTo: redirectTo() },
-      }),
+      });
+      return { error, session: data.session };
+    },
     [],
   );
 
@@ -95,8 +106,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const resetPassword = useCallback(
     (email: string) =>
+      // Redirects to /account where the password-change form lives.
+      // /account must be in the Supabase URL allow-list for redirects.
       supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/login`,
+        redirectTo: `${window.location.origin}/account`,
       }),
     [],
   );

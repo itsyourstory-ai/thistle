@@ -6,7 +6,6 @@ import DraftCard from "@/components/DraftCard";
 
 function renderDraftCard(overrides: Partial<Parameters<typeof DraftCard>[0]> = {}) {
   const defaults = {
-    id: "draft-1",
     childName: "Mia",
     currentStep: "/step/3-genre",
     updatedAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), // 2 hours ago
