@@ -33,8 +33,46 @@ jobs:
       - name: Lint
         run: npm run lint
 
-      - name: Test
-        run: npm run test
+      # Coverage runs the same tests as `npm run test`, plus a coverage report.
+      # Coverage is measured and reported only — no threshold gates the merge.
+      - name: Test (with coverage)
+        run: npm run test:coverage
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage/
+          if-no-files-found: ignore
 
       - name: Build (catch build-time errors)
         run: npm run build
+
+  deno-tests:
+    name: Deno tests (edge functions)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      # node_modules/ must exist before deno test so Deno 2.x can resolve
+      # @types/node (pulled in transitively by the esm.sh Supabase imports).
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Set up Deno
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      # Only the dependency-light pure modules in _shared/ are unit tested.
+      # The rest of functions/ pulls Supabase/AI runtime imports we don't
+      # exercise in CI.
+      - name: Test _shared modules
+        run: deno test supabase/functions/_shared/
