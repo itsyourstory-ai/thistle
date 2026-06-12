@@ -4,76 +4,9 @@
 //   - generate-book-images (progressive per-image uploads as they're created)
 //   - export-book-images-to-drive (final cleanup batch for anything missed)
 
-const GD = "https://connector-gateway.lovable.dev/google_drive/drive/v3";
-const GD_UPLOAD =
-  "https://connector-gateway.lovable.dev/google_drive/upload/drive/v3";
-const FOLDER_MIME = "application/vnd.google-apps.folder";
+import { getAccessToken, redactUrl } from "./googleAuth.ts";
 
-function getEnv(name: string): string {
-  const v = Deno.env.get(name);
-  if (!v) throw new Error(`${name} is not configured`);
-  return v;
-}
-
-function escQ(s: string): string {
-  return s.replace(/\\/g, "\\\\").replace(/'/g, "\\'");
-}
-
-// Strip the query string (which can carry tokens) so error messages never
-// leak credentials. Falls back to a generic label if the URL won't parse.
-export function redactUrl(url: string): string {
-  try {
-    const u = new URL(url);
-    return `${u.origin}${u.pathname}`;
-  } catch {
-    return "[unparseable url]";
-  }
-}
-
-async function gfetch(url: string, init: RequestInit = {}): Promise<any> {
-  const headers: Record<string, string> = {
-    Authorization: `Bearer ${getEnv("LOVABLE_API_KEY")}`,
-    "X-Connection-Api-Key": getEnv("GOOGLE_DRIVE_API_KEY"),
-    ...(init.headers as Record<string, string> | undefined),
-  };
-  const resp = await fetch(url, { ...init, headers });
-  const text = await resp.text();
-  if (!resp.ok) {
-    const method = init.method || "GET";
-    // Body may carry tokens/PII — log server-side only, never in the thrown Error.
-    console.error(`gfetch ${method} ${redactUrl(url)} → ${resp.status}: ${text.slice(0, 400)}`);
-    throw new Error(`${method} ${redactUrl(url)} → ${resp.status}`);
-  }
-  return text ? JSON.parse(text) : {};
-}
-
-async function findFolder(name: string, parentId: string): Promise<string | null> {
-  const q =
-    `mimeType='${FOLDER_MIME}' and name='${escQ(name)}' ` +
-    `and '${parentId}' in parents and trashed=false`;
-  const url = `${GD}/files?q=${encodeURIComponent(q)}&fields=files(id,name)&pageSize=10&supportsAllDrives=true&includeItemsFromAllDrives=true`;
-  const r = await gfetch(url, { headers: { "Content-Type": "application/json" } });
-  return r.files?.[0]?.id ?? null;
-}
-
-async function ensureSubfolderRaw(
-  name: string,
-  parentId: string,
-): Promise<{ id: string; webViewLink: string }> {
-  const existing = await findFolder(name, parentId);
-  if (existing) {
-    const meta = await gfetch(
-      `${GD}/files/${existing}?fields=id,webViewLink&supportsAllDrives=true`,
-      { headers: { "Content-Type": "application/json" } },
-    );
-    return { id: meta.id, webViewLink: meta.webViewLink };
-  }
-  return await gfetch(`${GD}/files?fields=id,webViewLink&supportsAllDrives=true`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ name, mimeType: FOLDER_MIME, parents: [parentId] }),
-  });
-}
+const GD_UPLOAD = "https://www.googleapis.com/upload/drive/v3";
 
 function dataUrlToBytes(dataUrl: string): { bytes: Uint8Array; mime: string } {
   const m = dataUrl.match(/^data:([^;]+);base64,(.+)$/);
@@ -131,13 +64,13 @@ async function uploadOnce(
   body.set(bytes, head.length);
   body.set(tail, head.length + bytes.length);
 
+  const token = await getAccessToken();
   const resp = await fetch(
     `${GD_UPLOAD}/files?uploadType=multipart&fields=id,webViewLink&supportsAllDrives=true`,
     {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${getEnv("LOVABLE_API_KEY")}`,
-        "X-Connection-Api-Key": getEnv("GOOGLE_DRIVE_API_KEY"),
+        Authorization: `Bearer ${token}`,
         "Content-Type": `multipart/related; boundary=${boundary}`,
       },
       body,
@@ -207,15 +140,18 @@ export async function uploadImageWithRetry(
   throw lastErr instanceof Error ? lastErr : new Error(String(lastErr));
 }
 
-// ---- Subfolder resolution ---------------------------------------------
+// ---- Book folder resolution -------------------------------------------
+//
+// Resolves the flat book folder (drive_folder_id) from the generated_books row.
+// If the manuscript export hasn't run yet, kicks it off first.
 
-export async function ensureBookImagesSubfolder(
+export async function ensureBookFolder(
   supabase: any,
   bookId: string,
 ): Promise<{ id: string; webViewLink: string }> {
   let { data: row, error } = await supabase
     .from("generated_books")
-    .select("id,drive_folder_id")
+    .select("id,drive_folder_id,drive_folder_url")
     .eq("id", bookId)
     .maybeSingle();
   if (error) throw new Error(`DB read failed: ${error.message}`);
@@ -231,16 +167,17 @@ export async function ensureBookImagesSubfolder(
     }
     const reread = await supabase
       .from("generated_books")
-      .select("drive_folder_id")
+      .select("drive_folder_id,drive_folder_url")
       .eq("id", bookId)
       .maybeSingle();
     row = reread.data || row;
   }
+
   if (!row?.drive_folder_id) {
     throw new Error("Book has no Drive folder yet; manuscript export must run first.");
   }
 
-  return await ensureSubfolderRaw(`book_images_${bookId}`, row.drive_folder_id);
+  return { id: row.drive_folder_id, webViewLink: row.drive_folder_url };
 }
 
 // ---- Per-row upload + DB stamp ----------------------------------------
@@ -320,7 +257,6 @@ export async function uploadAndStampImage(
         image_data_url: null,
       })
       .eq("id", img.id);
-    // Persist attempt log (fire-and-forget order doesn't matter).
     for (const ev of pending) {
       await logAttempt(supabase, img, source, ev, ev.outcome === "ok" ? lastOk : undefined);
     }
