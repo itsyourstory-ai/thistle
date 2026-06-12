@@ -9,8 +9,9 @@ export default defineConfig({
     globals: true,
     setupFiles: ["./src/test/setup.ts"],
     include: ["src/**/*.{test,spec}.{ts,tsx}"],
-    // Raised from 5000 to account for coverage-instrumentation overhead.
-    testTimeout: 15000,
+    // Raised from 5000 to account for coverage-instrumentation overhead and
+    // parallelism across the growing test suite.
+    testTimeout: 8000,
     coverage: {
       // Measure and report only — no thresholds gate CI yet (see docs/TESTING.md).
       provider: "v8",

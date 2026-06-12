@@ -9,14 +9,18 @@ Thistle is a personalized children's book creator. Users walk through a 10-step 
 ## Commands
 
 ```bash
-npm run dev        # dev server at http://localhost:8080
-npm run build      # production build
-npm run lint       # ESLint
-npm test           # run tests once (vitest run)
-npm run test:watch # vitest in watch mode
+npm run dev          # dev server at http://localhost:8080
+npm run build        # production build
+npm run lint         # ESLint
+npm test             # run tests once (vitest run)
+npm run test:watch   # vitest in watch mode
+npm run test:coverage # run tests with v8 coverage report
+npm run test:deno    # run Deno unit tests for supabase/functions/_shared/
 ```
 
 Run a single test file: `npx vitest run src/test/example.test.ts`
+
+See [docs/TESTING.md](docs/TESTING.md) for the full testing guide (layers, helpers, conventions).
 
 ## Required env vars
 
