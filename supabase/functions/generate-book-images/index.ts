@@ -18,6 +18,8 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
 import { isServiceRoleRequest, requireAuthedUser, unauthorized } from "../_shared/auth.ts";
+import { assertUuid } from "../_shared/validation.ts";
+import { checkRateLimit } from "../_shared/rateLimit.ts";
 import {
   CHARACTER_PORTRAIT_PROMPT_TEMPLATE,
   getArtStylePrompt,
@@ -566,9 +568,27 @@ Deno.serve(async (req) => {
     if (!bookId) throw new Error("Missing book_id");
 
     const supabaseUrl = getEnv("SUPABASE_URL");
-    const supabaseSrv =
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || getEnv("SUPABASE_ANON_KEY");
+    const supabaseSrv = getEnv("SUPABASE_SERVICE_ROLE_KEY");
     supabase = createClient(supabaseUrl, supabaseSrv);
+
+    assertUuid(bookId, "book_id");
+
+    // Per-user rate limit (skip trusted internal service-to-service calls).
+    if (!isInternal && callerUserId) {
+      const allowed = await checkRateLimit(
+        supabase,
+        callerUserId,
+        "generate-book-images",
+        10,
+        60,
+      );
+      if (!allowed) {
+        return new Response(
+          JSON.stringify({ error: "Rate limit exceeded. Please wait and try again." }),
+          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+    }
 
     const { data: row, error } = await supabase
       .from("generated_books")

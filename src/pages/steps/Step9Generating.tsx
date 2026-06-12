@@ -59,8 +59,8 @@ export default function Step10Generating() {
         await supabase.from('book_drafts').delete().eq('id', draftId);
         setDraftId(null);
       }
-    } catch (e: any) {
-      const msg = e?.message || "Couldn't start the book.";
+    } catch (e) {
+      const msg = (e instanceof Error ? e.message : "") || "Couldn't start the book.";
       setErrored(msg);
       setIsGenerating(false);
       toast({ title: "Hit a snag", description: msg });
@@ -298,8 +298,8 @@ export default function Step10Generating() {
             </p>
             <button
               onClick={() => navigate(pathForStep(1))}
-              className="px-8 py-4 rounded-full text-base font-semibold"
-              style={{ backgroundColor: "hsl(var(--wizard-primary))", color: "#fff" }}
+              className="px-8 py-4 rounded-full text-base font-semibold text-white"
+              style={{ backgroundColor: "hsl(var(--wizard-primary))" }}
             >
               🎉 Back to start
             </button>
@@ -311,19 +311,19 @@ export default function Step10Generating() {
             className="flex flex-col items-center gap-3 max-w-xs text-center"
             style={{ animation: "btn-fade 0.4s ease-out" }}
           >
-            <p className="text-sm text-[#2b4e18]/70">
+            <p className="text-sm text-wizard/70">
               We had a little trouble crafting the book. Let's try again — your order is safe.
             </p>
             <button
               onClick={() => setAttempt((n) => n + 1)}
-              className="px-6 py-3 rounded-full text-sm font-semibold"
-              style={{ backgroundColor: "hsl(var(--wizard-primary))", color: "#fff" }}
+              className="px-6 py-3 rounded-full text-sm font-semibold text-white"
+              style={{ backgroundColor: "hsl(var(--wizard-primary))" }}
             >
               ✨ Try again
             </button>
             <button
               onClick={() => navigate(pathForStep(10))}
-              className="text-xs underline text-[#2b4e18]/60"
+              className="text-xs underline text-wizard/60"
             >
               Back to checkout
             </button>

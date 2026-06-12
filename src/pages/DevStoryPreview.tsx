@@ -211,8 +211,8 @@ export default function DevStoryPreview() {
       });
       if (error) throw error;
       if (data?.id) window.location.assign(`/dev/story-preview/${data.id}`);
-    } catch (e: any) {
-      setError(e?.message ?? "Regeneration failed.");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Regeneration failed.");
     } finally {
       setRegenerating(false);
     }

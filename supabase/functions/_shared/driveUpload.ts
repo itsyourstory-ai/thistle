@@ -19,6 +19,17 @@ function escQ(s: string): string {
   return s.replace(/\\/g, "\\\\").replace(/'/g, "\\'");
 }
 
+// Strip the query string (which can carry tokens) so error messages never
+// leak credentials. Falls back to a generic label if the URL won't parse.
+function redactUrl(url: string): string {
+  try {
+    const u = new URL(url);
+    return `${u.origin}${u.pathname}`;
+  } catch {
+    return "[unparseable url]";
+  }
+}
+
 async function gfetch(url: string, init: RequestInit = {}): Promise<any> {
   const headers: Record<string, string> = {
     Authorization: `Bearer ${getEnv("LOVABLE_API_KEY")}`,
@@ -28,7 +39,10 @@ async function gfetch(url: string, init: RequestInit = {}): Promise<any> {
   const resp = await fetch(url, { ...init, headers });
   const text = await resp.text();
   if (!resp.ok) {
-    throw new Error(`${init.method || "GET"} ${url} → ${resp.status}: ${text.slice(0, 400)}`);
+    const method = init.method || "GET";
+    // Body may carry tokens/PII — log server-side only, never in the thrown Error.
+    console.error(`gfetch ${method} ${redactUrl(url)} → ${resp.status}: ${text.slice(0, 400)}`);
+    throw new Error(`${method} ${redactUrl(url)} → ${resp.status}`);
   }
   return text ? JSON.parse(text) : {};
 }
@@ -137,9 +151,11 @@ async function uploadOnce(
       const sec = parseFloat(ra);
       if (!isNaN(sec)) retryAfterMs = Math.min(10_000, Math.round(sec * 1000));
     }
+    // Body may carry tokens/PII — log server-side only, never in the thrown Error.
+    console.error(`Upload ${name} → ${resp.status}: ${text.slice(0, 400)}`);
     throw new HttpError(
       resp.status,
-      `Upload ${name} → ${resp.status}: ${text.slice(0, 400)}`,
+      `Upload ${name} → ${resp.status}`,
       retryAfterMs,
     );
   }

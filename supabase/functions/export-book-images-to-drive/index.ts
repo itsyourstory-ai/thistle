@@ -7,6 +7,7 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
 import { isServiceRoleRequest, unauthorized } from "../_shared/auth.ts";
+import { assertUuid } from "../_shared/validation.ts";
 import {
   ensureBookImagesSubfolder,
   uploadAndStampImage,
@@ -70,10 +71,10 @@ Deno.serve(async (req) => {
     const body = await req.json();
     bookId = body.book_id || body.bookId;
     if (!bookId) throw new Error("Missing book_id");
+    assertUuid(bookId, "book_id");
 
     const supabaseUrl = getEnv("SUPABASE_URL");
-    const supabaseSrv =
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || getEnv("SUPABASE_ANON_KEY");
+    const supabaseSrv = getEnv("SUPABASE_SERVICE_ROLE_KEY");
     const supabase = createClient(supabaseUrl, supabaseSrv);
 
     const result = await exportImages(bookId, supabase);

@@ -180,9 +180,9 @@ export function useCharacterPortrait() {
           dataUrl: imageDataUrl,
           sourceHash: forceHash,
         } satisfies CharacterPortraitState);
-      } catch (e: any) {
+      } catch (e) {
         if (ctrl.signal.aborted) return;
-        const msg = e?.message || "Portrait generation failed.";
+        const msg = (e instanceof Error ? e.message : "") || "Portrait generation failed.";
         setAnswer("characterPortrait", {
           status: "error",
           error: msg,

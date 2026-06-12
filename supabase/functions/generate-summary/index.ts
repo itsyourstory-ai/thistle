@@ -18,6 +18,9 @@ import {
   type TitlePatternId,
 } from "../_shared/storyConceptPrompt.ts";
 import { requireAuthedUser, unauthorized } from "../_shared/auth.ts";
+import { sanitizeUserText } from "../_shared/sanitize.ts";
+import { checkRateLimit } from "../_shared/rateLimit.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -274,6 +277,19 @@ Deno.serve(async (req) => {
     const user = await requireAuthedUser(req);
     if (!user) return unauthorized(corsHeaders, 401, "Authentication required.");
 
+    // Per-user rate limit (always a client-facing call).
+    const rlClient = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+    );
+    const rlAllowed = await checkRateLimit(rlClient, user.id, "generate-summary", 15, 60);
+    if (!rlAllowed) {
+      return new Response(
+        JSON.stringify({ error: "Rate limit exceeded. Please wait and try again." }),
+        { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
     const OPENROUTER_API_KEY = Deno.env.get("OPENROUTER_API_KEY");
     if (!OPENROUTER_API_KEY) throw new Error("OPENROUTER_API_KEY is not configured");
 
@@ -313,13 +329,13 @@ Deno.serve(async (req) => {
       supportingLine: supporting,
       supportingBehaviorNotes: buildSupportingBehaviorNotes(brief.supportingCharacters || []),
       forbiddenTraitWords: forbiddenTraitWords.join(", "),
-      heroQuirk: brief.protagonist?.special as string | undefined,
-      thingsAlreadyGoodAt: brief.story?.thingsAlreadyGoodAt,
-      thingsCurrentlyTricky: brief.story?.thingsCurrentlyTricky,
-      recentMeaningfulMoment: brief.story?.recentMeaningfulMoment,
+      heroQuirk: sanitizeUserText(brief.protagonist?.special, 1000),
+      thingsAlreadyGoodAt: sanitizeUserText(brief.story?.thingsAlreadyGoodAt, 2000),
+      thingsCurrentlyTricky: sanitizeUserText(brief.story?.thingsCurrentlyTricky, 2000),
+      recentMeaningfulMoment: sanitizeUserText(brief.story?.recentMeaningfulMoment, 2000),
       buyerRelationship: brief.buyer_relationship || brief.buyerRelationship,
       occasion: brief.occasion,
-      previousSummary,
+      previousSummary: sanitizeUserText(previousSummary, 4000),
     };
 
     const selectedFrameworkId = selectSummaryFramework(conceptCtx);

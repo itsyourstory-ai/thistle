@@ -20,7 +20,7 @@ import { Pill, AddPill, avatarCircle } from "./CastPillBar";
 
 /* ── main component ──────────────────────────────────────── */
 
-export default function Step6() {
+export default function Step7() {
   const { answers, setAnswer, setCanContinue } = useWizard();
 
   // Auto-fill protagonist name and gender from Step 1 answers.
