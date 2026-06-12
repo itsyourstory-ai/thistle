@@ -1,5 +1,6 @@
 // Fixed-window per-user rate limiter backed by the edge_rate_limits table.
 // Returns true if the call is allowed, false if the limit is exceeded.
+// Uses an atomic Postgres function to avoid the read-then-write race.
 export async function checkRateLimit(
   supabase: any,
   userId: string,
@@ -11,17 +12,16 @@ export async function checkRateLimit(
   const windowStart = new Date(
     Math.floor(now / (windowSeconds * 1000)) * windowSeconds * 1000,
   ).toISOString();
-  // Atomic-ish upsert + increment. Read current, then upsert.
-  const { data } = await supabase
-    .from("edge_rate_limits")
-    .select("count")
-    .eq("user_id", userId).eq("fn", fn).eq("window_start", windowStart)
-    .maybeSingle();
-  const current = data?.count ?? 0;
-  if (current >= limit) return false;
-  await supabase.from("edge_rate_limits").upsert(
-    { user_id: userId, fn, window_start: windowStart, count: current + 1 },
-    { onConflict: "user_id,fn,window_start" },
-  );
-  return true;
+  const { data, error } = await supabase.rpc("increment_rate_limit", {
+    p_user_id: userId,
+    p_fn: fn,
+    p_window_start: windowStart,
+    p_limit: limit,
+  });
+  if (error) {
+    // Fail open so the app stays functional if the migration hasn't applied yet.
+    console.error("checkRateLimit error:", error.message);
+    return true;
+  }
+  return data === true;
 }

@@ -13,6 +13,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
 import { isServiceRoleRequest, unauthorized } from "../_shared/auth.ts";
 import { assertUuid } from "../_shared/validation.ts";
+import { redactUrl } from "../_shared/driveUpload.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -68,17 +69,6 @@ function todayUTC(): string {
 }
 
 // ---- Gateway clients --------------------------------------------------------
-
-// Strip the query string (which can carry tokens) so error messages never
-// leak credentials. Falls back to a generic label if the URL won't parse.
-function redactUrl(url: string): string {
-  try {
-    const u = new URL(url);
-    return `${u.origin}${u.pathname}`;
-  } catch {
-    return "[unparseable url]";
-  }
-}
 
 async function gfetch(
   url: string,

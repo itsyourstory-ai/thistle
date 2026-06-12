@@ -11,6 +11,7 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
 import { isValidEmail, sanitizeUserText } from "../_shared/sanitize.ts";
+import { rateLimitExceeded } from "../_shared/auth.ts";
 import { checkRateLimit } from "../_shared/rateLimit.ts";
 import {
   ageToBand,
@@ -357,15 +358,9 @@ Deno.serve(async (req) => {
 
     // Per-user rate limit. generate-book is always a client-facing call
     // (it requires a user JWT), so there is no internal-call case to skip.
-    const supabaseServiceKeyForRl = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const rlClient = createClient(supabaseUrl, supabaseServiceKeyForRl);
-    const rlAllowed = await checkRateLimit(rlClient, user.id, "generate-book", 5, 60);
-    if (!rlAllowed) {
-      return new Response(
-        JSON.stringify({ error: "Rate limit exceeded. Please wait and try again." }),
-        { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
-    }
+    const supabase = createClient(supabaseUrl, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+    const allowed = await checkRateLimit(supabase, user.id, "generate-book", 5, 60);
+    if (!allowed) return rateLimitExceeded(corsHeaders);
 
     const body = await req.json();
     const rawBrief = stripDataUrls(body.brief || {});
@@ -409,9 +404,6 @@ Deno.serve(async (req) => {
       approvedConceptInstruction,
       revision_note ? `Revision note: ${revision_note}` : "",
     ].filter(Boolean).join("\n\n");
-
-    // Reuse the service-role client created for the rate-limit check above.
-    const supabase = rlClient;
 
     // Insert stub row immediately so the client has an id to poll.
     const { data: stubRow, error: stubErr } = await supabase

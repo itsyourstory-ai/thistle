@@ -182,7 +182,7 @@ export function useCharacterPortrait() {
         } satisfies CharacterPortraitState);
       } catch (e) {
         if (ctrl.signal.aborted) return;
-        const msg = (e instanceof Error ? e.message : "") || "Portrait generation failed.";
+        const msg = e instanceof Error ? e.message : "Portrait generation failed.";
         setAnswer("characterPortrait", {
           status: "error",
           error: msg,

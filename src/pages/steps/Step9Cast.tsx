@@ -73,7 +73,7 @@ export default function Step9Cast() {
       if (!url) throw new Error("No cover image returned.");
       setCover({ status: "ready", dataUrl: url });
     } catch (e) {
-      const msg = (e instanceof Error ? e.message : "") || "Couldn't draw the cover.";
+      const msg = e instanceof Error ? e.message : "Couldn't draw the cover.";
       setCover({ status: "error", error: msg });
       toast({ title: "Cover hit a snag", description: msg });
     }
@@ -113,7 +113,7 @@ export default function Step9Cast() {
         navigate(`/dev/story-preview/${data.id}`);
         return;
       } catch (e) {
-        const msg = (e instanceof Error ? e.message : "") || "Full-book generation failed.";
+        const msg = e instanceof Error ? e.message : "Full-book generation failed.";
         toast({ title: "Dev: book engine error", description: msg });
         setApproving(false);
         // Fall through to normal flow on failure.

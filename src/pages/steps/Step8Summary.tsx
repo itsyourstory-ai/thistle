@@ -64,7 +64,7 @@ export default function Step10Summary() {
       setSummary(newSummary);
       previousSummaryRef.current = newSummary;
     } catch (e) {
-      const msg = (e instanceof Error ? e.message : "") || "Something went wrong.";
+      const msg = e instanceof Error ? e.message : "Something went wrong.";
       setError(msg);
       toast({ title: "Couldn't craft the story", description: msg });
     } finally {

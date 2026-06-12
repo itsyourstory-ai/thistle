@@ -60,7 +60,7 @@ export default function Step10Generating() {
         setDraftId(null);
       }
     } catch (e) {
-      const msg = (e instanceof Error ? e.message : "") || "Couldn't start the book.";
+      const msg = e instanceof Error ? e.message : "Couldn't start the book.";
       setErrored(msg);
       setIsGenerating(false);
       toast({ title: "Hit a snag", description: msg });

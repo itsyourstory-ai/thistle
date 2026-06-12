@@ -21,7 +21,7 @@ function escQ(s: string): string {
 
 // Strip the query string (which can carry tokens) so error messages never
 // leak credentials. Falls back to a generic label if the URL won't parse.
-function redactUrl(url: string): string {
+export function redactUrl(url: string): string {
   try {
     const u = new URL(url);
     return `${u.origin}${u.pathname}`;

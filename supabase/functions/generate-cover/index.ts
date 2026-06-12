@@ -9,9 +9,8 @@ import {
   getArtStylePrompt,
   MODELS,
 } from "../_shared/prompts.ts";
-import { requireAuthedUser, unauthorized } from "../_shared/auth.ts";
+import { createServiceRoleClient, rateLimitExceeded, requireAuthedUser, unauthorized } from "../_shared/auth.ts";
 import { checkRateLimit } from "../_shared/rateLimit.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -29,17 +28,8 @@ Deno.serve(async (req) => {
     if (!user) return unauthorized(corsHeaders, 401, "Authentication required.");
 
     // Per-user rate limit (always a client-facing call).
-    const rlClient = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-    );
-    const rlAllowed = await checkRateLimit(rlClient, user.id, "generate-cover", 15, 60);
-    if (!rlAllowed) {
-      return new Response(
-        JSON.stringify({ error: "Rate limit exceeded. Please wait and try again." }),
-        { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
-    }
+    const allowed = await checkRateLimit(createServiceRoleClient(), user.id, "generate-cover", 15, 60);
+    if (!allowed) return rateLimitExceeded(corsHeaders);
 
     const OPENROUTER_API_KEY = Deno.env.get("OPENROUTER_API_KEY");
     if (!OPENROUTER_API_KEY) throw new Error("OPENROUTER_API_KEY is not configured");
