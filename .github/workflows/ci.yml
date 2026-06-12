@@ -75,4 +75,4 @@ jobs:
       # The rest of functions/ pulls Supabase/AI runtime imports we don't
       # exercise in CI.
       - name: Test _shared modules
-        run: deno test supabase/functions/_shared/
+        run: deno test --allow-env supabase/functions/_shared/

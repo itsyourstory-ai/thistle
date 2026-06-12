@@ -9,7 +9,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
 import { isServiceRoleRequest, unauthorized } from "../_shared/auth.ts";
 import { assertUuid } from "../_shared/validation.ts";
 import {
-  ensureBookImagesSubfolder,
+  ensureBookFolder,
   uploadAndStampImage,
   type BookImageRow,
 } from "../_shared/driveUpload.ts";
@@ -27,7 +27,7 @@ function getEnv(name: string): string {
 }
 
 async function exportImages(bookId: string, supabase: any) {
-  const subfolder = await ensureBookImagesSubfolder(supabase, bookId);
+  const subfolder = await ensureBookFolder(supabase, bookId);
 
   // Fetch ids only first — image_data_url is huge base64 and a bulk SELECT
   // including it routinely hits the statement timeout.

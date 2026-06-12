@@ -27,7 +27,7 @@ import {
   type PortraitPose,
 } from "../_shared/prompts.ts";
 import {
-  ensureBookImagesSubfolder,
+  ensureBookFolder,
   uploadByKindSlot,
 } from "../_shared/driveUpload.ts";
 
@@ -607,7 +607,7 @@ Deno.serve(async (req) => {
     // the final cleanup pass picks up the slack.
     let subfolderId: string | null = null;
     try {
-      const sub = await ensureBookImagesSubfolder(supabase, bookId);
+      const sub = await ensureBookFolder(supabase, bookId);
       subfolderId = sub.id;
     } catch (e) {
       console.error("Drive subfolder resolution failed (progressive uploads disabled):", e);
