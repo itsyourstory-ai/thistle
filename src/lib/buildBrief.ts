@@ -9,7 +9,7 @@
  * Pure — no React, no side effects.
  */
 
-import type { WizardAnswers } from "@/lib/wizardTypes";
+import type { StoryConcept, WizardAnswers } from "@/lib/wizardTypes";
 
 export interface AppearanceLike {
   hairColor?: string;
@@ -63,7 +63,7 @@ export interface StoryBrief {
   supportingCharacters: SupportingBriefChar[];
   artStyle?: string;
   /** The approved title/summary plus hidden story_seed metadata from generate-summary. */
-  approvedConcept?: any;
+  approvedConcept?: StoryConcept;
   /** Buyer's relationship to the child — flavors the dedication voice. */
   buyer_relationship?: string;
   /** Occasion the book is for — light flavor, never central plot. */
@@ -76,10 +76,10 @@ export interface StoryBrief {
   buyer_email?: string;
 }
 
-function wordsFromList(list: any): string[] {
+function wordsFromList(list: unknown): string[] {
   if (!Array.isArray(list)) return [];
   return list
-    .map((e) => (typeof e === "string" ? e : e?.word))
+    .map((e) => (typeof e === "string" ? e : (e as { word?: string })?.word))
     .map((w) => (typeof w === "string" ? w.trim() : ""))
     .filter(Boolean);
 }
@@ -129,7 +129,7 @@ export function buildBrief(answers: WizardAnswers): StoryBrief {
       ageRange: c.ageRange,
       description: c.description,
       traits: Array.isArray(c.traits)
-        ? c.traits.map((t: any) => t?.word).filter(Boolean)
+        ? c.traits.map((t) => t?.word).filter(Boolean)
         : undefined,
       appearance: c.appearance,
       photos:

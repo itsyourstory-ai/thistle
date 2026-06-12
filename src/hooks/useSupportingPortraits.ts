@@ -94,8 +94,8 @@ export function useSupportingPortraits() {
           ...after,
           [charId]: { status: "ready", dataUrl: imageDataUrl, sourceHash: forceHash },
         });
-      } catch (e: any) {
-        const msg = e?.message || "Portrait generation failed.";
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : "Portrait generation failed.";
         const after: SupportingPortraitsState =
           (latestAnswersRef.current.supportingPortraits as SupportingPortraitsState) || {};
         setAnswer("supportingPortraits", {

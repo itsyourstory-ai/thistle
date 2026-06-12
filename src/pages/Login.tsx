@@ -5,6 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 type Mode = "signin" | "signup" | "forgot";
 
@@ -122,9 +123,9 @@ export default function Login() {
           ) : (
             <form onSubmit={handleSubmit} className="space-y-3">
               <div className="space-y-1.5">
-                <label className="block text-sm font-medium text-muted-foreground">
+                <Label className="block text-sm font-medium text-muted-foreground">
                   Email
-                </label>
+                </Label>
                 <Input
                   type="email"
                   value={email}
@@ -136,9 +137,9 @@ export default function Login() {
 
               {mode !== "forgot" && (
                 <div className="space-y-1.5">
-                  <label className="block text-sm font-medium text-muted-foreground">
+                  <Label className="block text-sm font-medium text-muted-foreground">
                     Password
-                  </label>
+                  </Label>
                   <Input
                     type="password"
                     value={password}

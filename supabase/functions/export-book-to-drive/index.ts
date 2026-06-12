@@ -12,6 +12,8 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
 import { isServiceRoleRequest, unauthorized } from "../_shared/auth.ts";
+import { assertUuid } from "../_shared/validation.ts";
+import { redactUrl } from "../_shared/driveUpload.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -83,7 +85,11 @@ async function gfetch(
   const resp = await fetch(url, { ...init, headers });
   const text = await resp.text();
   if (!resp.ok) {
-    throw new Error(`${init.method || "GET"} ${url} → ${resp.status}: ${text.slice(0, 500)}`);
+    const method = init.method || "GET";
+    // Body may contain tokens/PII — log server-side only, never in the thrown
+    // Error (which can surface to the client).
+    console.error(`gfetch ${method} ${redactUrl(url)} → ${resp.status}: ${text.slice(0, 500)}`);
+    throw new Error(`${method} ${redactUrl(url)} → ${resp.status}`);
   }
   return text ? JSON.parse(text) : {};
 }
@@ -375,10 +381,10 @@ Deno.serve(async (req) => {
     const body = await req.json();
     bookId = body.book_id || body.bookId;
     if (!bookId) throw new Error("Missing book_id");
+    assertUuid(bookId, "book_id");
 
     const supabaseUrl = getEnv("SUPABASE_URL");
-    const supabaseSrv =
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || getEnv("SUPABASE_ANON_KEY");
+    const supabaseSrv = getEnv("SUPABASE_SERVICE_ROLE_KEY");
     supabase = createClient(supabaseUrl, supabaseSrv);
 
     const result = await exportBook(bookId, supabase);

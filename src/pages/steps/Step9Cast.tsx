@@ -72,8 +72,8 @@ export default function Step9Cast() {
       const url: string | undefined = data?.imageDataUrl;
       if (!url) throw new Error("No cover image returned.");
       setCover({ status: "ready", dataUrl: url });
-    } catch (e: any) {
-      const msg = e?.message || "Couldn't draw the cover.";
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Couldn't draw the cover.";
       setCover({ status: "error", error: msg });
       toast({ title: "Cover hit a snag", description: msg });
     }
@@ -112,8 +112,8 @@ export default function Step9Cast() {
         if (!data?.id) throw new Error("No book id returned.");
         navigate(`/dev/story-preview/${data.id}`);
         return;
-      } catch (e: any) {
-        const msg = e?.message || "Full-book generation failed.";
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : "Full-book generation failed.";
         toast({ title: "Dev: book engine error", description: msg });
         setApproving(false);
         // Fall through to normal flow on failure.
@@ -315,10 +315,9 @@ export default function Step9Cast() {
             type="button"
             onClick={approve}
             disabled={approving}
-            className="flex-1 basis-0 py-4 rounded-full text-base font-semibold disabled:opacity-40 disabled:cursor-not-allowed"
+            className="flex-1 basis-0 py-4 rounded-full text-base font-semibold text-white disabled:opacity-40 disabled:cursor-not-allowed"
             style={{
               backgroundColor: "hsl(var(--wizard-primary))",
-              color: "#fff",
             }}
           >
             {approving ? "Working…" : "Approve & continue →"}

@@ -71,3 +71,19 @@ export function unauthorized(
     { status, headers: { ...corsHeaders, "Content-Type": "application/json" } },
   );
 }
+
+/** Returns a 429 rate-limit Response with CORS headers. */
+export function rateLimitExceeded(corsHeaders: Record<string, string>): Response {
+  return new Response(
+    JSON.stringify({ error: "Rate limit exceeded. Please wait and try again." }),
+    { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+  );
+}
+
+/** Creates a Supabase client authenticated as service_role. */
+export function createServiceRoleClient() {
+  return createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+  );
+}

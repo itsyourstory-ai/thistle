@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import WizardShell from "@/components/WizardShell";
 import { useWizard } from "@/contexts/WizardContext";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -187,9 +188,9 @@ export default function Step5() {
             </h2>
             {activeCategoryDef.fields.map((field) => (
               <div key={field.key} className="space-y-1.5">
-                <label className="block text-base font-semibold text-wizard">
+                <Label className="block text-base font-semibold text-wizard">
                   {field.label}
-                </label>
+                </Label>
                 {field.type === "dropdown" ? (
                   <Select
                     value={details[field.key] || ""}

@@ -7,6 +7,7 @@ import { Check } from "lucide-react";
 import WizardHeader from "@/components/WizardHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 type Plan = "digital" | "hardcover";
 
@@ -178,9 +179,9 @@ export default function Step9Preview() {
             {/* Buyer details + order */}
             <div className="flex flex-col gap-3">
               <div className="flex flex-col gap-2">
-                <label className="text-xs font-semibold uppercase tracking-widest text-wizard/70">
+                <Label className="text-xs font-semibold uppercase tracking-widest text-wizard/70">
                   Your name
-                </label>
+                </Label>
                 <Input
                   type="text"
                   value={buyerName}
@@ -191,9 +192,9 @@ export default function Step9Preview() {
                 {buyerErrors.name && (
                   <p className="text-xs text-destructive">{buyerErrors.name}</p>
                 )}
-                <label className="text-xs font-semibold uppercase tracking-widest mt-2 text-wizard/70">
+                <Label className="text-xs font-semibold uppercase tracking-widest mt-2 text-wizard/70">
                   Email
-                </label>
+                </Label>
                 <Input
                   type="email"
                   value={buyerEmail}

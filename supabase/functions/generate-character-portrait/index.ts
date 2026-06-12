@@ -11,7 +11,8 @@ import {
   getArtStylePrompt,
   MODELS,
 } from "../_shared/prompts.ts";
-import { requireAuthedUser, unauthorized } from "../_shared/auth.ts";
+import { createServiceRoleClient, rateLimitExceeded, requireAuthedUser, unauthorized } from "../_shared/auth.ts";
+import { checkRateLimit } from "../_shared/rateLimit.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -27,6 +28,10 @@ Deno.serve(async (req) => {
   try {
     const user = await requireAuthedUser(req);
     if (!user) return unauthorized(corsHeaders, 401, "Authentication required.");
+
+    // Per-user rate limit (always a client-facing call).
+    const allowed = await checkRateLimit(createServiceRoleClient(), user.id, "generate-character-portrait", 20, 60);
+    if (!allowed) return rateLimitExceeded(corsHeaders);
 
     const OPENROUTER_API_KEY = Deno.env.get("OPENROUTER_API_KEY");
     if (!OPENROUTER_API_KEY) throw new Error("OPENROUTER_API_KEY is not configured");

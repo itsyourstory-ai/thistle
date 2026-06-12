@@ -63,8 +63,8 @@ export default function Step10Summary() {
       setTitle(newTitle);
       setSummary(newSummary);
       previousSummaryRef.current = newSummary;
-    } catch (e: any) {
-      const msg = e?.message || "Something went wrong.";
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Something went wrong.";
       setError(msg);
       toast({ title: "Couldn't craft the story", description: msg });
     } finally {
@@ -294,10 +294,9 @@ export default function Step10Summary() {
             type="button"
             onClick={continueToCast}
             disabled={!summary || loading || editing}
-            className="flex-1 basis-0 py-4 rounded-full text-base font-semibold disabled:opacity-40 disabled:cursor-not-allowed"
+            className="flex-1 basis-0 py-4 rounded-full text-base font-semibold text-white disabled:opacity-40 disabled:cursor-not-allowed"
             style={{
               backgroundColor: "hsl(var(--wizard-primary))",
-              color: "#fff",
             }}
           >
             Continue →

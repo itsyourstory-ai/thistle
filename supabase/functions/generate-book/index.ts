@@ -10,6 +10,9 @@
 // composition cue, and dev preview renderer all pick it up automatically.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
+import { isValidEmail, sanitizeUserText } from "../_shared/sanitize.ts";
+import { rateLimitExceeded } from "../_shared/auth.ts";
+import { checkRateLimit } from "../_shared/rateLimit.ts";
 import {
   ageToBand,
   BookEngineInput,
@@ -216,8 +219,13 @@ function mapBriefToEngineInput(brief: any): BookEngineInput {
 function buildApprovedConceptInstruction(concept: ApprovedConcept | null): string {
   if (!concept) return "";
 
-  const title = concept.title || "";
-  const summary = concept.user_visible_summary || concept.summary || "";
+  // Title and summary can be user-edited free text — sanitize before they
+  // are interpolated into the prompt. Summary gets a generous cap.
+  const title = sanitizeUserText(concept.title || "", 300);
+  const summary = sanitizeUserText(
+    concept.user_visible_summary || concept.summary || "",
+    4000,
+  );
   const seed = concept.story_seed || {};
   const notes = concept.personalization_notes || {};
   const manualEdit = concept.user_edited
@@ -348,12 +356,22 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Per-user rate limit. generate-book is always a client-facing call
+    // (it requires a user JWT), so there is no internal-call case to skip.
+    const supabase = createClient(supabaseUrl, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+    const allowed = await checkRateLimit(supabase, user.id, "generate-book", 5, 60);
+    if (!allowed) return rateLimitExceeded(corsHeaders);
+
     const body = await req.json();
     const rawBrief = stripDataUrls(body.brief || {});
     const buyer_name: string | undefined = body.buyer_name || rawBrief.buyer_name;
-    const buyer_email: string | undefined = body.buyer_email || rawBrief.buyer_email;
+    // Validate buyer_email; drop (store empty string) if malformed.
+    const rawBuyerEmail = body.buyer_email || rawBrief.buyer_email;
+    const buyer_email: string = isValidEmail(rawBuyerEmail) ? rawBuyerEmail : "";
     const brief = { ...rawBrief, buyer_name, buyer_email };
-    const revision_note: string | undefined = body.revision_note || undefined;
+    const revision_note: string | undefined = body.revision_note
+      ? sanitizeUserText(body.revision_note, 4000)
+      : undefined;
     const model: string = body.modelOverride || MODELS.book;
     const seed_portrait_data_url: string | null = body.seed_portrait_data_url || null;
 
@@ -386,9 +404,6 @@ Deno.serve(async (req) => {
       approvedConceptInstruction,
       revision_note ? `Revision note: ${revision_note}` : "",
     ].filter(Boolean).join("\n\n");
-
-    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     // Insert stub row immediately so the client has an id to poll.
     const { data: stubRow, error: stubErr } = await supabase

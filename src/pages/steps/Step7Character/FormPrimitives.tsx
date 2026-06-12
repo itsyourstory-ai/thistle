@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import { Upload, X, ChevronDown, ChevronUp } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
@@ -83,9 +84,9 @@ export function CharCounter({ current, max }: { current: number; max: number }) 
 
 export function FieldLabel({ children, optional }: { children: React.ReactNode; optional?: boolean }) {
   return (
-    <label className="block font-heading text-xl sm:text-2xl font-semibold text-left text-wizard">
+    <Label className="block font-heading text-xl sm:text-2xl font-semibold text-left text-wizard">
       {children}{optional && <span className="ml-1 text-xs opacity-60">(optional)</span>}
-    </label>
+    </Label>
   );
 }
 

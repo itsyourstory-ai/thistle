@@ -8,7 +8,17 @@ import { supabase } from "@/integrations/supabase/client";
 import { deserializeAnswers } from "@/lib/draftPhotos";
 import { useWizard } from "@/contexts/WizardContext";
 
-function getBookTitle(book: { parsed?: any; brief?: any }): string {
+interface BookParsed {
+  meta?: { title?: string };
+  cover_text?: string;
+}
+
+interface BookBrief {
+  selectedConcept?: { title?: string };
+  childName?: string;
+}
+
+function getBookTitle(book: { parsed?: BookParsed | null; brief?: BookBrief | null }): string {
   return (
     book.parsed?.meta?.title ||
     book.parsed?.cover_text ||
@@ -17,7 +27,7 @@ function getBookTitle(book: { parsed?: any; brief?: any }): string {
   );
 }
 
-function getChildName(book: { brief?: any }): string {
+function getChildName(book: { brief?: BookBrief | null }): string {
   return book.brief?.childName || "Unknown";
 }
 
@@ -96,13 +106,13 @@ export default function Dashboard() {
             <p className="text-sm text-muted-foreground">No drafts yet. Start creating your first book!</p>
           ) : (
             <div className="space-y-3">
-              {drafts.map((d: any) => (
+              {drafts.map((d) => (
                 <DraftCard
                   key={d.id}
                   childName={d.child_name || "Unnamed draft"}
                   currentStep={d.current_step}
                   updatedAt={d.updated_at}
-                  onResume={() => resumeDraft(d)}
+                  onResume={() => resumeDraft(d as Parameters<typeof resumeDraft>[0])}
                   onDelete={() => deleteDraft(d.id)}
                 />
               ))}
@@ -119,12 +129,12 @@ export default function Dashboard() {
             <p className="text-sm text-muted-foreground">No books yet. Create your first one above!</p>
           ) : (
             <div className="space-y-3">
-              {books.map((b: any) => (
+              {books.map((b) => (
                 <BookCard
                   key={b.id}
                   id={b.id}
-                  title={getBookTitle(b)}
-                  childName={getChildName(b)}
+                  title={getBookTitle({ parsed: b.parsed as BookParsed | null, brief: b.brief as BookBrief | null })}
+                  childName={getChildName({ brief: b.brief as BookBrief | null })}
                   createdAt={b.created_at}
                 />
               ))}

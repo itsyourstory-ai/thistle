@@ -54,7 +54,7 @@ Merging to `main` auto-deploys to **staging**. When you're ready to go live:
 
 ```bash
 cp .env.example .env   # fill in your Supabase values
-nvm use                # switches to Node 22
+nvm use                # switches to Node 24
 npm install
 npm run dev
 ```
@@ -62,4 +62,3 @@ npm run dev
 Env vars needed (get from Supabase dashboard):
 - `VITE_SUPABASE_URL`
 - `VITE_SUPABASE_PUBLISHABLE_KEY`
-- `VITE_SUPABASE_PROJECT_ID`
