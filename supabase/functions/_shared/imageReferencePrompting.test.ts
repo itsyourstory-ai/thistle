@@ -22,10 +22,15 @@ Deno.test("normalizeOutfitSourceIndex: accepts valid 0-based index", () => {
   assertEquals(normalizeOutfitSourceIndex(2, 3), 2);
 });
 
-Deno.test("normalizeOutfitSourceIndex: accepts valid 1-based index", () => {
-  // n=1 with photoCount=3 → 1-based=1 → 0-based=0
-  assertEquals(normalizeOutfitSourceIndex(1, 3), 0);
-  // n=3 with photoCount=3 → 1-based=3 → 0-based=2
+Deno.test("normalizeOutfitSourceIndex: prefers the 0-based interpretation for in-range values", () => {
+  // n=1 is a valid 0-based index for photoCount=3, so it stays 1 — the
+  // 0-based branch wins before the 1-based fallback is considered.
+  assertEquals(normalizeOutfitSourceIndex(1, 3), 1);
+});
+
+Deno.test("normalizeOutfitSourceIndex: treats n === photoCount as a 1-based index", () => {
+  // n=3 is out of 0-based range (0–2) but valid as 1-based → 0-based 2.
+  // This is the only case where the 1-based fallback actually applies.
   assertEquals(normalizeOutfitSourceIndex(3, 3), 2);
 });
 
