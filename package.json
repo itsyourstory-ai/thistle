@@ -15,7 +15,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "test:deno": "deno test supabase/functions/_shared/"
+    "test:deno": "deno test --allow-env supabase/functions/_shared/"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
