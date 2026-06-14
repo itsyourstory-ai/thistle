@@ -5,7 +5,7 @@
 // is usually a no-op — but it remains the safety net for anything that
 // progressive upload skipped (subfolder wasn't ready, retries exhausted).
 
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
 import { isServiceRoleRequest, unauthorized } from "../_shared/auth.ts";
 import { assertUuid } from "../_shared/validation.ts";
 import {

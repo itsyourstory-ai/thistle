@@ -30,7 +30,7 @@ vi.mock("@/contexts/WizardContext", () => ({ useWizard: vi.fn() }));
 // --- Imports (after mocks) ---
 import * as edgeFns from "@/lib/edgeFunctions";
 import { useWizard } from "@/contexts/WizardContext";
-import Step8Summary from "@/pages/steps/Step8Summary";
+import Step8Summary, { computeSummaryBriefHash } from "@/pages/steps/Step8Summary";
 
 const mockSetAnswer = vi.fn();
 
@@ -50,32 +50,6 @@ function renderStep(answers: Record<string, unknown> = {}) {
   );
 }
 
-// Replicate the hash function from Step8Summary to build matching hashes in tests.
-function buildHash(a: Record<string, unknown>): string {
-  const interests = Array.isArray(a.interestsList)
-    ? (a.interestsList as Array<{ word: string }>).map((i) => i.word).join(",")
-    : "";
-  const proto = (a.protagonist as Record<string, unknown>) || {};
-  const traits = Array.isArray(proto.traits)
-    ? (proto.traits as Array<{ word?: string }>).map((t) => t.word).join(",")
-    : "";
-  return [
-    a.childName || "",
-    a.ageRange || "",
-    a.gender || "",
-    a.genre || "",
-    a.mood || "",
-    a.lesson || "",
-    interests,
-    a.artStyle || "",
-    (proto.name as string) || "",
-    (proto.age as string) || "",
-    (proto.gender as string) || "",
-    (proto.special as string) || "",
-    traits,
-  ].join("|");
-}
-
 beforeEach(() => {
   vi.clearAllMocks();
 });
@@ -86,7 +60,7 @@ describe("Step8Summary auto-fetch guard (F4)", () => {
     const answers = {
       ...base,
       selectedConcept: { title: "Luna's Quest", summary: "A great adventure." },
-      summaryBriefHash: buildHash(base),
+      summaryBriefHash: computeSummaryBriefHash(base),
     };
 
     renderStep(answers);

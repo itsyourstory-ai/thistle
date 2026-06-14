@@ -13,7 +13,7 @@ import { useCharacterPortrait } from "@/hooks/useCharacterPortrait";
 import { useSupportingPortraits } from "@/hooks/useSupportingPortraits";
 import type { StoryConcept } from "@/lib/wizardTypes";
 
-function computeSummaryBriefHash(answers: ReturnType<typeof useWizard>["answers"]): string {
+export function computeSummaryBriefHash(answers: ReturnType<typeof useWizard>["answers"]): string {
   const interests = Array.isArray(answers.interestsList)
     ? answers.interestsList.map((i) => i.word).join(",")
     : "";

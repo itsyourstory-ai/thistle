@@ -68,10 +68,7 @@ export default function Dashboard() {
     retry: 1,
   });
 
-  async function resumeDraft(draft: {
-    id: string;
-    current_step: string;
-  }) {
+  async function resumeDraft(draft: { id: string }) {
     const { data, error } = await supabase
       .from("book_drafts")
       .select("answers, current_step")
@@ -120,7 +117,7 @@ export default function Dashboard() {
                   childName={d.child_name || "Unnamed draft"}
                   currentStep={d.current_step}
                   updatedAt={d.updated_at}
-                  onResume={() => resumeDraft({ id: d.id, current_step: d.current_step })}
+                  onResume={() => resumeDraft({ id: d.id })}
                   onDelete={() => deleteDraft(d.id)}
                 />
               ))}
