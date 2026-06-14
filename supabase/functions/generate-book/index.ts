@@ -9,7 +9,7 @@
 // one entry there; the prompt table, JSON schema enum, image-prompt
 // composition cue, and dev preview renderer all pick it up automatically.
 
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { isValidEmail, sanitizeUserText } from "../_shared/sanitize.ts";
 import { rateLimitExceeded } from "../_shared/auth.ts";
 import { checkRateLimit } from "../_shared/rateLimit.ts";

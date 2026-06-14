@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { POLL_INITIAL_DELAY, nextPollDelay } from "@/lib/pollBackoff";
 import { pathForStep } from "@/lib/wizardSteps";
 import { useNavigate } from "react-router-dom";
 import { useWizard } from "@/contexts/WizardContext";
@@ -25,9 +26,10 @@ export default function Step10Generating() {
   const [progress, setProgress] = useState<{ stage: string; current: number; total: number } | null>(null);
   const [bookId, setBookId] = useState<string | null>(null);
   const startedAt = useRef<number>(Date.now());
-  const pollRef = useRef<number | null>(null);
+  const pollRef = useRef<number | null>(null); // timeout id
 
-  const message = useRotatingMessage(coverMessages(name), 2200);
+  const coverMsgs = useMemo(() => coverMessages(name), [name]);
+  const message = useRotatingMessage(coverMsgs, 2200);
   const pipelineMsg = progress
     ? pipelineMessage(progress.stage, progress.current, progress.total, name)
     : `Writing ${name}'s story…`;
@@ -73,50 +75,64 @@ export default function Step10Generating() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [attempt]);
 
-  // Poll book progress
+  // Poll book progress with exponential backoff
   useEffect(() => {
     if (!bookId) return;
     let lastKey = "";
     let lastAt = Date.now();
+    let currentDelay = POLL_INITIAL_DELAY;
+
+    const scheduleNext = (resetDelay: boolean) => {
+      if (resetDelay) currentDelay = POLL_INITIAL_DELAY;
+      else currentDelay = nextPollDelay(currentDelay);
+      pollRef.current = window.setTimeout(tick, currentDelay);
+    };
+
     const tick = async () => {
       const data = await getBookStatus(bookId);
-      if (!data) return;
+      if (!data) { scheduleNext(false); return; }
+
       const status = data.pipeline_status || "idle";
       const prog = data.pipeline_progress || null;
       const err = data.pipeline_error || null;
       if (prog) setProgress(prog);
 
       const key = `${status}:${prog?.stage}:${prog?.current}/${prog?.total}`;
-      if (key !== lastKey) {
+      const progressChanged = key !== lastKey;
+      if (progressChanged) {
         lastKey = key;
         lastAt = Date.now();
-      } else if (
+      }
+
+      const stalled =
+        !progressChanged &&
         status !== "done" &&
         status !== "failed" &&
         status !== "story" &&
-        Date.now() - lastAt > 90_000
-      ) {
+        Date.now() - lastAt > 90_000;
+
+      if (stalled) {
         lastAt = Date.now();
         void callEdge("generate-book-images", { book_id: bookId });
       }
 
       if (status === "done") {
-        if (pollRef.current) window.clearInterval(pollRef.current);
         const elapsed = Date.now() - startedAt.current;
         setTimeout(() => {
           setDone(true);
           setIsGenerating(false);
         }, Math.max(0, MIN_DURATION - elapsed));
       } else if (status === "failed") {
-        if (pollRef.current) window.clearInterval(pollRef.current);
         setErrored(err || "Generation failed.");
         setIsGenerating(false);
+      } else {
+        scheduleNext(progressChanged || stalled);
       }
     };
-    pollRef.current = window.setInterval(tick, 3000);
+
     tick();
     return () => {
-      if (pollRef.current) window.clearInterval(pollRef.current);
+      if (pollRef.current) window.clearTimeout(pollRef.current);
     };
   }, [bookId, setIsGenerating]);
 

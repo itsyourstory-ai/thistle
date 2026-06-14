@@ -52,14 +52,20 @@ export default function Step7() {
                 className="w-full overflow-hidden rounded-xl mb-2 bg-muted"
                 style={{ aspectRatio: "2 / 3" }}
               >
-                <img
-                  src={s.preview}
-                  alt={`Example: ${s.label}`}
-                  width={512}
-                  height={768}
-                  loading="lazy"
-                  className="w-full h-full object-cover"
-                />
+                <picture>
+                  <source
+                    type="image/webp"
+                    srcSet={s.preview.replace(/\.jpg$/, ".webp")}
+                  />
+                  <img
+                    src={s.preview}
+                    alt={`Example: ${s.label}`}
+                    width={512}
+                    height={768}
+                    loading="lazy"
+                    className="w-full h-full object-cover"
+                  />
+                </picture>
               </div>
               <span className="block text-base font-semibold text-wizard">
                 <span aria-hidden className="mr-1">{s.emoji}</span>{s.label}

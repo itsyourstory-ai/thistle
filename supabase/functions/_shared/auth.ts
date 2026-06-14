@@ -1,8 +1,8 @@
 // Shared auth helpers for Supabase edge functions.
 // All helpers are header-only — they never call req.json().
 
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
-import type { User } from "https://esm.sh/@supabase/supabase-js@2.45.4";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import type { User } from "https://esm.sh/@supabase/supabase-js@2";
 
 export type GetUserFn = () => Promise<{ data: { user: User | null } }>;
 

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { pathForStep } from "@/lib/wizardSteps";
 import { useNavigate } from "react-router-dom";
 import { Pencil, RefreshCw, Check, X } from "lucide-react";
@@ -12,6 +12,31 @@ import { toast } from "@/hooks/use-toast";
 import { useCharacterPortrait } from "@/hooks/useCharacterPortrait";
 import { useSupportingPortraits } from "@/hooks/useSupportingPortraits";
 import type { StoryConcept } from "@/lib/wizardTypes";
+
+function computeSummaryBriefHash(answers: ReturnType<typeof useWizard>["answers"]): string {
+  const interests = Array.isArray(answers.interestsList)
+    ? answers.interestsList.map((i) => i.word).join(",")
+    : "";
+  const proto = (answers.protagonist as Record<string, unknown>) || {};
+  const traits = Array.isArray(proto.traits)
+    ? (proto.traits as Array<{ word?: string }>).map((t) => t.word).join(",")
+    : "";
+  return [
+    answers.childName || "",
+    answers.ageRange || "",
+    answers.gender || "",
+    answers.genre || "",
+    answers.mood || "",
+    answers.lesson || "",
+    interests,
+    answers.artStyle || "",
+    (proto.name as string) || "",
+    (proto.age as string) || "",
+    (proto.gender as string) || "",
+    (proto.special as string) || "",
+    traits,
+  ].join("|");
+}
 
 export default function Step10Summary() {
   const { answers, setAnswer } = useWizard();
@@ -28,6 +53,7 @@ export default function Step10Summary() {
   const [draft, setDraft] = useState("");
   const [draftTitle, setDraftTitle] = useState("");
 
+  const briefHash = useMemo(() => computeSummaryBriefHash(answers), [answers]);
   const previousSummaryRef = useRef<string>("");
   const loadingMsg = useRotatingMessage(summaryMessages(name), 2000);
 
@@ -63,6 +89,9 @@ export default function Step10Summary() {
       setTitle(newTitle);
       setSummary(newSummary);
       previousSummaryRef.current = newSummary;
+      // Persist immediately so back-nav restores without re-fetching
+      setAnswer("selectedConcept", nextConcept);
+      setAnswer("summaryBriefHash", briefHash);
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Something went wrong.";
       setError(msg);
@@ -72,9 +101,11 @@ export default function Step10Summary() {
     }
   };
 
-  // Auto-generate on first arrival if nothing yet
+  // Auto-generate on first arrival unless the brief is unchanged or user edited
   useEffect(() => {
-    if (!summary && !loading) {
+    const hashMatches = answers.summaryBriefHash === briefHash && !!answers.selectedConcept;
+    const userEdited = answers.selectedConcept?.user_edited === true;
+    if (!loading && !hashMatches && !userEdited) {
       fetchSummary();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps

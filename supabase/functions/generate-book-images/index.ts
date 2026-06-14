@@ -16,7 +16,7 @@
 // Long-running: 30 pages × ~6s ≈ ~3min. If we hit the edge function
 // timeout in production we'll shard into per-page invocations.
 
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { isServiceRoleRequest, rateLimitExceeded, requireAuthedUser, unauthorized } from "../_shared/auth.ts";
 import { assertUuid } from "../_shared/validation.ts";
 import { checkRateLimit } from "../_shared/rateLimit.ts";

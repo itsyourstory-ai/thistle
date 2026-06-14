@@ -138,10 +138,15 @@ export default function CharacterHeadPreview({
 
   const isStale = JSON.stringify(snap) !== JSON.stringify(current);
 
+  useEffect(() => {
+    if (!pulse) return;
+    const id = setTimeout(() => setPulse(false), 350);
+    return () => clearTimeout(id);
+  }, [pulse]);
+
   const update = () => {
     setSnap(current);
     setPulse(true);
-    setTimeout(() => setPulse(false), 350);
   };
 
   const displayName = snap.name?.trim() || "Your character";
