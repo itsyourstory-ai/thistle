@@ -11,11 +11,23 @@ vi.mock("@tanstack/react-query", async (importActual) => {
   return { ...actual, useQuery: vi.fn(), useQueryClient: vi.fn(() => ({ invalidateQueries: vi.fn() })) };
 });
 
+const mockSingle = vi.fn();
+const mockEq = vi.fn(() => ({ single: mockSingle }));
+const mockSelect = vi.fn(() => ({ eq: mockEq }));
+
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: {
-    from: vi.fn(() => ({
-      delete: vi.fn(() => ({ eq: vi.fn(() => Promise.resolve({ error: null })) })),
-    })),
+    from: vi.fn((table: string) => {
+      if (table === "book_drafts") {
+        return {
+          delete: vi.fn(() => ({ eq: vi.fn(() => Promise.resolve({ error: null })) })),
+          select: mockSelect,
+        };
+      }
+      return {
+        delete: vi.fn(() => ({ eq: vi.fn(() => Promise.resolve({ error: null })) })),
+      };
+    }),
   },
 }));
 
@@ -132,11 +144,13 @@ describe("Dashboard", () => {
   });
 
   it("shows BookCard when books exist", () => {
+    // PostgREST returns JSON sub-path selects as top-level fields
     const books = [
       {
         id: "book-1",
         created_at: new Date().toISOString(),
-        brief: { childName: "Leo", selectedConcept: { title: "The Great Adventure" } },
+        childName: "Leo",
+        selectedConcept: { title: "The Great Adventure" },
         parsed: null,
         status: "ok",
       },
@@ -155,7 +169,7 @@ describe("Dashboard", () => {
     expect(mockNavigate).toHaveBeenCalledWith("/step/1-name");
   });
 
-  it("clicking Resume calls deserializeAnswers, seedAnswers, setDraftId, and navigates", async () => {
+  it("clicking Resume fetches answers for the single draft, then seeds and navigates", async () => {
     const draftAnswers = { childName: "Aria" };
     const drafts = [
       {
@@ -163,15 +177,22 @@ describe("Dashboard", () => {
         child_name: "Aria",
         current_step: "/step/5-interests",
         updated_at: new Date().toISOString(),
-        answers: draftAnswers,
       },
     ];
+    // Simulate the targeted .select().eq().single() fetch returning answers
+    mockSingle.mockResolvedValueOnce({
+      data: { answers: draftAnswers, current_step: "/step/5-interests" },
+      error: null,
+    });
+
     mockQueries({ drafts, books: [] });
     renderDashboard();
 
     fireEvent.click(screen.getByRole("button", { name: /resume/i }));
 
     await waitFor(() => {
+      expect(mockSelect).toHaveBeenCalledWith("answers, current_step");
+      expect(mockEq).toHaveBeenCalledWith("id", "draft-42");
       expect(deserializeAnswers).toHaveBeenCalledWith(draftAnswers);
       expect(mockSeedAnswers).toHaveBeenCalledWith(draftAnswers);
       expect(mockSetDraftId).toHaveBeenCalledWith("draft-42");

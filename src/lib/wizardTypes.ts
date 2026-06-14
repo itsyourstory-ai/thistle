@@ -123,6 +123,7 @@ export interface WizardAnswers {
 
   // Step 8
   selectedConcept?: StoryConcept;
+  summaryBriefHash?: string;
 
   // Generating / post-generation
   bookId?: string;

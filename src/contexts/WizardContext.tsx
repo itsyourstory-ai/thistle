@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback, type ReactNode } from "react";
+import React, { createContext, useContext, useState, useCallback, useMemo, type ReactNode } from "react";
 import type { WizardAnswers } from "@/lib/wizardTypes";
 
 interface WizardContextType {
@@ -39,21 +39,24 @@ export function WizardProvider({ children }: { children: ReactNode }) {
     setDraftId(null);
   }, []);
 
+  const value = useMemo(
+    () => ({
+      answers,
+      setAnswer,
+      seedAnswers,
+      canContinue,
+      setCanContinue,
+      isGenerating,
+      setIsGenerating,
+      draftId,
+      setDraftId,
+      resetWizard,
+    }),
+    [answers, canContinue, isGenerating, draftId, setAnswer, seedAnswers, resetWizard, setCanContinue, setIsGenerating, setDraftId],
+  );
+
   return (
-    <WizardContext.Provider
-      value={{
-        answers,
-        setAnswer,
-        seedAnswers,
-        canContinue,
-        setCanContinue,
-        isGenerating,
-        setIsGenerating,
-        draftId,
-        setDraftId,
-        resetWizard,
-      }}
-    >
+    <WizardContext.Provider value={value}>
       {children}
     </WizardContext.Provider>
   );

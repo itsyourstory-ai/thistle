@@ -4,16 +4,11 @@ import { useWizard } from "@/contexts/WizardContext";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { SelectableTile } from "@/components/SelectableTile";
-import bookBoard from "@/assets/book-board.jpg";
-import bookPicture from "@/assets/book-picture.jpg";
-import bookEarly from "@/assets/book-early.jpg";
-import bookChapter from "@/assets/book-chapter.jpg";
-
 const AGE_RANGES = [
-  { value: "0-2", label: "Board Book", sub: "Ages 0–2", image: bookBoard },
-  { value: "3-5", label: "Picture Book", sub: "Ages 3–5", image: bookPicture },
-  { value: "6-8", label: "Early Reader", sub: "Ages 6–8", image: bookEarly },
-  { value: "9-12", label: "Chapter Book", sub: "Ages 9–12", image: bookChapter },
+  { value: "0-2", label: "Board Book", sub: "Ages 0–2", image: "/book-types/book-board.jpg" },
+  { value: "3-5", label: "Picture Book", sub: "Ages 3–5", image: "/book-types/book-picture.jpg" },
+  { value: "6-8", label: "Early Reader", sub: "Ages 6–8", image: "/book-types/book-early.jpg" },
+  { value: "9-12", label: "Chapter Book", sub: "Ages 9–12", image: "/book-types/book-chapter.jpg" },
 ];
 
 const GENDERS = [

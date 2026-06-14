@@ -13,22 +13,23 @@ interface BookParsed {
   cover_text?: string;
 }
 
-interface BookBrief {
-  selectedConcept?: { title?: string };
-  childName?: string;
+interface BookRow {
+  parsed?: BookParsed | null;
+  childName?: string | null;
+  selectedConcept?: { title?: string } | null;
 }
 
-function getBookTitle(book: { parsed?: BookParsed | null; brief?: BookBrief | null }): string {
+function getBookTitle(book: BookRow): string {
   return (
     book.parsed?.meta?.title ||
     book.parsed?.cover_text ||
-    book.brief?.selectedConcept?.title ||
+    (book.selectedConcept as { title?: string } | null)?.title ||
     "Untitled"
   );
 }
 
-function getChildName(book: { brief?: BookBrief | null }): string {
-  return book.brief?.childName || "Unknown";
+function getChildName(book: BookRow): string {
+  return (book.childName as string | null) || "Unknown";
 }
 
 export default function Dashboard() {
@@ -41,8 +42,9 @@ export default function Dashboard() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("book_drafts")
-        .select("id, child_name, current_step, updated_at, answers")
-        .order("updated_at", { ascending: false });
+        .select("id, child_name, current_step, updated_at")
+        .order("updated_at", { ascending: false })
+        .limit(25);
       if (error) { console.error("Drafts query error:", error); return []; }
       return data ?? [];
     },
@@ -55,9 +57,10 @@ export default function Dashboard() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("generated_books")
-        .select("id, created_at, brief, parsed, status")
+        .select("id, created_at, status, parsed, brief->childName, brief->selectedConcept")
         .eq("status", "ok")
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false })
+        .limit(25);
       if (error) { console.error("Books query error:", error); return []; }
       return data ?? [];
     },
@@ -65,15 +68,17 @@ export default function Dashboard() {
     retry: 1,
   });
 
-  async function resumeDraft(draft: {
-    id: string;
-    answers: Record<string, unknown>;
-    current_step: string;
-  }) {
-    const deserialized = await deserializeAnswers(draft.answers);
+  async function resumeDraft(draft: { id: string }) {
+    const { data, error } = await supabase
+      .from("book_drafts")
+      .select("answers, current_step")
+      .eq("id", draft.id)
+      .single();
+    if (error || !data) { console.error("Resume draft fetch error:", error); return; }
+    const deserialized = await deserializeAnswers(data.answers as Record<string, unknown>);
     seedAnswers(deserialized);
     setDraftId(draft.id);
-    navigate(draft.current_step);
+    navigate(data.current_step);
   }
 
   async function deleteDraft(id: string) {
@@ -112,7 +117,7 @@ export default function Dashboard() {
                   childName={d.child_name || "Unnamed draft"}
                   currentStep={d.current_step}
                   updatedAt={d.updated_at}
-                  onResume={() => resumeDraft(d as Parameters<typeof resumeDraft>[0])}
+                  onResume={() => resumeDraft({ id: d.id })}
                   onDelete={() => deleteDraft(d.id)}
                 />
               ))}
@@ -133,8 +138,8 @@ export default function Dashboard() {
                 <BookCard
                   key={b.id}
                   id={b.id}
-                  title={getBookTitle({ parsed: b.parsed as BookParsed | null, brief: b.brief as BookBrief | null })}
-                  childName={getChildName({ brief: b.brief as BookBrief | null })}
+                  title={getBookTitle(b as BookRow)}
+                  childName={getChildName(b as BookRow)}
                   createdAt={b.created_at}
                 />
               ))}

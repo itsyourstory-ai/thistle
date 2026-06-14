@@ -20,7 +20,7 @@ interface SelectableTileProps
  * - Adds a green checkmark badge in the top-right corner when selected.
  * - Pure presentation — caller controls state.
  */
-export function SelectableTile({
+export const SelectableTile = React.memo(function SelectableTile({
   selected,
   shape = "tile",
   hideCheck = false,
@@ -64,7 +64,7 @@ export function SelectableTile({
       {selected && !hideCheck && <CheckBadge />}
     </button>
   );
-}
+});
 
 function CheckBadge() {
   return (
