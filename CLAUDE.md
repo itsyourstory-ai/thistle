@@ -20,7 +20,7 @@ npm run test:deno    # run Deno unit tests for supabase/functions/_shared/
 
 Run a single test file: `npx vitest run src/test/example.test.ts`
 
-See [docs/TESTING.md](docs/TESTING.md) for the full testing guide (layers, helpers, conventions).
+See [docs/test-suite.md](docs/test-suite.md) for the full testing guide (layers, helpers, conventions). See [docs/manual-testing.md](docs/manual-testing.md) for the manual testing panel and seed profiles.
 
 ## Required env vars
 

@@ -13,7 +13,7 @@ export default defineConfig({
     // parallelism across the growing test suite.
     testTimeout: 8000,
     coverage: {
-      // Measure and report only — no thresholds gate CI yet (see docs/TESTING.md).
+      // Measure and report only — no thresholds gate CI yet (see docs/test-suite.md).
       provider: "v8",
       reporter: ["text", "html"],
       reportsDirectory: "./coverage",
