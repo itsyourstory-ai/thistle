@@ -2,8 +2,12 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+// AIDEV-NOTE: DEV fallbacks let the app boot without real credentials when paired
+// with VITE_DEV_AUTH_BYPASS. This file is auto-generated; restore from git if re-generated.
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL
+  ?? (import.meta.env.DEV ? "https://placeholder.supabase.co" : undefined);
+const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY
+  ?? (import.meta.env.DEV ? "placeholder-anon-key" : undefined);
 
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
