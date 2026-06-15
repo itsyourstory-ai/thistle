@@ -13,9 +13,14 @@ export default function Landing() {
         <span className="font-heading text-xl font-semibold text-wizard">
           📖 Thistle Books
         </span>
-        <Button asChild variant="wizardOutline" size="sm">
-          <Link to="/login">Log in</Link>
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button asChild variant="wizardOutline" size="sm">
+            <Link to="/login">Log in</Link>
+          </Button>
+          <Button asChild variant="wizard" size="sm">
+            <Link to="/login">Sign up</Link>
+          </Button>
+        </div>
       </nav>
 
       {/* Hero */}
@@ -31,15 +36,18 @@ export default function Landing() {
         </span>
 
         <h1 className="font-heading text-4xl sm:text-5xl font-semibold text-wizard leading-tight mb-4">
-          Where your child is<br />the hero of the story
+          Where your child is
+          <br />
+          the hero of the story
         </h1>
 
         <p className="text-muted-foreground text-lg mb-8 max-w-md">
-          Answer a few questions and we'll craft a beautifully illustrated book starring your little one.
+          Answer a few questions and we'll craft a beautifully illustrated book
+          starring your little one.
         </p>
 
         <Button asChild variant="wizard" size="pill">
-          <Link to="/login">Log in to start</Link>
+          <Link to="/login">Sign up to start →</Link>
         </Button>
       </main>
 
@@ -49,12 +57,16 @@ export default function Landing() {
           <Card className="rounded-3xl p-6 text-center space-y-2">
             <div className="text-3xl">🧒</div>
             <p className="font-semibold text-wizard">Tell us about them</p>
-            <p className="text-sm text-muted-foreground">Name, age, interests</p>
+            <p className="text-sm text-muted-foreground">
+              Name, age, interests
+            </p>
           </Card>
           <Card className="rounded-3xl p-6 text-center space-y-2">
             <div className="text-3xl">🎨</div>
             <p className="font-semibold text-wizard">Pick the art style</p>
-            <p className="text-sm text-muted-foreground">Watercolor, cartoon & more</p>
+            <p className="text-sm text-muted-foreground">
+              Watercolor, cartoon & more
+            </p>
           </Card>
           <Card className="rounded-3xl p-6 text-center space-y-2">
             <div className="text-3xl">📦</div>
