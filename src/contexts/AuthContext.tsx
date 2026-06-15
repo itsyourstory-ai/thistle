@@ -9,6 +9,7 @@ import React, {
 } from "react";
 import type { Session, User, AuthError, Provider } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
+import { isDevAuthBypass, makeMockSession } from "@/lib/devAuthBypass";
 
 /**
  * Single source of truth for the signed-in user. Mirrors the WizardContext
@@ -47,6 +48,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (isDevAuthBypass()) {
+      setSession(makeMockSession());
+      setLoading(false);
+      return;
+    }
+
     let active = true;
 
     supabase.auth.getSession().then(({ data }) => {

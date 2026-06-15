@@ -64,7 +64,9 @@ function readFromStorage(): TestModeState {
 }
 
 // Initialise from localStorage in DEV; always-disabled default in prod.
-let _state: TestModeState = import.meta.env.DEV ? readFromStorage() : { ...DEFAULT_STATE };
+let _state: TestModeState = import.meta.env.DEV
+  ? { ...readFromStorage(), ...(import.meta.env.VITE_DEV_TEST_MODE === "1" ? { enabled: true } : {}) }
+  : { ...DEFAULT_STATE };
 const _listeners = new Set<() => void>();
 
 function _notify() {

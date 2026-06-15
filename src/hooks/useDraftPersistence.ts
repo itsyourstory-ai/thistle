@@ -4,6 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useWizard } from "@/contexts/WizardContext";
 import { supabase } from "@/integrations/supabase/client";
 import { serializeAnswers } from "@/lib/draftPhotos";
+import { isDevAuthBypass } from "@/lib/devAuthBypass";
 
 /**
  * Persists wizard answers to book_drafts on every answers change (debounced).
@@ -44,6 +45,9 @@ export function useDraftPersistence(): { saveNow: () => Promise<void>; dirty: bo
 
     if (!currentUser) return;
     if (!currentAnswers.childName) return;
+    // AIDEV-NOTE: bypass mode has no real auth.users row -- drafts do not persist;
+    // use test-mode seed profiles to load wizard data instead.
+    if (isDevAuthBypass()) return;
 
     try {
       if (!currentDraftId) {
