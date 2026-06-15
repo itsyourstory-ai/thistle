@@ -20,6 +20,10 @@ import RootRedirect from "@/components/RootRedirect";
 
 beforeEach(() => vi.clearAllMocks());
 
+vi.mock("@/pages/Landing", () => ({
+  default: () => <div>LANDING PAGE</div>,
+}));
+
 function renderAt(path: string, ui: React.ReactNode) {
   return render(
     <MemoryRouter initialEntries={[path]}>
@@ -104,9 +108,9 @@ describe("RootRedirect", () => {
     expect(screen.getByText("DASHBOARD PAGE")).toBeInTheDocument();
   });
 
-  it("sends signed-out users to /login", () => {
+  it("renders the landing page for signed-out users", () => {
     mockUseAuth.mockReturnValue({ session: null, loading: false });
     renderAt("/", <RootRedirect />);
-    expect(screen.getByText("LOGIN PAGE")).toBeInTheDocument();
+    expect(screen.getByText("LANDING PAGE")).toBeInTheDocument();
   });
 });
