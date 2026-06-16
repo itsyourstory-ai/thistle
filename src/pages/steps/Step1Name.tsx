@@ -19,7 +19,6 @@ const GENDERS = [
 
 const LANGUAGES = [
   { value: "english", label: "English" },
-  { value: "español", label: "Español" },
 ];
 
 export default function Step1() {
@@ -59,9 +58,15 @@ export default function Step1() {
     setCanContinue(name.trim().length > 0 && age !== "" && gender !== "" && language !== "");
   }, [name, age, gender, language, setCanContinue]);
 
+  const missingHint =
+    !name.trim() ? "Enter the child's name to continue." :
+    !age ? "Choose a book format to continue." :
+    !gender ? "Choose a gender to continue." :
+    !language ? "Choose a language to continue." :
+    undefined;
 
   return (
-    <WizardShell>
+    <WizardShell missingHint={missingHint}>
       <div className="space-y-10">
         {/* Heading */}
         <div className="space-y-2">
@@ -84,6 +89,7 @@ export default function Step1() {
               Name
             </h2>
             <Input
+              maxLength={40}
               value={name}
               onChange={(e) => setAnswer("childName", e.target.value)}
               placeholder="e.g. Emma, John, etc."

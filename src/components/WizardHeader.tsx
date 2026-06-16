@@ -22,15 +22,15 @@ export default function WizardHeader({
 
   return (
     <header
-      className="sticky top-0 z-30 relative flex items-center justify-between px-4 py-3 border-b border-black/10 w-full bg-wizard-bg"
+      className="sticky top-0 z-30 relative border-b border-black/10 w-full bg-wizard-bg"
     >
-      <div className="w-[70px]" />
-
-      <div className="absolute left-1/2 -translate-x-1/2">
+      {/* Progress bar: always horizontally centered in its own row */}
+      <div className="flex justify-center px-4 pt-3 pb-1 sm:py-3">
         <ProgressBar currentStep={currentStep} />
       </div>
 
-      <div className="flex items-center gap-2">
+      {/* Buttons: centered below progress bar on mobile, absolute-right on sm+ */}
+      <div className="flex justify-center items-center gap-2 px-4 pb-2 sm:pb-0 sm:absolute sm:right-4 sm:top-0 sm:bottom-0">
         {onDevSkip && (
           <button
             type="button"

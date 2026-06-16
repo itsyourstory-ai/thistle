@@ -11,6 +11,9 @@ export default function WizardShell({
   showSkip = false,
   maxWidth = 700,
   onBeforeContinue,
+  continueLabel,
+  missingHint,
+  footer,
 }: {
   children: ReactNode;
   showSkip?: boolean;
@@ -18,6 +21,12 @@ export default function WizardShell({
   /** Optional gate. Return false (or a Promise resolving to false) to block
    *  navigation — useful for "are you sure?" confirmations. */
   onBeforeContinue?: () => boolean | Promise<boolean>;
+  /** Label for the Continue button. Defaults to "Continue →". */
+  continueLabel?: string;
+  /** Short hint shown above the bottom bar only when canContinue is false. */
+  missingHint?: string;
+  /** When provided, replaces the entire sticky bottom bar. */
+  footer?: ReactNode;
 }) {
   const { step } = useParams<{ step: string }>();
   const location = useLocation();
@@ -52,43 +61,48 @@ export default function WizardShell({
         <div className="w-full" style={{ maxWidth: `${maxWidth}px` }}>{children}</div>
       </main>
 
-      {/* Bottom bar */}
-      <div className="sticky bottom-0 z-30 px-4 py-4 flex flex-col items-center gap-2 border-t border-black/10 bg-wizard-bg">
-        <div className="flex justify-center items-center gap-3 w-full" style={{ maxWidth: "700px" }}>
-          {currentStep > 1 && (
+      {/* Bottom bar — footer prop overrides entirely (pass null to suppress) */}
+      {footer !== undefined ? footer : (
+        <div className="sticky bottom-0 z-30 px-4 py-4 flex flex-col items-center gap-2 border-t border-black/10 bg-wizard-bg">
+          {!canContinue && missingHint && (
+            <p className="text-xs text-muted-foreground text-center">{missingHint}</p>
+          )}
+          <div className="flex justify-center items-center gap-3 w-full" style={{ maxWidth: "700px" }}>
+            {currentStep > 1 && (
+              <Button
+                type="button"
+                variant="wizardOutline"
+                size="pill"
+                onClick={goBack}
+                className="flex-1 basis-0 transition-all"
+              >
+                ← Back
+              </Button>
+            )}
+            {showSkip && (
+              <Button
+                type="button"
+                variant="wizardGhost"
+                size="pill"
+                onClick={goNext}
+                className="transition-all"
+              >
+                Skip
+              </Button>
+            )}
             <Button
               type="button"
-              variant="wizardOutline"
+              variant="wizard"
               size="pill"
-              onClick={goBack}
-              className="flex-1 basis-0 transition-all"
+              onClick={handleContinue}
+              disabled={!canContinue}
+              className="flex-1 basis-0 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
             >
-              ← Back
+              {continueLabel ?? "Continue →"}
             </Button>
-          )}
-          {showSkip && (
-            <Button
-              type="button"
-              variant="wizardGhost"
-              size="pill"
-              onClick={goNext}
-              className="transition-all"
-            >
-              Skip
-            </Button>
-          )}
-          <Button
-            type="button"
-            variant="wizard"
-            size="pill"
-            onClick={handleContinue}
-            disabled={!canContinue}
-            className="flex-1 basis-0 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-          >
-            Continue →
-          </Button>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

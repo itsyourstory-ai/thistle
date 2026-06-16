@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import WizardShell from "@/components/WizardShell";
 import { useWizard } from "@/contexts/WizardContext";
 import { SelectableTile } from "@/components/SelectableTile";
@@ -35,12 +35,24 @@ export default function Step2() {
     setCanContinue(genre !== "" && mood !== "");
   }, [genre, mood, setCanContinue]);
 
+  const missingHint =
+    !genre ? "Choose a story type to continue." :
+    !mood ? "Almost there — choose a mood below 👇" :
+    undefined;
+
+  const moodSectionRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (genre && !mood && moodSectionRef.current) {
+      moodSectionRef.current.scrollIntoView?.({ behavior: "smooth", block: "start" });
+    }
+  }, [genre, mood]);
+
   const cardExtras = "p-4 text-left";
 
 
 
   return (
-    <WizardShell>
+    <WizardShell missingHint={missingHint}>
       <div className="space-y-10">
         {/* Heading */}
         <div className="space-y-2">
@@ -76,7 +88,7 @@ export default function Step2() {
         </div>
 
         {/* Mood grid */}
-        <div className="space-y-3">
+        <div className="space-y-3" ref={moodSectionRef}>
           <h2 className="font-heading text-xl sm:text-2xl font-semibold text-left text-wizard">
             Mood
           </h2>

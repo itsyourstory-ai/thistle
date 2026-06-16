@@ -89,6 +89,12 @@ export default function Step7() {
     );
   }, [protagonist.name, protagonist.age, protagonist.gender, setCanContinue]);
 
+  const missingHint =
+    !protagonist.name.trim() ? "Add the protagonist's name to continue." :
+    !protagonist.age.trim() ? "Add their age to continue." :
+    !protagonist.gender ? "Choose their gender to continue." :
+    undefined;
+
   // Kick off the background portrait the moment the first protagonist photo
   // is uploaded. No visible UI on this step — result is shown on Step 8.
   useCharacterPortrait();
@@ -155,7 +161,7 @@ export default function Step7() {
   const protoName = protagonist.name || "Main Character";
 
   return (
-    <WizardShell onBeforeContinue={handleBeforeContinue}>
+    <WizardShell onBeforeContinue={handleBeforeContinue} missingHint={missingHint}>
       <div className="space-y-6">
         {/* heading */}
         <div className="space-y-2">
@@ -270,12 +276,12 @@ export default function Step7() {
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2 sm:gap-0">
-            <Button type="button" variant="outline" size="sm" onClick={() => resolveNoChars(true)}>
-              Continue anyway
-            </Button>
-            <Button type="button" variant="wizard" size="sm"
+            <Button type="button" variant="wizardOutline" size="sm"
               onClick={() => { resolveNoChars(false); addSupporting(); }}>
               Add a character
+            </Button>
+            <Button type="button" variant="wizard" size="sm" onClick={() => resolveNoChars(true)}>
+              Continue anyway
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -57,13 +57,20 @@ const BOOST_BY_GENDER: Partial<Record<Gender, Partial<Record<AgeRange, Suggestio
     "6-8": [s("🦸","superheroes"), s("🥷","ninjas"), s("🏴‍☠️","pirates"), s("🛹","skateboards"), s("⛏️","minecraft-style worlds"), s("⚽","soccer"), s("🛡️","knights"), s("🐉","dragons")],
     "9-12": [s("🛹","skateboarding"), s("🎮","video games"), s("🏀","basketball"), s("🏃","parkour"), s("🚗","cars"), s("🤖","robots"), s("🎸","guitar"), s("🎣","fishing")],
   },
+  "non-binary": {
+    "0-2": [s("🐾","animals"), s("🎵","music"), s("🌿","nature"), s("🎨","colors"), s("🧸","soft toys"), s("🌙","stars"), s("🌊","water"), s("🌸","flowers")],
+    "3-5": [s("🦕","dinosaurs"), s("🐾","animals"), s("🎨","art"), s("🧩","puzzles"), s("🌿","nature"), s("🎵","music"), s("🌈","rainbows"), s("🚀","space")],
+    "6-8": [s("🧩","puzzles"), s("🌿","nature"), s("🎨","art"), s("✂️","crafts"), s("🔬","science"), s("🌊","the ocean"), s("🐾","animals"), s("🎵","music")],
+    "9-12": [s("✍️","writing"), s("🎨","art"), s("🔬","science"), s("🌿","nature"), s("🧩","puzzles"), s("💻","coding"), s("🎵","music"), s("📷","photography")],
+  },
 };
 
 function buildPool(age: AgeRange, gender: string): Suggestion[] {
   const base = BASE_BY_AGE[age] ?? BASE_BY_AGE["3-5"];
+  const genderKey = gender as Gender;
   const boost =
-    gender && (gender === "girl" || gender === "boy")
-      ? BOOST_BY_GENDER[gender as Gender]?.[age] ?? []
+    gender && BOOST_BY_GENDER[genderKey]
+      ? BOOST_BY_GENDER[genderKey]?.[age] ?? []
       : [];
   const seen = new Set<string>();
   return [...boost, ...base].filter((it) => {
@@ -115,15 +122,17 @@ export default function Step4b() {
   const addEntry = (word: string, emoji?: string) => {
     if (list.length >= MAX_INTERESTS) return;
     if (word && enteredSet.has(word.toLowerCase())) return;
+    // Custom-typed entries (no emoji from pool) default to ✨ for visual parity
+    const resolvedEmoji = emoji || (word ? "✨" : undefined);
     // Fill first empty slot if one exists
     const emptyIdx = list.findIndex((e) => !e.word.trim());
     if (emptyIdx >= 0 && word) {
       const next = list.slice();
-      next[emptyIdx] = { word, emoji };
+      next[emptyIdx] = { word, emoji: resolvedEmoji };
       setList(next);
       return;
     }
-    const next = [...list, { word, emoji }];
+    const next = [...list, { word, emoji: resolvedEmoji }];
     setList(next);
     if (!word) focusIdxRef.current = next.length - 1;
   };
@@ -131,8 +140,18 @@ export default function Step4b() {
   const updateEntry = (idx: number, word: string) => {
     const next = list.slice();
     const prev = next[idx];
-    // Drop emoji if user edits the suggestion text
-    const emoji = prev?.emoji && prev.word === word ? prev.emoji : undefined;
+    // Keep emoji if the word is unchanged (user didn't edit a suggestion)
+    // Assign ✨ for custom-typed entries that have no emoji yet
+    let emoji: string | undefined;
+    if (prev?.emoji && prev.word === word) {
+      emoji = prev.emoji;
+    } else if (prev?.emoji) {
+      // User edited a suggestion — drop the pool emoji
+      emoji = undefined;
+    } else if (word) {
+      // No prior emoji (custom slot): assign default ✨ for visual parity
+      emoji = "✨";
+    }
     next[idx] = { word, emoji };
     setList(next);
   };
@@ -219,15 +238,15 @@ export default function Step4b() {
           </div>
         )}
 
+        <p className="text-sm text-muted-foreground">
+          ⚠️ Please don't reference copyrighted material (movies, TV shows, singers, brands, etc.) — we can't include them in your book.
+        </p>
+
         {atCap && (
           <p className="text-sm text-muted-foreground">
             That's plenty — 3 is the sweet spot ✨
           </p>
         )}
-
-        <p className="text-xs text-muted-foreground">
-          ⚠️ Please don't reference copyrighted material (movies, TV shows, singers, brands, etc.) — we can't include them in your book.
-        </p>
       </div>
     </WizardShell>
   );

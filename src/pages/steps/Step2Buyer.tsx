@@ -9,7 +9,7 @@ const RELATIONSHIPS = [
   { value: "grandparent", label: "Grandparent", emoji: "🧓" },
   { value: "teacher", label: "Teacher", emoji: "📚" },
   { value: "friend", label: "Friend", emoji: "💛" },
-  { value: "other", label: "Someone else", emoji: "✨" },
+  { value: "other", label: "Someone else", emoji: "🤗" },
 ] as const;
 
 // Occasions — matches engine's BookEngineInput["occasion"].
@@ -36,11 +36,19 @@ export default function StepWhoIsItFor() {
     setCanContinue(buyerRelationship !== "" && occasion !== "");
   }, [buyerRelationship, occasion, setCanContinue]);
 
+  const missingHint =
+    !buyerRelationship ? "Choose your relationship to the child." :
+    !occasion ? "Choose an occasion to continue." :
+    undefined;
+
   const tileExtras = "px-4 py-4 text-center";
+  // min-h ensures all relationship tiles stay the same height even when
+  // "Someone else" wraps to a second line on narrow viewports.
+  const relTileExtras = `${tileExtras} min-h-[5rem]`;
 
 
   return (
-    <WizardShell>
+    <WizardShell missingHint={missingHint}>
       <div className="space-y-10">
         {/* Heading — warm, encouraging */}
         <div className="space-y-2">
@@ -66,7 +74,7 @@ export default function StepWhoIsItFor() {
                 key={r.value}
                 selected={buyerRelationship === r.value}
                 onClick={() => setAnswer("buyer_relationship", r.value)}
-                className={tileExtras}
+                className={relTileExtras}
               >
                 <div className="text-2xl mb-1">{r.emoji}</div>
                 <div className="text-sm font-semibold leading-tight text-wizard">{r.label}</div>
