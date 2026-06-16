@@ -25,10 +25,12 @@ export default function Step3() {
     setCanContinue(lesson !== "");
   }, [lesson, setCanContinue]);
 
+  const missingHint = !lesson ? "Choose a life lesson to continue." : undefined;
+
   const selectedLesson = LESSONS.find((l) => l.value === lesson);
 
   return (
-    <WizardShell>
+    <WizardShell missingHint={missingHint}>
       <div className="space-y-10">
         <div className="space-y-2">
           <h1 className="font-heading text-3xl sm:text-4xl font-semibold text-wizard">

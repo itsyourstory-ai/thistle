@@ -97,13 +97,30 @@ export function PhotoUploadZone({ photos, onChange, heroName, max = 3 }: {
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
 
+  const MAX_FILE_SIZE_MB = 10;
+  const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
+
   const handleFiles = (files: FileList | null) => {
     if (!files) return;
     const remaining = max - photos.length;
     if (remaining <= 0) { toast.error(`Maximum ${max} photos`); return; }
     const toProcess = Array.from(files).slice(0, remaining);
     toProcess.forEach((file) => {
+      // Type validation — only applies to drag-drop (the <input> has accept="image/*")
+      if (!file.type.startsWith("image/")) {
+        toast.error("Only image files are supported.");
+        return;
+      }
+      // Size validation
+      if (file.size > MAX_FILE_SIZE_BYTES) {
+        toast.error(`Photos must be under ${MAX_FILE_SIZE_MB} MB.`);
+        return;
+      }
+
       const reader = new FileReader();
+      reader.onerror = () => {
+        toast.error("Couldn't read that photo. Try another one.");
+      };
       reader.onload = () => {
         onChange([...photos, reader.result as string].slice(0, max));
       };

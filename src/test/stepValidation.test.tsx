@@ -14,6 +14,7 @@ import React from "react";
 import { MemoryRouter, Routes, Route } from "react-router-dom";
 import { WizardProvider, useWizard } from "@/contexts/WizardContext";
 import { emptyAppearance } from "@/lib/wizardTypes";
+import Step1Name from "@/pages/steps/Step1Name";
 import Step3Genre from "@/pages/steps/Step3Genre";
 import Step7Character from "@/pages/steps/Step7Character";
 
@@ -54,6 +55,67 @@ function renderStep3() {
     </MemoryRouter>,
   );
 }
+
+// ── Step 1: Name ──────────────────────────────────────────────────────────────
+
+function renderStep1() {
+  return render(
+    <MemoryRouter initialEntries={["/step/1-name"]}>
+      <WizardProvider>
+        <Routes>
+          <Route path="/step/:step" element={<Step1Name />} />
+        </Routes>
+      </WizardProvider>
+    </MemoryRouter>,
+  );
+}
+
+describe("Step1Name — missingHint", () => {
+  it("shows a hint about entering a name when name is empty", () => {
+    renderStep1();
+    expect(screen.getByText(/enter the child's name/i)).toBeInTheDocument();
+  });
+
+  it("advances hint to book format after name is entered", async () => {
+    renderStep1();
+
+    const input = screen.getByPlaceholderText(/emma/i);
+    await act(async () => { fireEvent.change(input, { target: { value: "Alex" } }); });
+
+    // Name hint gone, now asking for book format (gender is next but the
+    // Radix Select dropdown isn't supported in jsdom, so we stop here and
+    // verify that the name hint is gone and the next hint is shown).
+    expect(screen.queryByText(/enter the child's name/i)).not.toBeInTheDocument();
+    expect(screen.getByText(/choose a book format/i)).toBeInTheDocument();
+  });
+});
+
+// ── Step 1: Name — maxLength and language tiles ───────────────────────────────
+
+describe("Step1Name — name input maxLength", () => {
+  it("renders the name input with maxLength of 40", () => {
+    renderStep1();
+    const input = screen.getByPlaceholderText(/emma/i);
+    expect(input).toHaveAttribute("maxLength", "40");
+  });
+});
+
+describe("Step1Name — language tiles", () => {
+  it("renders the English tile as a selectable button", () => {
+    renderStep1();
+    expect(screen.getByRole("button", { name: /english/i })).toBeInTheDocument();
+  });
+
+  it("does NOT render Español as a selectable button", () => {
+    renderStep1();
+    expect(screen.queryByRole("button", { name: /español/i })).not.toBeInTheDocument();
+  });
+
+  it("renders a non-interactive 'More coming soon' placeholder", () => {
+    renderStep1();
+    expect(screen.getByText(/more coming soon/i)).toBeInTheDocument();
+  });
+});
 
 // ── Step 3: Genre + Mood ──────────────────────────────────────────────────────
 
@@ -172,5 +234,67 @@ describe("Step7Character — canContinue gating", () => {
       getApi().seedAnswers({ protagonist: { ...fullProtagonist, gender: "" } });
     });
     expect(screen.getByRole("button", { name: /continue/i })).toBeDisabled();
+  });
+});
+
+// ── Step 3: Genre + Mood — missingHint ───────────────────────────────────────
+
+describe("Step3Genre — missingHint", () => {
+  it("shows a hint about story type when neither genre nor mood is selected", () => {
+    renderStep3();
+    expect(screen.getByText("Choose a story type to continue.")).toBeInTheDocument();
+  });
+
+  it("shows a hint mentioning mood when genre is selected but mood is not", async () => {
+    renderStep3();
+    const bedtimeBtn = screen.getByRole("button", { name: /bedtime/i });
+    await act(async () => { fireEvent.click(bedtimeBtn); });
+    expect(screen.getByText(/almost there/i)).toBeInTheDocument();
+  });
+
+  it("does not show a hint when both genre and mood are selected", async () => {
+    renderStep3();
+    const mysteryBtn = screen.getByRole("button", { name: /mystery/i });
+    const calmBtn = screen.getByRole("button", { name: /calm/i });
+    await act(async () => { fireEvent.click(mysteryBtn); });
+    await act(async () => { fireEvent.click(calmBtn); });
+    // Both hint texts should be gone
+    expect(screen.queryByText("Choose a story type to continue.")).not.toBeInTheDocument();
+    expect(screen.queryByText(/almost there/i)).not.toBeInTheDocument();
+  });
+});
+
+// ── Step 7: Character — missingHint ──────────────────────────────────────────
+
+describe("Step7Character — missingHint", () => {
+  it("shows a hint about protagonist's name when name is empty", () => {
+    renderStep7();
+    expect(screen.getByText(/protagonist's name/i)).toBeInTheDocument();
+  });
+
+  it("shows a hint about age when name is set but age is missing", async () => {
+    const { getApi } = renderStep7();
+    await act(async () => {
+      getApi().seedAnswers({ protagonist: { ...fullProtagonist, age: "" } });
+    });
+    expect(screen.getByText(/their age/i)).toBeInTheDocument();
+  });
+
+  it("shows a hint about gender when name and age are set but gender is missing", async () => {
+    const { getApi } = renderStep7();
+    await act(async () => {
+      getApi().seedAnswers({ protagonist: { ...fullProtagonist, gender: "" } });
+    });
+    expect(screen.getByText(/their gender/i)).toBeInTheDocument();
+  });
+
+  it("does not show a hint when all required fields are set", async () => {
+    const { getApi } = renderStep7();
+    await act(async () => {
+      getApi().seedAnswers({ protagonist: fullProtagonist });
+    });
+    expect(screen.queryByText(/protagonist's name/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/their age/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/their gender/i)).not.toBeInTheDocument();
   });
 });

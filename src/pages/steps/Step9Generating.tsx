@@ -3,7 +3,7 @@ import { POLL_INITIAL_DELAY, nextPollDelay } from "@/lib/pollBackoff";
 import { pathForStep } from "@/lib/wizardSteps";
 import { useNavigate } from "react-router-dom";
 import { useWizard } from "@/contexts/WizardContext";
-import WizardHeader from "@/components/WizardHeader";
+import WizardShell from "@/components/WizardShell";
 import { buildBrief } from "@/lib/buildBrief";
 import { coverMessages, pipelineMessage, useRotatingMessage } from "@/lib/loadingMessages";
 import { callEdge } from "@/lib/edgeFunctions";
@@ -137,13 +137,10 @@ export default function Step10Generating() {
   }, [bookId, setIsGenerating]);
 
   return (
-    <div
-      className="flex flex-col min-h-[100dvh]"
-      style={{ backgroundColor: "hsl(var(--wizard-bg))" }}
-    >
-      <WizardHeader currentStep={11} />
-
-      <div className="flex-1 flex flex-col items-center justify-center px-4 relative">
+    // AIDEV-NOTE: footer={null} suppresses the default Back/Continue bar — this step
+    // manages its own CTAs inline (state-dependent: generating / done / error).
+    <WizardShell footer={null}>
+      <div className="flex flex-col items-center justify-center px-4 relative" style={{ minHeight: "calc(100dvh - 64px)" }}>
         <style>{`
           @keyframes book-open {
             0% { transform: rotateY(0deg); }
@@ -282,7 +279,26 @@ export default function Step10Generating() {
           Every word, every illustration — made just for {name}.
         </p>
 
-        {/* Progress bar */}
+        {/* Indeterminate progress bar — shown during the story-writing stage
+            before any page/portrait progress has been reported */}
+        {!done && !errored && (!progress || progress.total === 0) && (
+          <div className="w-full max-w-xs mb-6">
+            <div
+              className="h-2 rounded-full overflow-hidden"
+              style={{ backgroundColor: "hsl(var(--wizard-primary) / 0.15)" }}
+            >
+              <div
+                className="h-full w-1/3 rounded-full animate-pulse"
+                style={{ backgroundColor: "hsl(var(--wizard-primary))" }}
+              />
+            </div>
+            <p className="text-xs text-center mt-2" style={{ color: "hsl(var(--wizard-primary) / 0.6)" }}>
+              Writing {name}'s story…
+            </p>
+          </div>
+        )}
+
+        {/* Deterministic progress bar — shown once pages/portraits start */}
         {!done && !errored && progress && progress.total > 0 && (
           <div className="w-full max-w-xs mb-6">
             <div
@@ -308,16 +324,18 @@ export default function Step10Generating() {
         )}
 
         {done && !errored && (
-          <div className="flex flex-col items-center gap-3" style={{ animation: "btn-fade 0.6s ease-out" }}>
-            <p className="text-sm text-center max-w-sm" style={{ color: "hsl(var(--wizard-primary) / 0.75)" }}>
-              We'll email everything to <span className="font-semibold">{answers.buyer_email}</span> shortly.
+          <div className="flex flex-col items-center gap-4 text-center max-w-sm" style={{ animation: "btn-fade 0.6s ease-out" }}>
+            <p className="text-lg font-semibold text-wizard">{name}'s book is on its way! 🎉</p>
+            <p className="text-sm" style={{ color: "hsl(var(--wizard-primary) / 0.75)" }}>
+              We're putting the finishing touches on every page. You'll get an email at{" "}
+              <span className="font-semibold">{answers.buyer_email}</span> as soon as it's ready.
             </p>
             <button
               onClick={() => navigate(pathForStep(1))}
-              className="px-8 py-4 rounded-full text-base font-semibold text-white"
-              style={{ backgroundColor: "hsl(var(--wizard-primary))" }}
+              className="text-sm underline underline-offset-2 transition-colors"
+              style={{ color: "hsl(var(--wizard-primary) / 0.7)" }}
             >
-              🎉 Back to start
+              Create another book
             </button>
           </div>
         )}
@@ -346,6 +364,6 @@ export default function Step10Generating() {
           </div>
         )}
       </div>
-    </div>
+    </WizardShell>
   );
 }
