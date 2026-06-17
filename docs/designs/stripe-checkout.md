@@ -74,7 +74,7 @@ One row per checkout attempt, created when the PaymentIntent is created. Writes 
 | `currency` | text | default `usd` |
 | `buyer_name` | text null | |
 | `buyer_email` | text null | also → Stripe customer/metadata |
-| `shipping` | jsonb null | `{name, line1, line2, city, region, postal_code, country}` for hardcover; null for digital |
+| `shipping` | jsonb null | Lulu-compatible shape for hardcover; null for digital. `{name, street1, street2, city, state_code, postcode, country_code, phone}` — `country_code` fixed `"US"` for v1, `state_code` = US state. Field names match the Lulu print API so the future fulfillment ticket needs no mapping. |
 | `stripe_payment_intent_id` | text **unique** | guards double-create |
 | `stripe_customer_id` | text null | |
 | `draft_id` | uuid null | ties order to the wizard session (`book_drafts`) before a book exists |
@@ -101,7 +101,9 @@ Step 11 checkout → Step 12 generation (`src/pages/steps/Step9Generating.tsx`).
 
 1. Step 11 loads with the existing plan cards + buyer name/email. Selecting a plan asks
    the server to create a PaymentIntent and returns a `client_secret`.
-2. Hardcover → a shipping-address block appears (required before paying). Digital hides it.
+2. Hardcover → a shipping-address block appears (required before paying): name, street1,
+   street2 (optional), city, **US state dropdown** (`state_code`), postcode, and **phone**
+   (required — Lulu/carriers need it). Country is fixed to US for v1. Digital hides it.
 3. Optional discount-code field + "Apply"; server validates against Stripe promotion
    codes and recomputes the total, updating the same PaymentIntent's amount. Invalid →
    inline error, total unchanged.
@@ -119,7 +121,8 @@ Step 11 checkout → Step 12 generation (`src/pages/steps/Step9Generating.tsx`).
 ### Edge functions
 
 - **`create-payment-intent`** (new): auth + rate-limited. Sets `base_amount_cents` from a
-  server-side price map (digital 999, hardcover 5499). Validates hardcover shipping.
+  server-side price map (digital 999, hardcover 5499). Validates hardcover shipping
+  (requires street1, city, `state_code`, postcode, phone; `country_code` forced to `US`).
   Validates discount via Stripe promotion code. Upserts one `orders` row keyed on
   `(user_id, draft_id)`, creates/updates its PaymentIntent (Stripe idempotency key = order
   id). Returns `{ client_secret, order_id, amount_cents, discount_cents }`. Also serves the
@@ -157,7 +160,8 @@ existing harness; production stays byte-identical.
 - **Unpaid / abandoned order** — stays `pending`, never satisfies the gate.
 - **Invalid / expired discount code** — server rejects, amount unchanged, inline error.
 - **Hardcover with missing/invalid shipping** — `create-payment-intent` rejects before
-  creating the PI; client blocks pay and shows field errors. Digital skips shipping.
+  creating the PI; client blocks pay and shows field errors (incl. missing phone / state).
+  Digital skips shipping.
 - **Amount changes after a PI exists** — server updates the existing PI's amount; displayed
   total reflects the server response.
 
@@ -177,8 +181,10 @@ existing harness; production stays byte-identical.
 
 **Deferred:**
 - Refunds / cancellations.
-- Hardcover fulfillment / printing pipeline (address collected + stored only; flagged as
-  a separate ticket).
+- Hardcover fulfillment / printing pipeline via **Lulu** (https://www.lulu.com/, print
+  API at https://developers.lulu.com/). Separate ticket. This ticket collects + stores a
+  Lulu-compatible US shipping address (incl. phone) so fulfillment needs no re-collection
+  or migration. Hardcover is **US-only** for v1.
 - Transactional email (receipt + "book ready") — separate **Loops** ticket, reads from
   `orders`.
 - Subscriptions, credits, tax/VAT.
@@ -188,5 +194,5 @@ existing harness; production stays byte-identical.
 
 ## Open Questions
 
-- None blocking. Hardcover fulfillment is confirmed deferred (address collected + stored
-  only) — flag if the printer/vendor integration turns out to be needed sooner.
+- None blocking. Hardcover fulfillment via Lulu is confirmed deferred to a later ticket;
+  this ticket collects + stores a Lulu-compatible US shipping address (incl. phone) only.
