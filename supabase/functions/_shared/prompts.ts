@@ -361,7 +361,7 @@ export const STORY_WRITING_RULES = [
   "WRITING RULES (apply to every story page):",
   "1. Content safety: no profanity, no nudity or sexual content of any kind, no crude or bathroom humor, no scary imagery beyond age-appropriate mild tension, no violence beyond gentle cartoon slapstick suitable for the age band.",
   "2. Age appropriateness: vocabulary, sentence length, themes, emotional intensity, and humor must match the given age band. Romance, death-as-plot, real-world hazards, and complex moral ambiguity are off-limits for under-6 and only allowed for older bands if directly required by the chosen value.",
-  "3. Gifter / occasion neutrality: buyer relationship and occasion are internal metadata only. They must NOT appear in story text, must NOT shape the plot, setting, or characters, and must NOT be referenced in the dedication beyond a single soft mention if a belongs-to page is requested.",
+  "3. Gifter / occasion neutrality: buyer relationship and occasion are internal metadata only. They must NOT appear in story text or shape the plot, setting, or characters.",
   "4. Interests = seasoning, present but not dominant: the chosen framework owns the plot arc; interests never drive the main conflict, resolution, or structure. Every listed interest should appear at least once across the 30 story pages as flavor (setting detail, supporting character, prop, sensory beat, background activity). Appearance is natural and uneven — not every page needs an interest, weights don't have to be equal, and an interest should be skipped on any page where it doesn't fit rather than forced in. Interests flavor the world AROUND the characters — they must NOT be painted onto the characters themselves. Do not put interests on a character's clothing, accessories, hair, jewelry, named pets, or chosen name, and do not make their bedroom decor or default outfit a themed costume of their interest (a dinosaur-loving child does not wear a dinosaur shirt by default; a space-loving child does not wear rocket pajamas as their standard outfit). Characters keep the appearance defined in their profile; interests show up through what they encounter, notice, or do, not through costume. Interests change the texture of the world, not the shape of the story or the look of the characters.",
 ].join("\n");
 
@@ -438,17 +438,32 @@ export function buildBookJsonSchema(): any {
   };
 }
 
-export function buildBookUserMessageV2({ age_band, include_belongs_to_page, buyer_relationship_label, occasion_label, child_name }: { age_band: AgeBand; include_belongs_to_page?: boolean; buyer_relationship_label: string; occasion_label: string; child_name: string }) {
+export function buildBookUserMessageV2({ age_band, child_name }: { age_band: AgeBand; child_name: string }) {
   return [
     "Return the complete book JSON using the tool schema.",
     `Child name: ${child_name}. Age band: ${age_band}.`,
-    `Dedication/keepsake context: from ${buyer_relationship_label}; occasion ${occasion_label}.`,
-    "Buyer relationship and occasion are for the dedication only — they must not influence story pages 3–32 in any way.",
-    include_belongs_to_page ? "Include a gentle belongs-to style dedication on page 2." : "Use page 2 as a short dedication/intro page.",
+    "Page 2 is the dedication page — generate an image_scene for a gentle spot illustration. Set text to an empty string; the buyer's dedication will be applied after generation.",
     "Layout registry for story pages:",
     serializeLayoutRegistryForPrompt(),
     "Use varied layouts from the registry. Page text must be short enough for picture-book overlay. Do not write text inside image_scene.",
   ].join("\n");
+}
+
+// Strips control chars (except newlines) and trims/caps dedication text
+// before it is written verbatim into the book page.
+function sanitizeDedicationText(input: unknown, maxLen = 600): string {
+  if (typeof input !== "string") return "";
+  // deno-lint-ignore no-control-regex
+  return input.replace(/[\x00-\x09\x0b-\x1f\x7f]/g, "").trim().slice(0, maxLen);
+}
+
+/** Replaces page-2 dedication text with the buyer-supplied string verbatim.
+ *  No-op when dedicationText is empty. Touches only the `text` field — the
+ *  AI-generated image_scene for the spot illustration is preserved. */
+export function applyDedication(pages: RawBookPage[], dedicationText?: string): RawBookPage[] {
+  const clean = sanitizeDedicationText(dedicationText);
+  if (!clean) return pages;
+  return pages.map((p) => (p.role === "dedication" ? { ...p, text: clean } : p));
 }
 
 export function parseBookPagesOutput(rawArgs: string): { meta: { title: string; repeating_phrase?: string; book_outfit?: string }; cover: { title: string; subtitle?: string; image_scene?: string; setting?: string; mood?: string }; pages: RawBookPage[] } {

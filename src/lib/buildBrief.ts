@@ -74,6 +74,8 @@ export interface StoryBrief {
   buyer_name?: string;
   /** Buyer email collected at checkout. */
   buyer_email?: string;
+  /** User-written dedication text shown verbatim on page 2. */
+  dedicationText?: string;
 }
 
 function wordsFromList(list: unknown): string[] {
@@ -142,5 +144,6 @@ export function buildBrief(answers: WizardAnswers): StoryBrief {
     bookBelongsTo: answers.bookBelongsTo,
     buyer_name: answers.buyer_name,
     buyer_email: answers.buyer_email,
+    dedicationText: answers.dedicationText,
   };
 }

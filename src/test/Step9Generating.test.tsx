@@ -82,7 +82,7 @@ import Step9Generating from "@/pages/steps/Step9Generating";
 function renderStep(answers: Record<string, unknown> = {}) {
   mockAnswers = answers;
   return render(
-    <MemoryRouter initialEntries={["/step/11-generating"]}>
+    <MemoryRouter initialEntries={["/step/12-generating"]}>
       <Routes>
         <Route path="/step/:step" element={<Step9Generating />} />
       </Routes>

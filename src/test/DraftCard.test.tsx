@@ -31,12 +31,12 @@ describe("DraftCard", () => {
 
   it("renders the step label derived from currentStep", () => {
     renderDraftCard({ currentStep: "/step/3-genre" });
-    expect(screen.getByText("Step 3 of 11")).toBeInTheDocument();
+    expect(screen.getByText("Step 3 of 12")).toBeInTheDocument();
   });
 
   it("renders step label for a different step", () => {
     renderDraftCard({ currentStep: "/step/7-character" });
-    expect(screen.getByText("Step 7 of 11")).toBeInTheDocument();
+    expect(screen.getByText("Step 7 of 12")).toBeInTheDocument();
   });
 
   it("calls onResume when the Resume button is clicked", () => {
