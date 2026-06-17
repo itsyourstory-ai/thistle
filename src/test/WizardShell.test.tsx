@@ -15,9 +15,13 @@ import WizardShell from "@/components/WizardShell";
 
 // ── Mocks ─────────────────────────────────────────────────────────────────────
 
-// Stub WizardHeader — it tries to connect to supabase for the dev panel.
+// Stub WizardHeader — captures onDevSkip prop for dev-gate tests.
+let capturedOnDevSkip: (() => void) | undefined;
 vi.mock("@/components/WizardHeader", () => ({
-  default: () => <div data-testid="wizard-header" />,
+  default: (props: { currentStep?: number; onDevSkip?: () => void }) => {
+    capturedOnDevSkip = props.onDevSkip;
+    return <div data-testid="wizard-header" />;
+  },
 }));
 
 // Stub supabase so any indirect imports don't fail.
@@ -131,5 +135,27 @@ describe("WizardShell — footer prop", () => {
     renderShell({ footer: <div data-testid="custom-footer">My custom footer</div> });
     // The default Continue button should not be present
     expect(screen.queryByRole("button", { name: /continue/i })).not.toBeInTheDocument();
+  });
+});
+
+// ── Skip step dev gate ─────────────────────────────────────────────────────────
+
+describe("WizardShell — Skip step dev gate", () => {
+  it("does not pass onDevSkip to WizardHeader in production mode", () => {
+    const originalDev = import.meta.env.DEV;
+    import.meta.env.DEV = false;
+    capturedOnDevSkip = undefined;
+    renderShell();
+    expect(capturedOnDevSkip).toBeUndefined();
+    import.meta.env.DEV = originalDev;
+  });
+
+  it("passes onDevSkip to WizardHeader in dev mode", () => {
+    const originalDev = import.meta.env.DEV;
+    import.meta.env.DEV = true;
+    capturedOnDevSkip = undefined;
+    renderShell();
+    expect(capturedOnDevSkip).toBeDefined();
+    import.meta.env.DEV = originalDev;
   });
 });

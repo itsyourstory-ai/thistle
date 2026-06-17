@@ -54,7 +54,7 @@ export default function WizardShell({
 
   return (
     <div className="flex flex-col min-h-[100dvh] bg-wizard-bg">
-      <WizardHeader currentStep={currentStep} onDevSkip={goNext} />
+      <WizardHeader currentStep={currentStep} onDevSkip={import.meta.env.DEV ? goNext : undefined} />
 
       {/* Content */}
       <main className="flex-1 flex justify-center px-4 pt-12 pb-20">
