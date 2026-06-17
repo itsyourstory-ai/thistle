@@ -103,7 +103,7 @@ const BASE_ANSWERS = {
 function renderStep(answers: Record<string, unknown> = BASE_ANSWERS) {
   mockAnswers = answers;
   return render(
-    <MemoryRouter initialEntries={["/step/9-cast"]}>
+    <MemoryRouter initialEntries={["/step/10-cast"]}>
       <Routes>
         <Route path="/step/:step" element={<Step9Cast />} />
       </Routes>

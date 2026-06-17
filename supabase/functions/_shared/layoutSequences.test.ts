@@ -2,7 +2,7 @@ import {
   assertEquals,
   assertThrows,
   assertStringIncludes,
-} from "https://deno.land/std@0.208.0/assert/mod.ts";
+} from "jsr:@std/assert";
 import {
   DEFAULT_30_STORY_PAGE_LAYOUT_SEQUENCE,
   layoutIdForStoryPage,

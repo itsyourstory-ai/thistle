@@ -104,6 +104,10 @@ describe("buildBrief — Classic seed (Leo)", () => {
   it("maps artStyle", () => {
     expect(brief.artStyle).toBe("cozy-gouache");
   });
+
+  it("maps dedicationText", () => {
+    expect(brief.dedicationText).toBe("For Leo, with all our love.");
+  });
 });
 
 // ── Minimal seed (Priya) ──────────────────────────────────────────────────────

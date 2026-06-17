@@ -157,6 +157,9 @@ const PROFILE_CLASSIC: WizardAnswers = {
     }),
   ],
 
+  // Step 8 — dedication
+  dedicationText: "For Leo, with all our love.",
+
   // Pre-filled concept + cover so you can jump to preview
   selectedConcept: CONCEPT_CLASSIC,
   selectedPlan: "digital",
@@ -207,6 +210,8 @@ const PROFILE_MINIMAL: WizardAnswers = {
     traits: [{ word: "creative" }, { word: "dreamy" }],
   },
   supportingCharacters: [],
+
+  dedicationText: "For Priya, with all our love.",
 
   selectedConcept: CONCEPT_MINIMAL,
   selectedPlan: "digital",
@@ -278,6 +283,8 @@ const PROFILE_EDGE: WizardAnswers = {
     }),
   ],
 
+  dedicationText: "For Bartholomew-James, with all our love.",
+
   selectedConcept: CONCEPT_EDGE,
   selectedPlan: "digital",
 };
@@ -342,6 +349,8 @@ const PROFILE_SPECIAL: WizardAnswers = {
       traits: [{ word: "wise" }, { word: "mischievous" }],
     }),
   ],
+
+  dedicationText: "For River, with all our love.",
 
   selectedConcept: CONCEPT_SPECIAL,
   selectedPlan: "digital",

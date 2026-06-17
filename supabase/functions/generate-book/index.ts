@@ -15,6 +15,7 @@ import { rateLimitExceeded } from "../_shared/auth.ts";
 import { checkRateLimit } from "../_shared/rateLimit.ts";
 import {
   ageToBand,
+  applyDedication,
   BookEngineInput,
   BookOutputV2,
   bookWordTotalRange,
@@ -396,9 +397,6 @@ Deno.serve(async (req) => {
     const userMessage = [
       buildBookUserMessageV2({
         age_band,
-        include_belongs_to_page: engineInput.include_belongs_to_page,
-        buyer_relationship_label: vars.buyer_relationship,
-        occasion_label: vars.occasion,
         child_name: engineInput.child_name,
       }),
       approvedConceptInstruction,
@@ -492,7 +490,8 @@ Deno.serve(async (req) => {
         const artStyleFragment = getArtStylePrompt(engineInput.art_style);
         const bookOutfit = parsedRaw.meta.book_outfit;
 
-        const pages = parsedRaw.pages.map((p) => ({
+        const pagesWithDedication = applyDedication(parsedRaw.pages, brief.dedicationText);
+        const pages = pagesWithDedication.map((p) => ({
           ...p,
           image_prompt:
             p.role === "title"

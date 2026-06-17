@@ -121,7 +121,10 @@ export interface WizardAnswers {
   appearanceAutofillHash?: string;
   supportingPortraits?: SupportingPortraitsState;
 
-  // Step 8
+  // Step 8 — dedication
+  dedicationText?: string;
+
+  // Step 9
   selectedConcept?: StoryConcept;
   summaryBriefHash?: string;
 
