@@ -15,3 +15,15 @@
 - `supabase db push` is unreliable when the remote migration history was created outside the CLI (e.g. by Lovable). Use the SQL editor for migrations on this project.
 - `SUPABASE_ANON_KEY` is deprecated in new Supabase projects (≥2024). New projects use `SUPABASE_PUBLISHABLE_KEYS` (a JSON dict). Needed a fallback pattern: `Deno.env.get("SUPABASE_ANON_KEY") || (JSON.parse(Deno.env.get("SUPABASE_PUBLISHABLE_KEYS") ?? "{}").default ?? "")`.
 - The `.claude/settings.local.json` file can accumulate Supabase access tokens in the `permissions.allow` list — needs to be in `.gitignore`.
+
+## Catchup 2026-06-17
+
+### Friction
+None notable.
+
+### Mistakes
+- Minor copy fix needed after initial implementation (`fix: correct dedication subtitle copy and trailing newline`) — caught quickly and corrected same session.
+
+### Observations
+- The wizard step numbering in this app is intentionally offset between route slugs and filenames for steps 9 and 10 (documented in CLAUDE.md). Adding a new step mid-sequence (step 8) required careful renumbering of downstream steps — worth double-checking route slugs, file names, and ProgressBar dot count as a checklist when inserting steps.
+- Pre-existing test failures in `AuthContext.test.tsx` and `useDraftPersistence.test.ts` (7 tests) exist on `main` and should be tracked down and fixed independently; they are not related to wizard features.
