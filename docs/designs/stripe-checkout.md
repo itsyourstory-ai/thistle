@@ -1,5 +1,7 @@
 # Feature: Stripe payments / checkout (TIC-12)
 
+> Plan created: docs/plans/stripe-checkout.md
+
 Notion ticket: https://app.notion.com/p/3800fc47bb8b809b82bec714ac614670
 
 ## Problem
