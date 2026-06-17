@@ -28,6 +28,10 @@ const mockWizardContext = () => ({
 
 // ── Module mocks ──────────────────────────────────────────────────────────────
 
+vi.mock("@/lib/devAuthBypass", () => ({
+  isDevAuthBypass: () => false,
+}));
+
 vi.mock("@/contexts/AuthContext", () => ({
   useAuth: () => ({ user: { id: "user-1" }, session: {}, loading: false }),
 }));
