@@ -22,11 +22,6 @@ const mockResetPasswordForEmail = vi.fn();
 const mockSignOut = vi.fn();
 const mockUnsubscribe = vi.fn();
 
-vi.mock("@/lib/devAuthBypass", () => ({
-  isDevAuthBypass: () => false,
-  makeMockSession: () => null,
-}));
-
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: {
     auth: {
