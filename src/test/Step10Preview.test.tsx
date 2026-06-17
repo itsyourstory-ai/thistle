@@ -64,7 +64,7 @@ import Step10Preview from "@/pages/steps/Step10Preview";
 function renderStep(answers: Record<string, unknown> = {}) {
   mockAnswers = answers;
   return render(
-    <MemoryRouter initialEntries={["/step/10-preview"]}>
+    <MemoryRouter initialEntries={["/step/11-preview"]}>
       <Routes>
         <Route path="/step/:step" element={<Step10Preview />} />
       </Routes>

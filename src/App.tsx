@@ -22,6 +22,7 @@ const Step4Lesson = lazy(() => import("./pages/steps/Step4Lesson"));
 const Step5Interests = lazy(() => import("./pages/steps/Step5Interests"));
 const Step6ArtStyle = lazy(() => import("./pages/steps/Step6ArtStyle"));
 const Step7Character = lazy(() => import("./pages/steps/Step7Character"));
+const Step8Dedication = lazy(() => import("./pages/steps/Step8Dedication"));
 const Step8Summary = lazy(() => import("./pages/steps/Step8Summary"));
 const Step9Cast = lazy(() => import("./pages/steps/Step9Cast"));
 const Step9Generating = lazy(() => import("./pages/steps/Step9Generating"));
@@ -70,12 +71,18 @@ const App = () => (
                 <Route path="/step/5-interests" element={<Step5Interests />} />
                 <Route path="/step/6-art-style" element={<Step6ArtStyle />} />
                 <Route path="/step/7-character" element={<Step7Character />} />
-                <Route path="/step/8-story" element={<Step8Summary />} />
-                <Route path="/step/9-cast" element={<Step9Cast />} />
-                <Route path="/step/10-preview" element={<Step10Preview />} />
-                <Route path="/step/11-generating" element={<Step9Generating />} />
+                <Route path="/step/8-dedication" element={<Step8Dedication />} />
+                <Route path="/step/9-story" element={<Step8Summary />} />
+                <Route path="/step/10-cast" element={<Step9Cast />} />
+                <Route path="/step/11-preview" element={<Step10Preview />} />
+                <Route path="/step/12-generating" element={<Step9Generating />} />
                 {/* Secret Ingredient hidden — route preserved */}
                 <Route path="/step/secret-ingredient" element={<StepSecretIngredient />} />
+                {/* Legacy slug redirects for steps that shifted when dedication was inserted */}
+                <Route path="/step/8-story" element={<Navigate to="/step/9-story" replace />} />
+                <Route path="/step/9-cast" element={<Navigate to="/step/10-cast" replace />} />
+                <Route path="/step/10-preview" element={<Navigate to="/step/11-preview" replace />} />
+                <Route path="/step/11-generating" element={<Navigate to="/step/12-generating" replace />} />
                 {/* Legacy numeric redirects */}
                 {WIZARD_STEPS.map((s) => (
                   <Route
