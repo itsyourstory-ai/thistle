@@ -37,7 +37,7 @@ export default function Step8Dedication() {
       <div className="space-y-10">
         <StepHeader
           title="Write their dedication 💌"
-          subtitle="This message appears on the first page of the book. You can keep the default or make it your own."
+          subtitle="This message appears on the opening page of the book. You can keep the default or make it your own."
         />
 
         <Textarea
