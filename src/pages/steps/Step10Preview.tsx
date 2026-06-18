@@ -58,16 +58,16 @@ const HARDCOVER_FEATURES = [
   "Free digital copy included",
 ];
 
-// ── Inner payment form (must be inside <Elements> provider) ──────────────────
+// ── Inner payment buttons (must be inside <Elements> provider) ───────────────
 
-interface PaymentFormProps {
+interface PaymentFormButtonsProps {
   amountLabel: string;
   orderId: string;
   onValidate: () => boolean;
   onSuccess: (orderId: string) => void;
 }
 
-function PaymentForm({ amountLabel, orderId, onValidate, onSuccess }: PaymentFormProps) {
+function PaymentFormButtons({ amountLabel, orderId, onValidate, onSuccess }: PaymentFormButtonsProps) {
   const stripe = useStripe();
   const elements = useElements();
   const navigate = useNavigate();
@@ -98,13 +98,12 @@ function PaymentForm({ amountLabel, orderId, onValidate, onSuccess }: PaymentFor
 
   return (
     <>
-      <PaymentElement />
       {payError && (
-        <p className="text-xs text-destructive mt-1" role="alert">
+        <p className="text-xs text-destructive mb-2" role="alert">
           {payError}
         </p>
       )}
-      <div className="flex items-center gap-3 mt-2">
+      <div className="flex items-center gap-3">
         <Button
           type="button"
           variant="wizardOutline"
@@ -132,10 +131,9 @@ function PaymentForm({ amountLabel, orderId, onValidate, onSuccess }: PaymentFor
 
 // ── Main checkout step ────────────────────────────────────────────────────────
 
-// AIDEV-NOTE: This step uses WizardShell with a custom footer so the shell
-// provides the header (with Back button) while the sticky bar shows the
-// checkout form instead of the default Back/Continue buttons. The checkout
-// section is too complex to squeeze into continueLabel/onBeforeContinue.
+// AIDEV-NOTE: <Elements> wraps the entire WizardShell (not just the footer) so
+// PaymentElement in the body and PaymentFormButtons in the footer both share the
+// same Stripe context without needing to pass stripe/elements as props.
 export default function Step9Preview() {
   const { answers, setAnswer, draftId } = useWizard();
   const navigate = useNavigate();
@@ -310,9 +308,173 @@ export default function Step9Preview() {
       className="sticky bottom-0 z-30 border-t border-black/10 bg-wizard-bg"
       style={{ backgroundColor: "hsl(var(--wizard-bg))" }}
     >
-      <div className="px-4 pt-4 pb-6 flex flex-col gap-3" style={{ maxWidth: "700px", margin: "0 auto" }}>
+      <div className="px-4 pt-4 pb-6" style={{ maxWidth: "700px", margin: "0 auto" }}>
+        {clientSecret ? (
+          <PaymentFormButtons
+            amountLabel={amountLabel}
+            orderId={piOrderId!}
+            onValidate={validateBuyerForm}
+            onSuccess={handlePaySuccess}
+          />
+        ) : (
+          <div className="flex items-center gap-3">
+            <Button
+              type="button"
+              variant="wizardOutline"
+              size="pill"
+              onClick={() => navigate(pathForStep(9))}
+              className="flex-none"
+            >
+              ← Back
+            </Button>
+            <Button
+              variant="wizard"
+              size="pill"
+              disabled
+              className="flex-1"
+            >
+              Pay {amountLabel} & start crafting
+            </Button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
+  const pageContent = (
+    <WizardShell footer={checkoutFooter}>
+
+      <div className="w-full mx-auto" style={{ maxWidth: "700px" }}>
+
+        {/* Heading */}
+        <div className="space-y-2 mb-6">
+          <h1 className="font-heading text-3xl sm:text-4xl font-semibold text-left text-wizard">
+            {name}'s story is ready to print.
+          </h1>
+          <p className="text-muted-foreground text-lg text-left">
+            Choose your format and place your order. Every page will be yours to review and edit after checkout.
+          </p>
+        </div>
+
+        {/* Testimonial */}
+        <figure
+          className="mb-6 rounded-2xl p-5 border"
+          style={{
+            backgroundColor: "hsl(100 52% 20% / 0.08)",
+            borderColor: "hsl(100 52% 20% / 0.2)",
+          }}
+        >
+          <span
+            className="block text-2xl leading-none mb-2 font-serif"
+            style={{ color: "hsl(100 52% 20%)" }}
+            aria-hidden="true"
+          >
+            "
+          </span>
+          <blockquote className="text-sm md:text-base font-serif italic leading-relaxed text-wizard/90">
+            She opened the first page and whispered, "Grandma, it's me." I still can't stop thinking about that moment.
+          </blockquote>
+          <figcaption className="mt-3 text-xs font-medium text-wizard/65">
+            — Carol, grandmother
+          </figcaption>
+        </figure>
+
+        {/* Cover */}
+        <div className="flex flex-wrap gap-4 mb-8">
+          <div className="flex flex-col items-start gap-2">
+            <p className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground">
+              Cover
+            </p>
+            <div
+              className="rounded-2xl overflow-hidden shadow-lg bg-white"
+              style={{ aspectRatio: "1/1", width: 260 }}
+            >
+              {coverImage ? (
+                <img
+                  src={coverImage}
+                  alt={`Cover of ${title}`}
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <div className="h-full w-full flex items-center justify-center bg-muted">
+                  <span className="text-xs text-muted-foreground">Cover loading…</span>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Plan selector */}
+        <div className="flex flex-col gap-4 mb-6">
+          {/* Digital */}
+          <button
+            type="button"
+            onClick={() => setSelected("digital")}
+            className="relative text-left rounded-2xl border-2 p-5 transition-all"
+            style={{
+              borderColor: selected === "digital" ? "hsl(var(--wizard-primary))" : "hsl(var(--border))",
+              boxShadow: selected === "digital" ? "0 0 0 2px hsl(var(--wizard-primary) / 0.25)" : "none",
+              backgroundColor: "hsl(var(--card))",
+            }}
+          >
+            <div className="flex items-baseline justify-between mb-3">
+              <div>
+                <span className="font-semibold">Digital Book</span>
+                <span className="ml-2 text-xs text-muted-foreground">Instant delivery</span>
+              </div>
+              <span className="text-lg font-bold text-wizard">$9.99</span>
+            </div>
+            <ul className="space-y-1.5">
+              {DIGITAL_FEATURES.map((f) => (
+                <li key={f} className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Check className="w-4 h-4 shrink-0 text-wizard" />
+                  {f}
+                </li>
+              ))}
+            </ul>
+          </button>
+
+          {/* Hardcover */}
+          <button
+            type="button"
+            onClick={() => setSelected("hardcover")}
+            className="relative text-left rounded-2xl border-2 p-5 transition-all"
+            style={{
+              borderColor: selected === "hardcover" ? "hsl(var(--wizard-accent))" : "hsl(var(--wizard-accent) / 0.4)",
+              boxShadow: selected === "hardcover" ? "0 0 0 2px hsl(var(--wizard-accent) / 0.3)" : "none",
+              backgroundColor: "hsl(var(--card))",
+            }}
+          >
+            <span className="absolute -top-3 right-4 text-xs font-semibold px-3 py-1 rounded-full bg-wizard-accent text-wizard-accent-foreground">
+              ⭐ Most popular
+            </span>
+
+            <div className="flex items-baseline justify-between mb-3 mt-1">
+              <div>
+                <span className="font-semibold">Printed Hardcover + Digital</span>
+              </div>
+              <span className="text-lg font-bold text-wizard">$54.99</span>
+            </div>
+            <ul className="space-y-1.5">
+              {HARDCOVER_FEATURES.map((f) => (
+                <li key={f} className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Check className="w-4 h-4 shrink-0 text-wizard" />
+                  {f}
+                </li>
+              ))}
+            </ul>
+          </button>
+        </div>
+
+        {/* Trust signals */}
+        <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 text-xs text-muted-foreground mb-8">
+          <span>🔒 Secure checkout</span>
+          <span>💳 All major cards accepted</span>
+          <span>📦 Free shipping to the US</span>
+        </div>
+
         {/* Buyer details */}
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-2 mb-6">
           <Label className="text-xs font-semibold uppercase tracking-widest text-wizard/70">
             Your name
           </Label>
@@ -344,9 +506,9 @@ export default function Step9Preview() {
           </p>
         </div>
 
-        {/* Hardcover shipping address block */}
+        {/* Hardcover shipping address */}
         {selected === "hardcover" && (
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-2 mb-6">
             <Label className="text-xs font-semibold uppercase tracking-widest text-wizard/70">
               Shipping address
             </Label>
@@ -438,8 +600,8 @@ export default function Step9Preview() {
           </div>
         )}
 
-        {/* Discount code field */}
-        <div className="flex flex-col gap-1.5">
+        {/* Promo code */}
+        <div className="flex flex-col gap-1.5 mb-6">
           <Label className="text-xs font-semibold uppercase tracking-widest text-wizard/70">
             Promo code
           </Label>
@@ -467,177 +629,25 @@ export default function Step9Preview() {
           )}
         </div>
 
-        {piError && <p className="text-xs text-destructive">{piError}</p>}
+        {piError && <p className="text-xs text-destructive mb-4">{piError}</p>}
 
-        {clientSecret ? (
-          <Elements key={clientSecret} stripe={stripePromise} options={{ clientSecret }}>
-            <PaymentForm
-              amountLabel={amountLabel}
-              orderId={piOrderId!}
-              onValidate={validateBuyerForm}
-              onSuccess={handlePaySuccess}
-            />
-          </Elements>
-        ) : (
-          <div className="flex items-center gap-3">
-            <Button
-              type="button"
-              variant="wizardOutline"
-              size="pill"
-              onClick={() => navigate(pathForStep(9))}
-              className="flex-none"
-            >
-              ← Back
-            </Button>
-            <Button
-              variant="wizard"
-              size="pill"
-              disabled
-              className="flex-1"
-            >
-              Pay {amountLabel} & start crafting
-            </Button>
+        {/* Payment Element */}
+        {!bypassCheckout && clientSecret && (
+          <div className="mb-6">
+            <PaymentElement />
           </div>
         )}
-      </div>
-    </div>
-  );
 
-  return (
-    <WizardShell footer={checkoutFooter}>
-
-      <div className="w-full mx-auto" style={{ maxWidth: "700px" }}>
-
-        {/* Heading */}
-        <div className="space-y-2 mb-8">
-          <h1 className="font-heading text-3xl sm:text-4xl font-semibold text-left text-wizard">
-            {name}'s story is ready to print.
-          </h1>
-          <p className="text-muted-foreground text-lg text-left">
-            Choose your format and place your order. Every page will be yours to review and edit after checkout.
-          </p>
-        </div>
-
-        {/* Illustrations row (cover + other illustrations side by side) */}
-        <div className="flex flex-wrap gap-4 mb-8">
-          <div className="flex flex-col items-start gap-2">
-            <p className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground">
-              Cover
-            </p>
-            <div
-              className="rounded-2xl overflow-hidden shadow-lg bg-white"
-              style={{ aspectRatio: "1/1", width: 260 }}
-            >
-              {coverImage ? (
-                <img
-                  src={coverImage}
-                  alt={`Cover of ${title}`}
-                  className="h-full w-full object-cover"
-                />
-              ) : (
-                <div className="h-full w-full flex items-center justify-center bg-muted">
-                  <span className="text-xs text-muted-foreground">Cover loading…</span>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Stacked content */}
-        <div className="flex flex-col">
-
-          <div className="flex flex-col gap-4 mb-6">
-            {/* Digital */}
-            <button
-              type="button"
-              onClick={() => setSelected("digital")}
-              className="relative text-left rounded-2xl border-2 p-5 transition-all"
-              style={{
-                borderColor: selected === "digital" ? "hsl(var(--wizard-primary))" : "hsl(var(--border))",
-                boxShadow: selected === "digital" ? "0 0 0 2px hsl(var(--wizard-primary) / 0.25)" : "none",
-                backgroundColor: "hsl(var(--card))",
-              }}
-            >
-              <div className="flex items-baseline justify-between mb-3">
-                <div>
-                  <span className="font-semibold">Digital Book</span>
-                  <span className="ml-2 text-xs text-muted-foreground">Instant delivery</span>
-                </div>
-                <span className="text-lg font-bold text-wizard">$9.99</span>
-              </div>
-              <ul className="space-y-1.5">
-                {DIGITAL_FEATURES.map((f) => (
-                  <li key={f} className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Check className="w-4 h-4 shrink-0 text-wizard" />
-                    {f}
-                  </li>
-                ))}
-              </ul>
-            </button>
-
-            {/* Hardcover */}
-            <button
-              type="button"
-              onClick={() => setSelected("hardcover")}
-              className="relative text-left rounded-2xl border-2 p-5 transition-all"
-              style={{
-                borderColor: selected === "hardcover" ? "hsl(var(--wizard-accent))" : "hsl(var(--wizard-accent) / 0.4)",
-                boxShadow: selected === "hardcover" ? "0 0 0 2px hsl(var(--wizard-accent) / 0.3)" : "none",
-                backgroundColor: "hsl(var(--card))",
-              }}
-            >
-              <span className="absolute -top-3 right-4 text-xs font-semibold px-3 py-1 rounded-full bg-wizard-accent text-wizard-accent-foreground">
-                ⭐ Most popular
-              </span>
-
-              <div className="flex items-baseline justify-between mb-3 mt-1">
-                <div>
-                  <span className="font-semibold">Printed Hardcover + Digital</span>
-                </div>
-                <span className="text-lg font-bold text-wizard">$54.99</span>
-              </div>
-              <ul className="space-y-1.5">
-                {HARDCOVER_FEATURES.map((f) => (
-                  <li key={f} className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Check className="w-4 h-4 shrink-0 text-wizard" />
-                    {f}
-                  </li>
-                ))}
-              </ul>
-            </button>
-          </div>
-
-          {/* Trust signals */}
-          <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 text-xs text-muted-foreground mb-6">
-            <span>🔒 Secure checkout</span>
-            <span>💳 All major cards accepted</span>
-            <span>📦 Free shipping to the US</span>
-          </div>
-
-          {/* Testimonial */}
-          <figure
-            className="mt-2 mb-8 rounded-2xl p-5 border"
-            style={{
-              backgroundColor: "hsl(100 52% 20% / 0.08)",
-              borderColor: "hsl(100 52% 20% / 0.2)",
-            }}
-          >
-            <span
-              className="block text-2xl leading-none mb-2 font-serif"
-              style={{ color: "hsl(100 52% 20%)" }}
-              aria-hidden="true"
-            >
-              "
-            </span>
-            <blockquote className="text-sm md:text-base font-serif italic leading-relaxed text-wizard/90">
-              She opened the first page and whispered, "Grandma, it's me." I still can't stop thinking about that moment.
-            </blockquote>
-            <figcaption className="mt-3 text-xs font-medium text-wizard/65">
-              — Carol, grandmother
-            </figcaption>
-          </figure>
-        </div>
       </div>
     </WizardShell>
   );
+
+  if (!bypassCheckout && clientSecret) {
+    return (
+      <Elements key={clientSecret} stripe={stripePromise} options={{ clientSecret }}>
+        {pageContent}
+      </Elements>
+    );
+  }
+  return pageContent;
 }

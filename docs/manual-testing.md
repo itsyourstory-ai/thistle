@@ -9,8 +9,11 @@ The wizard has a **🧪 test: off** pill in the header next to "⚙ dev: skip st
 | Control | What it does |
 |---|---|
 | **Test mode toggle (on/off)** | When ON, all 6 AI edge functions return instant fake responses instead of calling Supabase. Walk the entire wizard for $0. |
+| **Bypass checkout** | Skip the Stripe payment step entirely and jump straight to generation. Use this for wizard testing when you don't care about the payment flow. |
 | **Seed profile dropdown** | Picks which of the 4 pre-filled child profiles to load. Each has very different shape: photo vs no-photo, supporting characters, edge-case names, special pet. |
-| **Load → (button)** | Fills all wizard answers from the selected profile and goes to Step 1. Navigate normally from there — every step will already show the seeded selections. |
+| **Load → Step 1 (button)** | Fills all wizard answers from the selected profile and goes to Step 1. Navigate normally from there — every step will already show the seeded selections. |
+| **Jump → Checkout (button)** | Seeds answers from the selected profile and navigates directly to the checkout step (step 11). If a draft ID is entered below, injects it so the Stripe payment form loads. |
+| **Draft ID for Stripe** | Paste a Supabase draft ID here. When set, "Jump → Checkout" injects it so `create-payment-intent` can run and the Stripe Payment Element appears. Get one by completing steps 1–8 once with real Supabase — no AI calls happen until step 9. |
 | **Fake delay (ms)** | Adds artificial latency to every mocked call. Set > 0 so loading states and animations actually play. Set to 0 for instant results. |
 | **Force error on** | Makes the selected function (or all) return an error instead of a fixture. Use this to trigger the "Try again" / error UI on demand without breaking anything. |
 | **Run live (checkboxes)** | Per-function override: keeps test mode on globally but calls Supabase for real on the checked functions. Useful for testing one specific AI call while the rest stay free. |
@@ -25,11 +28,26 @@ The wizard has a **🧪 test: off** pill in the header next to "⚙ dev: skip st
 2. Open any wizard step in the browser
 3. Click "🧪 test: off" → toggle ON
 4. Pick a seed profile (start with "Classic — Leo")
-5. Click "Load →"  — the wizard jumps to Step 1 with all answers pre-filled
+5. Click "Load → Step 1"  — the wizard jumps to Step 1 with all answers pre-filled
 6. Click Continue through the steps — every page shows the seeded selections
 7. All AI calls (summary, cover, portrait, book) return fake data instantly
 8. Toggle test mode OFF to run a real generation when you need it
 ```
+
+### Testing checkout without AI calls
+
+```
+1. Complete steps 1–8 once with real Supabase (no AI calls happen until step 9)
+2. Copy the draft ID from the Supabase dashboard → Table Editor → drafts
+3. Paste it into "Draft ID for Stripe" in the test panel (it persists across reloads)
+4. Turn on test mode, pick a seed profile, click "Jump → Checkout"
+5. The checkout page opens with the cover, plan selector, and Stripe payment form
+6. Use test card 4242 4242 4242 4242 to complete a payment
+```
+
+### Important: navigating to steps in dev
+
+The wizard state is held in React memory. **`window.location.href = '/step/X'` causes a full page reload and wipes all wizard answers** — the wizard then redirects you back to step 1. Always use in-app navigation to move between steps: the SKIP STEP button, the step nav in the header, or the "Jump → Checkout" button in the test panel. These use React Router and preserve state.
 
 ### The 4 seed profiles
 
