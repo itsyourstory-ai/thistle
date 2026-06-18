@@ -8,6 +8,7 @@ import { buildBrief } from "@/lib/buildBrief";
 import { coverMessages, pipelineMessage, useRotatingMessage } from "@/lib/loadingMessages";
 import { callEdge } from "@/lib/edgeFunctions";
 import { getBookStatus } from "@/lib/bookStatus";
+import { getTestMode } from "@/lib/testMode";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -43,6 +44,10 @@ export default function Step10Generating() {
     startedAt.current = Date.now();
 
     try {
+      const bypassCheckout = import.meta.env.DEV && getTestMode().bypassCheckout;
+      if (!answers.orderId && !bypassCheckout) {
+        throw new Error("No order found. Please complete checkout before generating.");
+      }
       const brief = buildBrief(answers);
       const seed = (answers.characterPortrait as { dataUrl?: string } | undefined)?.dataUrl || null;
       const { data: bookResp, error: bookErr } = await callEdge("generate-book", {
@@ -50,6 +55,8 @@ export default function Step10Generating() {
         buyer_name: answers.buyer_name || "",
         buyer_email: answers.buyer_email || "",
         seed_portrait_data_url: seed ?? undefined,
+        order_id: answers.orderId,
+        ...(bypassCheckout ? { bypass_checkout: true } : {}),
       });
       if (bookErr) throw bookErr;
       if (bookResp?.error) throw new Error(bookResp.error);

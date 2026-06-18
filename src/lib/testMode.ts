@@ -36,6 +36,15 @@ export interface TestModeState {
   perFnLive: string[];
   /** Whether to record real responses to cache, replay from cache, or skip. */
   cacheMode: CacheMode;
+  /** Skip the Stripe payment step and jump straight to generation (DEV only). */
+  bypassCheckout: boolean;
+  /**
+   * A real Supabase draft ID to inject when jumping to the checkout step in
+   * dev. Lets you test the Stripe payment form without running any AI calls.
+   * Get one by completing steps 1–8 once; the ID appears in the browser console
+   * or the Supabase dashboard → Table Editor → drafts.
+   */
+  checkoutDraftId: string;
 }
 
 // ── Defaults ──────────────────────────────────────────────────────────────────
@@ -47,6 +56,8 @@ const DEFAULT_STATE: TestModeState = {
   forceErrorFns: [],
   perFnLive: [],
   cacheMode: "off",
+  bypassCheckout: false,
+  checkoutDraftId: "",
 };
 
 // ── Module-level store (not React state, so callEdge can read it) ─────────────

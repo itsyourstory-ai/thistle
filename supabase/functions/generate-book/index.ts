@@ -10,6 +10,7 @@
 // composition cue, and dev preview renderer all pick it up automatically.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
+import Stripe from "https://esm.sh/stripe@14.21.0?target=deno";
 import { isValidEmail, sanitizeUserText } from "../_shared/sanitize.ts";
 import { rateLimitExceeded } from "../_shared/auth.ts";
 import { checkRateLimit } from "../_shared/rateLimit.ts";
@@ -375,6 +376,64 @@ Deno.serve(async (req) => {
       : undefined;
     const model: string = body.modelOverride || MODELS.book;
     const seed_portrait_data_url: string | null = body.seed_portrait_data_url || null;
+    const order_id: string | null = body.order_id ?? null;
+    const bypass_checkout: boolean = body.bypass_checkout === true;
+    // Bypass is only honored with a Stripe test key — production is fully protected.
+    const isTestEnv = (Deno.env.get("STRIPE_SECRET_KEY") ?? "").startsWith("sk_test_");
+
+    // ── Paid-order gate ────────────────────────────────────────────────────────
+    // All generation requires a paid order. If the webhook hasn't landed yet,
+    // fall back to retrieving the PaymentIntent from Stripe directly.
+    // Dev bypass skips the gate entirely when running against a Stripe test key.
+    if (!(bypass_checkout && isTestEnv)) {
+      if (!order_id) {
+        return new Response(
+          JSON.stringify({ error: "order_id is required." }),
+          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+
+      const { data: order, error: orderErr } = await supabase
+        .from("orders")
+        .select("id, status, stripe_payment_intent_id")
+        .eq("id", order_id)
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (orderErr || !order) {
+        return new Response(
+          JSON.stringify({ error: "Order not found." }),
+          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+
+      if (order.status !== "paid") {
+        // Webhook may not have landed yet — check Stripe directly as a fallback.
+        const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY")!, {
+          // @ts-ignore — Deno requires the fetch http client
+          apiVersion: "2024-04-10",
+          httpClient: Stripe.createFetchHttpClient(),
+        });
+        const pi = await stripe.paymentIntents.retrieve(order.stripe_payment_intent_id);
+        if (pi.status !== "succeeded") {
+          return new Response(
+            JSON.stringify({ error: "Payment not completed." }),
+            { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+          );
+        }
+        // Mark the order paid so future calls and the webhook are idempotent.
+        await supabase
+          .from("orders")
+          .update({
+            status: "paid",
+            paid_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", order.id)
+          .neq("status", "paid");
+      }
+    }
+    // ── End paid-order gate ────────────────────────────────────────────────────
 
     const approvedConcept: ApprovedConcept | null = brief.approvedConcept || brief.selectedConcept || null;
     const approvedConceptInstruction = buildApprovedConceptInstruction(approvedConcept);
@@ -435,6 +494,14 @@ Deno.serve(async (req) => {
     }
 
     const bookId = stubRow.id as string;
+
+    // Link the generated book back to the order (no-op when bypass_checkout skips order creation).
+    if (order_id) {
+      await supabase
+        .from("orders")
+        .update({ book_id: bookId, updated_at: new Date().toISOString() })
+        .eq("id", order_id);
+    }
 
     // Background work — story AI call + persist + chain image pipeline.
     const work = async () => {

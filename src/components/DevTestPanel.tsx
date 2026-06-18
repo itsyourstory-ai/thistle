@@ -33,7 +33,7 @@ type FnName = (typeof FN_NAMES)[number];
 
 export default function DevTestPanel() {
   const [mode, update] = useTestMode();
-  const { seedAnswers } = useWizard();
+  const { seedAnswers, setDraftId } = useWizard();
   const navigate = useNavigate();
 
   const handleLoad = () => {
@@ -41,6 +41,14 @@ export default function DevTestPanel() {
     if (!profile) return;
     seedAnswers(profile.answers);
     navigate(pathForStep(1));
+  };
+
+  const handleJumpToCheckout = () => {
+    const profile = getSeedProfile(mode.profileId as ProfileId);
+    if (!profile) return;
+    seedAnswers(profile.answers);
+    if (mode.checkoutDraftId.trim()) setDraftId(mode.checkoutDraftId.trim());
+    navigate(pathForStep(11));
   };
 
   // forceErrorFns is ["*"] for all, [fnName] for one, or [] for none.
@@ -93,6 +101,20 @@ export default function DevTestPanel() {
           />
         </div>
 
+        {/* ── Bypass checkout ───────────────────────────────────── */}
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-sm font-semibold leading-none">Bypass checkout</p>
+            <p className="text-[11px] text-muted-foreground mt-0.5">
+              Skip Stripe payment and jump to generation
+            </p>
+          </div>
+          <Switch
+            checked={mode.bypassCheckout}
+            onCheckedChange={(v) => update({ bypassCheckout: v })}
+          />
+        </div>
+
         {mode.enabled && (
           <>
             <hr className="border-black/10" />
@@ -120,14 +142,40 @@ export default function DevTestPanel() {
               )}
             </div>
 
-            {/* ── Load ─────────────────────────────────────────── */}
-            <button
-              type="button"
-              onClick={handleLoad}
-              className="w-full px-3 py-1.5 rounded-lg text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
-            >
-              Load → (goes to Step 1)
-            </button>
+            {/* ── Load / Jump ───────────────────────────────── */}
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={handleLoad}
+                className="flex-1 px-3 py-1.5 rounded-lg text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+              >
+                Load → Step 1
+              </button>
+              <button
+                type="button"
+                onClick={handleJumpToCheckout}
+                className="flex-1 px-3 py-1.5 rounded-lg text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+              >
+                Jump → Checkout
+              </button>
+            </div>
+
+            {/* ── Draft ID for Stripe ───────────────────────── */}
+            <div className="space-y-1.5">
+              <div>
+                <p className="text-xs font-medium">Draft ID for Stripe</p>
+                <p className="text-[10px] text-muted-foreground">
+                  Paste a Supabase draft ID so the payment form loads at checkout. Get one by completing steps 1–8 once.
+                </p>
+              </div>
+              <input
+                type="text"
+                value={mode.checkoutDraftId}
+                onChange={(e) => update({ checkoutDraftId: e.target.value })}
+                placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+                className="w-full font-mono text-[10px] rounded border border-input px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-ring"
+              />
+            </div>
 
             <hr className="border-black/10" />
 

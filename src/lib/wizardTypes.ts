@@ -131,6 +131,7 @@ export interface WizardAnswers {
   // Generating / post-generation
   bookId?: string;
   selectedPlan?: string;
+  orderId?: string;
   bookTitle?: string;
 
   // Legacy/misc buildBrief fields

@@ -18,6 +18,7 @@ import { getFixture } from "@/test/fixtures";
 import { cacheGet, cachePut } from "./edgeCache";
 
 export type EdgeFnName =
+  | "create-payment-intent"
   | "generate-summary"
   | "generate-cover"
   | "generate-character-portrait"

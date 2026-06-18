@@ -41,20 +41,22 @@ See [docs/test-suite.md](docs/test-suite.md) for the full testing guide (layers,
 
 Steps are defined in `src/lib/wizardSteps.ts` and routed in `src/App.tsx`:
 
-| Route | Step |
-|---|---|
-| `/step/1-name` | Child's name, age, gender |
-| `/step/2-buyer` | Buyer relationship + occasion |
-| `/step/3-genre` | Story genre/mood |
-| `/step/4-lesson` | Life lesson |
-| `/step/5-interests` | Interests (editable chip picker) |
-| `/step/6-art-style` | Art style selection |
-| `/step/7-character` | Protagonist + supporting characters + personality |
-| `/step/8-summary` | AI generates story concept + cover; user approves |
-| `/step/9-preview` | Preview the final book (Step10Preview.tsx) |
-| `/step/10-generating` | Full book generation (Step9Generating.tsx) |
+| Route | Step | Component |
+|---|---|---|
+| `/step/1-name` | Child's name, age, gender | Step1Name |
+| `/step/2-buyer` | Buyer relationship + occasion | Step2Buyer |
+| `/step/3-genre` | Story genre/mood | Step3Genre |
+| `/step/4-lesson` | Life lesson | Step4Lesson |
+| `/step/5-interests` | Interests (editable chip picker) | Step5Interests |
+| `/step/6-art-style` | Art style selection | Step6ArtStyle |
+| `/step/7-character` | Protagonist + supporting characters + personality | Step7Character |
+| `/step/8-dedication` | Dedication message | Step8Dedication |
+| `/step/9-story` | AI generates story concept + cover; user approves | Step8Summary |
+| `/step/10-cast` | Cast portraits | Step9Cast |
+| `/step/11-preview` | Checkout — choose format + pay | Step10Preview |
+| `/step/12-generating` | Full book generation | Step9Generating |
 
-Note: route slugs and filenames are intentionally offset by one between steps 9 and 10.
+Note: component filenames are offset from route numbers for steps 9–12 (historical artifact).
 
 ### State management
 
