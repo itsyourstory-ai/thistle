@@ -12,7 +12,7 @@ import {
   computeAmount,
   type ShippingAddress,
 } from "../_shared/stripe.ts";
-import { sanitizeUserText } from "../_shared/sanitize.ts";
+import { sanitizeUserText, isValidEmail } from "../_shared/sanitize.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -46,9 +46,8 @@ Deno.serve(async (req) => {
     const buyer_name: string | null = body.buyer_name
       ? sanitizeUserText(body.buyer_name, 200)
       : null;
-    const buyer_email: string | null = body.buyer_email
-      ? sanitizeUserText(body.buyer_email, 200)
-      : null;
+    const rawBuyerEmail = body.buyer_email ? sanitizeUserText(body.buyer_email, 200) : null;
+    const buyer_email: string | null = rawBuyerEmail && isValidEmail(rawBuyerEmail) ? rawBuyerEmail : null;
 
     if (!product || !draft_id) {
       return jsonResponse({ error: "product and draft_id are required." }, 400);

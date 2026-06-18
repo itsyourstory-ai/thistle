@@ -495,11 +495,13 @@ Deno.serve(async (req) => {
 
     const bookId = stubRow.id as string;
 
-    // Link the generated book back to the order.
-    await supabase
-      .from("orders")
-      .update({ book_id: bookId, updated_at: new Date().toISOString() })
-      .eq("id", order_id);
+    // Link the generated book back to the order (no-op when bypass_checkout skips order creation).
+    if (order_id) {
+      await supabase
+        .from("orders")
+        .update({ book_id: bookId, updated_at: new Date().toISOString() })
+        .eq("id", order_id);
+    }
 
     // Background work — story AI call + persist + chain image pipeline.
     const work = async () => {

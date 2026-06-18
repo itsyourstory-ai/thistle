@@ -186,7 +186,6 @@ export default function Step9Preview() {
     callEdge("create-payment-intent", {
       product: selected,
       draft_id: draftId,
-      // INSERTION POINT: Task 8 — shipping (included below for hardcover)
       ...(selected === "hardcover" ? {
         shipping: {
           name: shippingName || undefined,
