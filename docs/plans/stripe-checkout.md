@@ -4,15 +4,15 @@
 
 | Task | Description | Assign | Done |
 | ---- | ----------- | ------ | ---- |
-| 1 | `orders` + `stripe_webhook_events` migration (RLS, grants, types) | Master | |
-| 2 | `_shared/stripe.ts` — price map, shipping + discount validation (pure, tested) | Master | |
-| 3 | `create-payment-intent` edge function + config | Master | |
-| 4 | `stripe-webhook` edge function + config | Master | |
-| 5 | `generate-book` paid-gate modification | Master | |
-| 6 | Client Stripe deps + provider wiring | Master | |
-| 7 | Step 11 Payment Element + price reconcile + wire create-payment-intent | Master | |
-| 8 | Hardcover shipping-address block | Clone | |
-| 9 | Discount-code field | Clone | |
+| 1 | `orders` + `stripe_webhook_events` migration (RLS, grants, types) | Master | ✅ |
+| 2 | `_shared/stripe.ts` — price map, shipping + discount validation (pure, tested) | Master | ✅ |
+| 3 | `create-payment-intent` edge function + config | Master | ✅ |
+| 4 | `stripe-webhook` edge function + config | Master | ✅ |
+| 5 | `generate-book` paid-gate modification | Master | ✅ |
+| 6 | Client Stripe deps + provider wiring | Master | ✅ |
+| 7 | Step 11 Payment Element + price reconcile + wire create-payment-intent | Master | ✅ |
+| 8 | Hardcover shipping-address block | Clone | ✅ |
+| 9 | Discount-code field | Clone | ✅ |
 | 10 | Step 12 pass `order_id` to generate-book | Master | |
 | 11 | `bypassCheckout` dev/test flag (harness + panel + server marker) | Master | |
 

@@ -140,6 +140,90 @@ export type Database = {
         }
         Relationships: []
       }
+      orders: {
+        Row: {
+          id: string
+          user_id: string
+          status: string
+          product: string
+          base_amount_cents: number
+          discount_code: string | null
+          discount_cents: number
+          amount_cents: number
+          currency: string
+          buyer_name: string | null
+          buyer_email: string | null
+          shipping: Json | null
+          stripe_payment_intent_id: string
+          stripe_customer_id: string | null
+          draft_id: string | null
+          book_id: string | null
+          created_at: string
+          updated_at: string
+          paid_at: string | null
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          status?: string
+          product: string
+          base_amount_cents: number
+          discount_code?: string | null
+          discount_cents?: number
+          amount_cents: number
+          currency?: string
+          buyer_name?: string | null
+          buyer_email?: string | null
+          shipping?: Json | null
+          stripe_payment_intent_id: string
+          stripe_customer_id?: string | null
+          draft_id?: string | null
+          book_id?: string | null
+          created_at?: string
+          updated_at?: string
+          paid_at?: string | null
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          status?: string
+          product?: string
+          base_amount_cents?: number
+          discount_code?: string | null
+          discount_cents?: number
+          amount_cents?: number
+          currency?: string
+          buyer_name?: string | null
+          buyer_email?: string | null
+          shipping?: Json | null
+          stripe_payment_intent_id?: string
+          stripe_customer_id?: string | null
+          draft_id?: string | null
+          book_id?: string | null
+          created_at?: string
+          updated_at?: string
+          paid_at?: string | null
+        }
+        Relationships: []
+      }
+      stripe_webhook_events: {
+        Row: {
+          event_id: string
+          type: string
+          received_at: string
+        }
+        Insert: {
+          event_id: string
+          type: string
+          received_at?: string
+        }
+        Update: {
+          event_id?: string
+          type?: string
+          received_at?: string
+        }
+        Relationships: []
+      }
       generated_books: {
         Row: {
           brief: Json

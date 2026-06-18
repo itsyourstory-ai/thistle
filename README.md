@@ -62,3 +62,4 @@ npm run dev
 Env vars needed (get from Supabase dashboard):
 - `VITE_SUPABASE_URL`
 - `VITE_SUPABASE_PUBLISHABLE_KEY`
+- `VITE_STRIPE_PUBLISHABLE_KEY` (get from Stripe dashboard → Developers → API keys)
