@@ -53,6 +53,65 @@ Created in Supabase (project `uglsyitjasajubfvbiry`) with email auto-confirmed. 
 
 ---
 
+## Stripe checkout testing
+
+Everything here runs on **Stripe test mode** — no real card is ever charged. Real
+cards are rejected; only the test cards below work.
+
+### Three ways to exercise checkout, from least to most setup
+
+| Goal | How |
+|---|---|
+| **Skip payment entirely** (most wizard testing) | Turn on `bypassCheckout` in the 🧪 test panel. Step 11 skips the Payment Element and routes straight to generation. No Stripe involved. |
+| **Test the real payment UI against deployed staging** | Merge the checkout functions to `main` (auto-deploys), register the dashboard webhook (manual-setup Part B), then run the flow on the staging URL. Stripe sends webhooks directly to the deployed endpoint — no `stripe listen` needed. |
+| **Test the real payment UI against functions running locally** | Run the functions locally + forward webhooks with the Stripe CLI (below). |
+
+### Local payment flow with `stripe listen`
+
+Local `supabase.functions.invoke` calls don't get webhooks from Stripe (your machine
+isn't internet-reachable), so the Stripe CLI forwards them for you.
+
+```bash
+# Terminal 1 — serve the edge functions locally with their secrets
+supabase functions serve --env-file supabase/.env
+
+# Terminal 2 — forward Stripe test events to the local stripe-webhook function
+stripe listen --forward-to http://localhost:54321/functions/v1/stripe-webhook
+```
+
+- `stripe listen` prints a **local** signing secret (`whsec_…`). Put it in
+  `supabase/.env` as `STRIPE_WEBHOOK_SECRET=…` (this is a *different* secret from the
+  deployed dashboard endpoint's). Restart Terminal 1 after adding it.
+- Leave both terminals running while you test. Each successful test payment fires
+  `payment_intent.succeeded`, the CLI forwards it, and the order flips to `paid`.
+- Trigger an event by hand without paying:
+  `stripe trigger payment_intent.succeeded`.
+
+### Test cards (test mode only)
+
+| Card number | Result |
+|---|---|
+| `4242 4242 4242 4242` | Succeeds |
+| `4000 0000 0000 0002` | Declined (generic) |
+| `4000 0025 0000 3155` | Requires 3-D Secure authentication |
+
+Any future expiry, any 3-digit CVC, any ZIP. Full list: https://docs.stripe.com/testing.
+
+### Discount codes
+
+Discount codes are **Stripe promotion codes** created in the dashboard
+(Product catalog → Coupons → add a promotion code). Type the code into the checkout's
+discount field; the server looks it up and recomputes the total. Invalid/expired codes
+are rejected inline with the total unchanged.
+
+### Prices
+
+Set server-side, not from Stripe Price objects: digital **$9.99** (999¢), hardcover
+**$54.99** (5499¢). The Stripe product names are cosmetic — the code keys off
+`digital` / `hardcover`, so renaming products in Stripe changes nothing.
+
+---
+
 ## Automated tests
 
 ```bash
