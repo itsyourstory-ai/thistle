@@ -377,56 +377,61 @@ Deno.serve(async (req) => {
     const model: string = body.modelOverride || MODELS.book;
     const seed_portrait_data_url: string | null = body.seed_portrait_data_url || null;
     const order_id: string | null = body.order_id ?? null;
-    // Task 11 adds bypassCheckout — the field is threaded through here for that task.
+    const bypass_checkout: boolean = body.bypass_checkout === true;
+    // Bypass is only honored with a Stripe test key — production is fully protected.
+    const isTestEnv = (Deno.env.get("STRIPE_SECRET_KEY") ?? "").startsWith("sk_test_");
 
     // ── Paid-order gate ────────────────────────────────────────────────────────
     // All generation requires a paid order. If the webhook hasn't landed yet,
     // fall back to retrieving the PaymentIntent from Stripe directly.
-    if (!order_id) {
-      return new Response(
-        JSON.stringify({ error: "order_id is required." }),
-        { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
-    }
-
-    const { data: order, error: orderErr } = await supabase
-      .from("orders")
-      .select("id, status, stripe_payment_intent_id")
-      .eq("id", order_id)
-      .eq("user_id", user.id)
-      .maybeSingle();
-
-    if (orderErr || !order) {
-      return new Response(
-        JSON.stringify({ error: "Order not found." }),
-        { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
-    }
-
-    if (order.status !== "paid") {
-      // Webhook may not have landed yet — check Stripe directly as a fallback.
-      const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY")!, {
-        // @ts-ignore — Deno requires the fetch http client
-        apiVersion: "2024-04-10",
-        httpClient: Stripe.createFetchHttpClient(),
-      });
-      const pi = await stripe.paymentIntents.retrieve(order.stripe_payment_intent_id);
-      if (pi.status !== "succeeded") {
+    // Dev bypass skips the gate entirely when running against a Stripe test key.
+    if (!(bypass_checkout && isTestEnv)) {
+      if (!order_id) {
         return new Response(
-          JSON.stringify({ error: "Payment not completed." }),
+          JSON.stringify({ error: "order_id is required." }),
           { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } },
         );
       }
-      // Mark the order paid so future calls and the webhook are idempotent.
-      await supabase
+
+      const { data: order, error: orderErr } = await supabase
         .from("orders")
-        .update({
-          status: "paid",
-          paid_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", order.id)
-        .neq("status", "paid");
+        .select("id, status, stripe_payment_intent_id")
+        .eq("id", order_id)
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (orderErr || !order) {
+        return new Response(
+          JSON.stringify({ error: "Order not found." }),
+          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+
+      if (order.status !== "paid") {
+        // Webhook may not have landed yet — check Stripe directly as a fallback.
+        const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY")!, {
+          // @ts-ignore — Deno requires the fetch http client
+          apiVersion: "2024-04-10",
+          httpClient: Stripe.createFetchHttpClient(),
+        });
+        const pi = await stripe.paymentIntents.retrieve(order.stripe_payment_intent_id);
+        if (pi.status !== "succeeded") {
+          return new Response(
+            JSON.stringify({ error: "Payment not completed." }),
+            { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+          );
+        }
+        // Mark the order paid so future calls and the webhook are idempotent.
+        await supabase
+          .from("orders")
+          .update({
+            status: "paid",
+            paid_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", order.id)
+          .neq("status", "paid");
+      }
     }
     // ── End paid-order gate ────────────────────────────────────────────────────
 

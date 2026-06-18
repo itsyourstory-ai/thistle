@@ -20,6 +20,7 @@ import { MemoryRouter, Routes, Route } from "react-router-dom";
 // ── Captured mock handles ──────────────────────────────────────────────────────
 
 let mockDraftId: string | null = null;
+let mockBypassCheckout = false;
 const mockSetAnswer = vi.fn();
 const mockNavigate = vi.fn();
 const mockConfirmPayment = vi.fn();
@@ -69,6 +70,11 @@ vi.mock("@/lib/stripe", () => ({
   stripePromise: Promise.resolve(null),
 }));
 
+vi.mock("@/lib/testMode", () => ({
+  useTestMode: () => [{ bypassCheckout: mockBypassCheckout }, vi.fn()],
+  getTestMode: () => ({ bypassCheckout: mockBypassCheckout }),
+}));
+
 vi.mock("@stripe/react-stripe-js", () => ({
   Elements: ({ children }: { children: React.ReactNode }) => <>{children}</>,
   PaymentElement: () => <div data-testid="payment-element" />,
@@ -102,6 +108,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   mockAnswers = {};
   mockDraftId = null;
+  mockBypassCheckout = false;
 
   vi.mocked(callEdge).mockResolvedValue({
     data: { client_secret: "pi_test_secret", order_id: "order-123", amount_cents: 5499, discount_cents: 0 },
@@ -376,5 +383,28 @@ describe("Step10Preview — discount code field", () => {
     });
     // Amount stays at the current value from the initial PI
     expect(screen.getByRole("button", { name: /pay \$54\.99/i })).toBeInTheDocument();
+  });
+});
+
+// ── Bypass checkout (dev flag, Task 11) ───────────────────────────────────────
+
+describe("Step10Preview — bypassCheckout dev flag", () => {
+  it("shows a skip-checkout button when bypassCheckout is on", () => {
+    mockBypassCheckout = true;
+    renderStep({ childName: "Ellie" });
+    expect(screen.getByRole("button", { name: /skip checkout/i })).toBeInTheDocument();
+  });
+
+  it("hides the Payment Element when bypassCheckout is on", () => {
+    mockBypassCheckout = true;
+    renderStep({ childName: "Ellie" });
+    expect(screen.queryByTestId("payment-element")).not.toBeInTheDocument();
+  });
+
+  it("navigates directly to step 12 when bypass button is clicked", () => {
+    mockBypassCheckout = true;
+    renderStep({ childName: "Ellie" });
+    fireEvent.click(screen.getByRole("button", { name: /skip checkout/i }));
+    expect(mockNavigate).toHaveBeenCalledWith("/step/12-generating");
   });
 });

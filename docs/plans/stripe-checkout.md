@@ -13,8 +13,8 @@
 | 7 | Step 11 Payment Element + price reconcile + wire create-payment-intent | Master | ✅ |
 | 8 | Hardcover shipping-address block | Clone | ✅ |
 | 9 | Discount-code field | Clone | ✅ |
-| 10 | Step 12 pass `order_id` to generate-book | Master | |
-| 11 | `bypassCheckout` dev/test flag (harness + panel + server marker) | Master | |
+| 10 | Step 12 pass `order_id` to generate-book | Master | ✅ |
+| 11 | `bypassCheckout` dev/test flag (harness + panel + server marker) | Master | ✅ |
 
 ## Prerequisites
 

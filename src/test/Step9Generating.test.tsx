@@ -49,6 +49,13 @@ vi.mock("@/lib/edgeFunctions", () => ({
   callEdge: (...args: unknown[]) => mockCallEdge(...args),
 }));
 
+// testMode — controllable per-test
+let mockBypassCheckout = false;
+vi.mock("@/lib/testMode", () => ({
+  getTestMode: () => ({ bypassCheckout: mockBypassCheckout }),
+  useTestMode: () => [{ bypassCheckout: mockBypassCheckout }, vi.fn()],
+}));
+
 // getBookStatus — controllable per-test
 const mockGetBookStatus = vi.fn();
 vi.mock("@/lib/bookStatus", () => ({
@@ -93,6 +100,7 @@ function renderStep(answers: Record<string, unknown> = {}) {
 beforeEach(() => {
   vi.clearAllMocks();
   mockAnswers = {};
+  mockBypassCheckout = false;
   // Default: callEdge never resolves (keeps component in generating state)
   mockCallEdge.mockReturnValue(new Promise(() => {}));
   // Default: getBookStatus never resolves
@@ -177,28 +185,112 @@ describe("Step9Generating — success state", () => {
   }
 
   it("shows celebratory message with child's name when done", async () => {
-    await renderAndAdvanceToDone({ childName: "Noah", buyer_email: "parent@example.com" });
+    await renderAndAdvanceToDone({ childName: "Noah", buyer_email: "parent@example.com", orderId: "order-1" });
     expect(screen.getByText(/noah's book is on its way/i)).toBeInTheDocument();
   });
 
   it("shows email confirmation text when done", async () => {
-    await renderAndAdvanceToDone({ childName: "Noah", buyer_email: "parent@example.com" });
+    await renderAndAdvanceToDone({ childName: "Noah", buyer_email: "parent@example.com", orderId: "order-1" });
     expect(screen.getByText(/parent@example\.com/i)).toBeInTheDocument();
   });
 
   it("shows 'Create another book' secondary action when done", async () => {
-    await renderAndAdvanceToDone({ childName: "Noah", buyer_email: "parent@example.com" });
+    await renderAndAdvanceToDone({ childName: "Noah", buyer_email: "parent@example.com", orderId: "order-1" });
     expect(screen.getByRole("button", { name: /create another book/i })).toBeInTheDocument();
   });
 
   it("does NOT show 'Back to start' button when done", async () => {
-    await renderAndAdvanceToDone({ childName: "Noah", buyer_email: "parent@example.com" });
+    await renderAndAdvanceToDone({ childName: "Noah", buyer_email: "parent@example.com", orderId: "order-1" });
     expect(screen.queryByRole("button", { name: /back to start/i })).not.toBeInTheDocument();
   });
 
   it("shows 'email' copy in success state", async () => {
-    await renderAndAdvanceToDone({ childName: "Noah", buyer_email: "parent@example.com" });
+    await renderAndAdvanceToDone({ childName: "Noah", buyer_email: "parent@example.com", orderId: "order-1" });
     expect(screen.getByText(/you'll get an email/i)).toBeInTheDocument();
+  });
+});
+
+// ── Tests: order_id threading ─────────────────────────────────────────────────
+
+describe("Step9Generating — order_id", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("passes order_id to generate-book call when orderId is in answers", async () => {
+    mockCallEdge.mockResolvedValue({ data: { id: "book-abc" }, error: null });
+    mockGetBookStatus.mockReturnValue(new Promise(() => {}));
+
+    renderStep({ childName: "Leo", orderId: "order-xyz" });
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    const call = mockCallEdge.mock.calls.find(([name]) => name === "generate-book");
+    expect(call).toBeDefined();
+    expect(call![1]).toMatchObject({ order_id: "order-xyz" });
+  });
+
+  it("shows error state and skips generate-book when orderId is missing", async () => {
+    renderStep({ childName: "Leo" }); // no orderId
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    // generate-book should NOT have been called
+    const call = mockCallEdge.mock.calls.find(([name]) => name === "generate-book");
+    expect(call).toBeUndefined();
+
+    // Error state should be showing
+    expect(screen.getByRole("button", { name: /try again/i })).toBeInTheDocument();
+  });
+});
+
+// ── Tests: bypassCheckout dev flag ────────────────────────────────────────────
+
+describe("Step9Generating — bypassCheckout", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("calls generate-book with bypass_checkout:true when bypass is on (no orderId)", async () => {
+    mockBypassCheckout = true;
+    mockCallEdge.mockResolvedValue({ data: { id: "book-bypass" }, error: null });
+    mockGetBookStatus.mockReturnValue(new Promise(() => {}));
+
+    renderStep({ childName: "Leo" }); // no orderId
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    const call = mockCallEdge.mock.calls.find(([name]) => name === "generate-book");
+    expect(call).toBeDefined();
+    expect(call![1]).toMatchObject({ bypass_checkout: true });
+  });
+
+  it("does NOT show the error state when bypass is on and orderId is missing", async () => {
+    mockBypassCheckout = true;
+    mockCallEdge.mockResolvedValue({ data: { id: "book-bypass" }, error: null });
+    mockGetBookStatus.mockReturnValue(new Promise(() => {}));
+
+    renderStep({ childName: "Leo" }); // no orderId
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(screen.queryByRole("button", { name: /try again/i })).not.toBeInTheDocument();
   });
 });
 
@@ -228,7 +320,7 @@ describe("Step9Generating — deterministic progress bar", () => {
       return new Promise(() => {}); // hang after first tick
     });
 
-    renderStep({ childName: "Isla" });
+    renderStep({ childName: "Isla", orderId: "order-det" });
     // Flush async operations
     await act(async () => {
       await Promise.resolve();

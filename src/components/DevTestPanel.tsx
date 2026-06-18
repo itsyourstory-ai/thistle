@@ -93,6 +93,20 @@ export default function DevTestPanel() {
           />
         </div>
 
+        {/* ── Bypass checkout ───────────────────────────────────── */}
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-sm font-semibold leading-none">Bypass checkout</p>
+            <p className="text-[11px] text-muted-foreground mt-0.5">
+              Skip Stripe payment and jump to generation
+            </p>
+          </div>
+          <Switch
+            checked={mode.bypassCheckout}
+            onCheckedChange={(v) => update({ bypassCheckout: v })}
+          />
+        </div>
+
         {mode.enabled && (
           <>
             <hr className="border-black/10" />

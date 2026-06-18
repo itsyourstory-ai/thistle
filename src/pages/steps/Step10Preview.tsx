@@ -5,6 +5,7 @@ import { useWizard } from "@/contexts/WizardContext";
 import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
 import { stripePromise } from "@/lib/stripe";
 import { callEdge } from "@/lib/edgeFunctions";
+import { useTestMode } from "@/lib/testMode";
 
 import { Check } from "lucide-react";
 import WizardShell from "@/components/WizardShell";
@@ -138,6 +139,8 @@ function PaymentForm({ amountLabel, orderId, onValidate, onSuccess }: PaymentFor
 export default function Step9Preview() {
   const { answers, setAnswer, draftId } = useWizard();
   const navigate = useNavigate();
+  const [testMode] = useTestMode();
+  const bypassCheckout = import.meta.env.DEV && testMode.bypassCheckout;
   const name = answers.childName || "your little one";
   const concept = answers.selectedConcept || {};
   const title = concept.title || answers.bookTitle || `${name}'s Adventure`;
@@ -171,9 +174,9 @@ export default function Step9Preview() {
   const [amountCents, setAmountCents] = useState<number | null>(null);
   const [piError, setPiError] = useState<string | null>(null);
 
-  // Create / update PI when plan changes (also fires on mount)
+  // Create / update PI when plan changes (also fires on mount). Skipped in bypass mode.
   useEffect(() => {
-    if (!draftId) return;
+    if (!draftId || bypassCheckout) return;
 
     let cancelled = false;
     setClientSecret(null);
@@ -288,7 +291,22 @@ export default function Step9Preview() {
     navigate(pathForStep(12));
   };
 
-  const checkoutFooter = (
+  const checkoutFooter = bypassCheckout ? (
+    <div
+      className="sticky bottom-0 z-30 border-t border-black/10 bg-wizard-bg px-4 py-4"
+      style={{ backgroundColor: "hsl(var(--wizard-bg))" }}
+    >
+      <Button
+        type="button"
+        variant="wizard"
+        size="pill"
+        className="w-full"
+        onClick={() => navigate(pathForStep(12))}
+      >
+        Skip checkout (dev bypass)
+      </Button>
+    </div>
+  ) : (
     <div
       className="sticky bottom-0 z-30 border-t border-black/10 bg-wizard-bg"
       style={{ backgroundColor: "hsl(var(--wizard-bg))" }}
@@ -488,6 +506,7 @@ export default function Step9Preview() {
 
   return (
     <WizardShell footer={checkoutFooter}>
+
       <div className="w-full mx-auto" style={{ maxWidth: "700px" }}>
 
         {/* Heading */}

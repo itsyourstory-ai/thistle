@@ -36,6 +36,8 @@ export interface TestModeState {
   perFnLive: string[];
   /** Whether to record real responses to cache, replay from cache, or skip. */
   cacheMode: CacheMode;
+  /** Skip the Stripe payment step and jump straight to generation (DEV only). */
+  bypassCheckout: boolean;
 }
 
 // ── Defaults ──────────────────────────────────────────────────────────────────
@@ -47,6 +49,7 @@ const DEFAULT_STATE: TestModeState = {
   forceErrorFns: [],
   perFnLive: [],
   cacheMode: "off",
+  bypassCheckout: false,
 };
 
 // ── Module-level store (not React state, so callEdge can read it) ─────────────
