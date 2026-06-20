@@ -21,6 +21,7 @@ const mockSignInWithOAuth = vi.fn();
 const mockResetPasswordForEmail = vi.fn();
 const mockSignOut = vi.fn();
 const mockUnsubscribe = vi.fn();
+const mockFunctionsInvoke = vi.fn();
 
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: {
@@ -32,6 +33,9 @@ vi.mock("@/integrations/supabase/client", () => ({
       signInWithOAuth: (...a: unknown[]) => mockSignInWithOAuth(...a),
       resetPasswordForEmail: (...a: unknown[]) => mockResetPasswordForEmail(...a),
       signOut: (...a: unknown[]) => mockSignOut(...a),
+    },
+    functions: {
+      invoke: (...a: unknown[]) => mockFunctionsInvoke(...a),
     },
   },
 }));
@@ -65,6 +69,7 @@ beforeEach(() => {
   mockSignInWithOAuth.mockResolvedValue({ data: {}, error: null });
   mockResetPasswordForEmail.mockResolvedValue({ data: {}, error: null });
   mockSignOut.mockResolvedValue({ error: null });
+  mockFunctionsInvoke.mockResolvedValue({ data: null, error: null });
 });
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
@@ -199,5 +204,45 @@ describe("useAuth — guard", () => {
     const spy = vi.spyOn(console, "error").mockImplementation(() => {});
     expect(() => render(<Boom />)).toThrow(/useAuth must be used within/);
     spy.mockRestore();
+  });
+});
+
+describe("AuthContext — sync-contact", () => {
+  type AuthCallback = (event: string, session: unknown) => void;
+
+  async function renderAndGetCallback(): Promise<AuthCallback> {
+    const { Spy, get } = makeAuthSpy();
+    render(
+      <AuthProvider>
+        <Spy />
+      </AuthProvider>,
+    );
+    await waitFor(() => expect(get().loading).toBe(false));
+    return mockOnAuthStateChange.mock.calls[0][0] as AuthCallback;
+  }
+
+  it("invokes sync-contact once on SIGNED_IN", async () => {
+    const callback = await renderAndGetCallback();
+    act(() => callback("SIGNED_IN", FAKE_SESSION));
+    await waitFor(() => expect(mockFunctionsInvoke).toHaveBeenCalledWith("sync-contact"));
+    expect(mockFunctionsInvoke).toHaveBeenCalledTimes(1);
+  });
+
+  it("does NOT invoke sync-contact on TOKEN_REFRESHED", async () => {
+    const callback = await renderAndGetCallback();
+    act(() => callback("TOKEN_REFRESHED", FAKE_SESSION));
+    // Let any scheduled setTimeout(0) fire before asserting.
+    await act(async () => { await new Promise((r) => setTimeout(r, 0)); });
+    expect(mockFunctionsInvoke).not.toHaveBeenCalled();
+  });
+
+  it("does NOT invoke sync-contact on repeat SIGNED_IN for the same user id", async () => {
+    const callback = await renderAndGetCallback();
+    act(() => callback("SIGNED_IN", FAKE_SESSION));
+    await waitFor(() => expect(mockFunctionsInvoke).toHaveBeenCalledTimes(1));
+    // Second SIGNED_IN for the same user — dedup ref should block it.
+    act(() => callback("SIGNED_IN", FAKE_SESSION));
+    await act(async () => { await new Promise((r) => setTimeout(r, 0)); });
+    expect(mockFunctionsInvoke).toHaveBeenCalledTimes(1);
   });
 });

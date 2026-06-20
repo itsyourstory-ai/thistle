@@ -27,6 +27,11 @@ See [docs/test-suite.md](docs/test-suite.md) for the full testing guide (layers,
 - `VITE_SUPABASE_URL`
 - `VITE_SUPABASE_PUBLISHABLE_KEY`
 
+### Server-side / edge function secrets (never `VITE_`-prefixed)
+
+- `LOOPS_API_KEY` — Loops API key; get from Loops dashboard → Settings → API Keys. Set in the Supabase dashboard (Functions → Secrets) and in Vercel environment variables. Never commit a real value.
+- `LOOPS_TRANSPORT` — `"live"` in production; omit or set to `"mock"` for local dev and tests. The `test:deno` script forces `mock` automatically.
+
 ## Architecture
 
 ### Tech stack

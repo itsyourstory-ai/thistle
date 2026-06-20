@@ -4,11 +4,11 @@
 
 | Task | Description | Assign | Done |
 | ---- | ----------- | ------ | ---- |
-| 1 | Migration: `profiles.welcomed_at` + `profiles.subscribed` | Master | |
-| 2 | `_shared/loops.ts` helper + `loops.test.ts` (TDD) | Master | |
-| 3 | `sync-contact` edge function + `config.toml` entry | Clone | |
-| 4 | `AuthContext.tsx` sign-in sync wiring | Master | |
-| 5 | Env vars + test-forcing + docs | Master | |
+| 1 | Migration: `profiles.welcomed_at` + `profiles.subscribed` | Master | ✅ |
+| 2 | `_shared/loops.ts` helper + `loops.test.ts` (TDD) | Master | ✅ |
+| 3 | `sync-contact` edge function + `config.toml` entry | Clone | ✅ |
+| 4 | `AuthContext.tsx` sign-in sync wiring | Master | ✅ |
+| 5 | Env vars + test-forcing + docs | Master | ✅ |
 
 ## Prerequisites
 

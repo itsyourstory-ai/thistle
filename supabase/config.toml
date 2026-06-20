@@ -27,3 +27,6 @@ verify_jwt = false
 [functions.export-book-images-to-drive]
 verify_jwt = false
 
+[functions.sync-contact]
+verify_jwt = false
+
