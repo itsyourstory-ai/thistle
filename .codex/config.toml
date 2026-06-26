@@ -1,0 +1,9 @@
+[mcp_servers.github]
+command = "npx"
+args = [
+    "-y",
+    "@modelcontextprotocol/server-github",
+]
+
+[mcp_servers.vercel]
+url = "https://mcp.vercel.com"
