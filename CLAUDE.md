@@ -129,3 +129,12 @@ Key tables (migrations in `supabase/migrations/`):
 ## CI/CD
 
 GitHub Actions runs lint, test, and build on every PR — all must pass before merge. Merging to `main` auto-deploys to Vercel staging. To promote to production, use the [Vercel deployments dashboard](https://vercel.com/its-your-story/thistle/deployments).
+
+## Loops
+
+Before starting any task that requires account-specific Loops data — such as
+transactional email template IDs, contact property names, mailing list IDs, or
+campaign details — run `loops agent-context` and read the output first.
+
+Do NOT run it for: general Loops API questions, reviewing existing Loops code,
+or tasks where no account-specific IDs or field names are needed.
