@@ -3,6 +3,7 @@ import React, {
   useContext,
   useState,
   useEffect,
+  useRef,
   useCallback,
   useMemo,
   type ReactNode,
@@ -46,6 +47,9 @@ const redirectTo = () => `${window.location.origin}/dashboard`;
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  // Tracks the last user id we synced so repeat SIGNED_IN events (e.g. token
+  // refresh racing with a re-mount) don't fire duplicate sync-contact calls.
+  const lastSyncedUserId = useRef<string | null>(null);
 
   useEffect(() => {
     if (isDevAuthBypass()) {
@@ -71,6 +75,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // where the password change form lives. Guard against loops if already there.
       if (event === "PASSWORD_RECOVERY" && window.location.pathname !== "/account") {
         window.location.replace("/account");
+      }
+      // On fresh sign-in, sync the contact to Loops once per user session.
+      // setTimeout(0) defers the invoke out of the Supabase auth-lock — calling
+      // supabase inside an onAuthStateChange callback synchronously can deadlock.
+      // The dedup ref prevents a second call if SIGNED_IN fires again for the
+      // same user (e.g. OAuth redirect replays the event on re-mount).
+      if (event === "SIGNED_IN" && nextSession?.user.id !== lastSyncedUserId.current) {
+        lastSyncedUserId.current = nextSession?.user.id ?? null;
+        setTimeout(() => {
+          supabase.functions.invoke("sync-contact").catch(console.error);
+        }, 0);
       }
     });
 

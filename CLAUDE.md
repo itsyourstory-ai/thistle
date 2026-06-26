@@ -27,6 +27,11 @@ See [docs/test-suite.md](docs/test-suite.md) for the full testing guide (layers,
 - `VITE_SUPABASE_URL`
 - `VITE_SUPABASE_PUBLISHABLE_KEY`
 
+### Server-side / edge function secrets (never `VITE_`-prefixed)
+
+- `LOOPS_API_KEY` — Loops API key; get from Loops dashboard → Settings → API Keys. Set in the Supabase dashboard (Functions → Secrets) and in Vercel environment variables. Never commit a real value.
+- `LOOPS_TRANSPORT` — `"live"` in production; omit or set to `"mock"` for local dev and tests. The `test:deno` script forces `mock` automatically.
+
 ## Architecture
 
 ### Tech stack
@@ -124,3 +129,12 @@ Key tables (migrations in `supabase/migrations/`):
 ## CI/CD
 
 GitHub Actions runs lint, test, and build on every PR — all must pass before merge. Merging to `main` auto-deploys to Vercel staging. To promote to production, use the [Vercel deployments dashboard](https://vercel.com/its-your-story/thistle/deployments).
+
+## Loops
+
+Before starting any task that requires account-specific Loops data — such as
+transactional email template IDs, contact property names, mailing list IDs, or
+campaign details — run `loops agent-context` and read the output first.
+
+Do NOT run it for: general Loops API questions, reviewing existing Loops code,
+or tasks where no account-specific IDs or field names are needed.
