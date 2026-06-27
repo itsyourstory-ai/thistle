@@ -1,5 +1,7 @@
 # Feature: Auth & account emails via Loops
 
+> Plan created: docs/plans/auth-account-emails-via-loops.md
+
 > Notion ticket: [TIC-28 — Auth & account emails via Loops](https://app.notion.com/p/3840fc47bb8b81fab766da4685212b1d)
 > Part of epic **All email via Loops** (TIC-17). Ticket 2 of 5. Depends on TIC-27 (Ticket 1) infrastructure, which is already merged.
 
