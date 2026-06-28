@@ -29,6 +29,20 @@ See [docs/test-suite.md](docs/test-suite.md) for the full testing guide (layers,
 
 - `LOOPS_API_KEY` — Loops API key; get from Loops dashboard → Settings → API Keys. Set in the Supabase dashboard (Functions → Secrets) and in Vercel environment variables. Never commit a real value.
 - `LOOPS_TRANSPORT` — `"live"` in production; omit or set to `"mock"` for local dev and tests. The `test:deno` script forces `mock` automatically.
+- `SEND_EMAIL_HOOK_SECRET` — Standard Webhooks secret (format `v1,whsec_…`) for the Supabase Send-Email auth hook. Generated when you enable the hook in the Supabase dashboard (Authentication → Hooks → Send Email); copy it from there. The `auth-email-hook` function strips the `v1,whsec_` prefix and verifies incoming requests with it. Set in the Supabase dashboard (Functions → Secrets). Never commit a real value.
+
+### Auth & account transactional emails (Loops)
+
+Auth and account-lifecycle emails are sent through Loops transactional templates, with IDs filled into `LOOPS_TEMPLATES` in [`supabase/functions/_shared/loops.ts`](supabase/functions/_shared/loops.ts):
+
+| Template key | Trigger | Required variables |
+|---|---|---|
+| `confirmEmail` | Sign-up confirmation (Supabase `signup` hook action) | `confirmationUrl` |
+| `passwordReset` | Password reset (Supabase `recovery` hook action) | `resetUrl` |
+| `welcome` | First successful contact sync after sign-in | none |
+| `accountDeletion` | Account deletion, before the user is deleted | none |
+
+The `confirmEmail` / `passwordReset` sends are driven by the Supabase Send-Email hook → `auth-email-hook` function; `welcome` and `accountDeletion` are sent from `sync-contact` and `delete-account` respectively. Transactional email sends from the `mail.thistlebook.com` subdomain (configured in the Loops dashboard; no code impact).
 
 ## Architecture
 

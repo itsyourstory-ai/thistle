@@ -4,6 +4,7 @@ import {
   unauthorized,
 } from "../_shared/auth.ts";
 import { upsertContact } from "../_shared/loops.ts";
+import { maybeSendWelcome } from "../_shared/accountEmails.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -32,7 +33,7 @@ Deno.serve(async (req) => {
   // subscribed — from profiles table.
   const { data: profile } = await db
     .from("profiles")
-    .select("subscribed")
+    .select("subscribed, welcomed_at")
     .eq("id", user.id)
     .maybeSingle();
   if (profile != null) {
@@ -72,6 +73,13 @@ Deno.serve(async (req) => {
     await upsertContact(user.email!, properties);
   } catch (err) {
     console.error("[sync-contact] upsertContact failed:", err);
+  }
+
+  // Welcome email on first sync — best-effort, never fail the response.
+  try {
+    await maybeSendWelcome(db, { id: user.id, email: user.email! }, profile);
+  } catch (err) {
+    console.error("[sync-contact] maybeSendWelcome failed:", err);
   }
 
   return new Response(JSON.stringify({ success: true }), {

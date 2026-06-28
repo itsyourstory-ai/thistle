@@ -4,13 +4,13 @@
 
 | Task | Description | Assign | Done |
 | ---- | ----------- | ------ | ---- |
-| 1 | `sendTransactional` returns boolean + add `LOOPS_TEMPLATES` keys | Master | |
-| 2 | `_shared/authEmailHook.ts` handler + tests | Clone | |
-| 3 | `auth-email-hook/index.ts` + `config.toml` wiring | Master | |
-| 4 | `_shared/accountEmails.ts` (welcome + deletion helpers) + tests | Master | |
-| 5 | Wire Welcome guard into `sync-contact` | Clone | |
-| 6 | Wire deletion email into `delete-account` | Clone | |
-| 7 | Document `SEND_EMAIL_HOOK_SECRET` + template contract in AGENTS.md | Master | |
+| 1 | `sendTransactional` returns boolean + add `LOOPS_TEMPLATES` keys | Master | ✅ |
+| 2 | `_shared/authEmailHook.ts` handler + tests | Clone | ✅ |
+| 3 | `auth-email-hook/index.ts` + `config.toml` wiring | Master | ✅ |
+| 4 | `_shared/accountEmails.ts` (welcome + deletion helpers) + tests | Master | ✅ |
+| 5 | Wire Welcome guard into `sync-contact` | Clone | ✅ |
+| 6 | Wire deletion email into `delete-account` | Clone | ✅ |
+| 7 | Document `SEND_EMAIL_HOOK_SECRET` + template contract in AGENTS.md | Master | ✅ |
 
 ## Prerequisites
 

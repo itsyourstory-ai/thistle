@@ -30,3 +30,11 @@ verify_jwt = false
 [functions.sync-contact]
 verify_jwt = false
 
+[auth.hook.send_email]
+enabled = true
+uri = "https://uglsyitjasajubfvbiry.supabase.co/functions/v1/auth-email-hook"
+secret = "env(SEND_EMAIL_HOOK_SECRET)"
+
+[functions.auth-email-hook]
+verify_jwt = false
+

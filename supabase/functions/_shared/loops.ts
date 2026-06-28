@@ -17,8 +17,12 @@ export interface LoopsRecordedCall {
 }
 
 // Single source of truth for Loops template IDs.
-// TIC-28 through TIC-31 will populate this map as email types are added.
-export const LOOPS_TEMPLATES: Record<string, string> = {};
+export const LOOPS_TEMPLATES: Record<string, string> = {
+  confirmEmail: "cmqxafmpp02ti0jyqdn2x2uqs",
+  passwordReset: "cmqxax8oe03760jy233f2si9i",
+  accountDeletion: "cmqxbaohm03ky0j015zoo3yh6",
+  welcome: "cmqxbdgvz03550jzq4d4g0hcj",
+};
 
 export const mockSentEmails: LoopsRecordedCall[] = [];
 
@@ -36,7 +40,7 @@ function getApiKey(): string {
   return key;
 }
 
-async function loopsFetch(path: string, payload: Record<string, unknown>): Promise<void> {
+async function loopsFetch(path: string, payload: Record<string, unknown>): Promise<boolean> {
   const apiKey = getApiKey();
   let resp: Response;
   try {
@@ -50,25 +54,27 @@ async function loopsFetch(path: string, payload: Record<string, unknown>): Promi
     });
   } catch (err) {
     console.warn(`[loops] fetch failed for ${path}:`, err);
-    return;
+    return false;
   }
   if (!resp.ok) {
     const text = await resp.text().catch(() => "");
     console.warn(`[loops] ${path} → ${resp.status}: ${text.slice(0, 200)}`);
+    return false;
   }
+  return true;
 }
 
 export async function sendTransactional(
   templateId: string,
   email: string,
   dataVariables: Record<string, unknown>,
-): Promise<void> {
+): Promise<boolean> {
   const payload: Record<string, unknown> = { transactionalId: templateId, email, dataVariables };
   if (isMockMode()) {
     mockSentEmails.push({ kind: "transactional", payload });
-    return;
+    return true;
   }
-  await loopsFetch("/api/v1/transactional", payload);
+  return loopsFetch("/api/v1/transactional", payload);
 }
 
 export async function upsertContact(
