@@ -37,4 +37,3 @@ secret = "env(SEND_EMAIL_HOOK_SECRET)"
 
 [functions.auth-email-hook]
 verify_jwt = false
-
