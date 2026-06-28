@@ -90,7 +90,7 @@ This is a backend feature; "flows" are email-trigger paths.
 
 Before `adminClient.auth.admin.deleteUser(user.id)` (while `user.email` is still
 valid), call
-`sendTransactional(LOOPS_TEMPLATES.accountDeletion, user.email, { deletedAt: new Date().toISOString() })`.
+`sendTransactional(LOOPS_TEMPLATES.accountDeletion, user.email, {})` (template uses no variables).
 Best-effort; never block deletion.
 
 ### Touched: `sync-contact`
@@ -123,7 +123,7 @@ verify_jwt = false
 |---|---|---|---|
 | Confirm your email | `confirmationUrl` | account email | `notify@mail.thistlebook.com` |
 | Password reset | `resetUrl` | account email | `notify@mail.thistlebook.com` |
-| Account deleted | `deletedAt` | account email | `notify@mail.thistlebook.com` |
+| Account deleted | none | account email | `notify@mail.thistlebook.com` |
 | Welcome | none | account email | `notify@mail.thistlebook.com` |
 
 Sender/reply convention: `notify@mail.thistlebook.com` for transactional/account email;

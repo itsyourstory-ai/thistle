@@ -30,13 +30,16 @@
 
 - Change `loopsFetch` to return `Promise<boolean>` (true on 2xx, false on non-2xx / network error).
 - Change `sendTransactional` to return `Promise<boolean>` — `true` in mock mode after recording; in live mode return what `loopsFetch` returns.
-- Add four placeholder keys to `LOOPS_TEMPLATES` with empty-string values and a comment noting IDs are filled from the dashboard: `confirmEmail`, `passwordReset`, `accountDeletion`, `welcome`.
+- Populate `LOOPS_TEMPLATES` with the four real Transactional IDs from the Loops dashboard:
+  - `confirmEmail`: `cmqxafmpp02ti0jyqdn2x2uqs`
+  - `passwordReset`: `cmqxax8oe03760jy233f2si9i`
+  - `accountDeletion`: `cmqxbaohm03ky0j015zoo3yh6`
+  - `welcome`: `cmqxbdgvz03550jzq4d4g0hcj`
 - Update `loops.test.ts`: assert `sendTransactional` returns `true` in mock mode.
 
 **NOT in scope:**
 
 - Changing `upsertContact` / `sendEvent` return types (leave `void`).
-- Real template ID values.
 
 **Build order:**
 
@@ -122,8 +125,8 @@
 
 - New `_shared/accountEmails.ts`:
   - `maybeSendWelcome(db, user, profile): Promise<boolean>` — if `profile` is null → return `false` (skip). If `profile.welcomed_at` is null → `sendTransactional(LOOPS_TEMPLATES.welcome, user.email, {})`, then `db.from("profiles").update({ welcomed_at: new Date().toISOString() }).eq("id", user.id)`, return `true`. Otherwise return `false`. Welcome sends an empty `dataVariables` object — the dashboard template uses no variables.
-  - `sendAccountDeletionEmail(email): Promise<boolean>` — `return sendTransactional(LOOPS_TEMPLATES.accountDeletion, email, { deletedAt: new Date().toISOString() })`.
-- New `_shared/accountEmails.test.ts`: welcome sends + records update when `welcomed_at` null (minimal chainable fake `db`); welcome skips when `welcomed_at` set; welcome skips when `profile` null; deletion email records correct template/email/`deletedAt`.
+  - `sendAccountDeletionEmail(email): Promise<boolean>` — `return sendTransactional(LOOPS_TEMPLATES.accountDeletion, email, {})`. The dashboard template uses no variables.
+- New `_shared/accountEmails.test.ts`: welcome sends + records update when `welcomed_at` null (minimal chainable fake `db`); welcome skips when `welcomed_at` set; welcome skips when `profile` null; deletion email records correct template + email.
 
 **NOT in scope:**
 
@@ -195,7 +198,7 @@
 **In scope:**
 
 - Add `SEND_EMAIL_HOOK_SECRET` to the server-side secrets section: Standard Webhooks secret (`v1,whsec_…`) from the Supabase Send-Email hook config; set in Supabase Functions → Secrets. Never commit a real value.
-- Add a short note documenting the 4 templates + their required variables (`confirmEmail`→`confirmationUrl`, `passwordReset`→`resetUrl`, `accountDeletion`→`deletedAt`, `welcome`→no variables) and that IDs are filled into `LOOPS_TEMPLATES`. Note transactional email sends from the `mail.thistlebook.com` subdomain (configured in the Loops dashboard; no code impact).
+- Add a short note documenting the 4 templates + their required variables (`confirmEmail`→`confirmationUrl`, `passwordReset`→`resetUrl`, `accountDeletion`→no variables, `welcome`→no variables) and that IDs are filled into `LOOPS_TEMPLATES`. Note transactional email sends from the `mail.thistlebook.com` subdomain (configured in the Loops dashboard; no code impact).
 
 **NOT in scope:**
 
