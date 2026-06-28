@@ -42,7 +42,7 @@ None notable.
 - The `setTimeout(fn, 0)` pattern for avoiding the Supabase auth-lock deadlock is testable with RTL's `waitFor` (positive case) and `await act(async () => { await new Promise(r => setTimeout(r, 0)); })` (negative case) — no fake timers needed.
 - Deno test suite runs under `--allow-env` only (no `--allow-net`), so any accidental `fetch` call in mock transport would throw a permission error — this is the implicit "zero network calls" enforcement. The `LOOPS_TRANSPORT=mock` prefix in `test:deno` ensures mock mode is forced even if the env has a live key.
 
-## Catchup 2026-06-27
+## Catchup 2026-06-27 (session 2)
 
 ### Friction
 - User had to explicitly ask to commit after the plan was complete. The `/execute-plan` skill should prompt about committing (or proceed if already authorized) at the end rather than leaving everything staged.
@@ -56,3 +56,16 @@ None notable.
 - The `deno.lock` file grew by ~3700 lines from caching `npm:standardwebhooks@1`. This is expected and correct — the lock file ensures deterministic installs. Staging it alongside the implementation files is the right move.
 - Pre-existing `npm run build` failure (`environmentManager` not exported by `@tanstack/query-core`) was caused by a stale `node_modules` (query-core@5.83.0 vs react-query@5.101.2). `npm install` reconciled it without touching package.json or package-lock.json.
 - Clone A (authEmailHook) needed to run `deno eval` to pre-fetch and cache `npm:standardwebhooks` before the test suite could find it. This is a Deno module-caching quirk — if a new `npm:` import is added in a test file, the first run may fail until the package is cached.
+
+## Catchup 2026-06-27 (session 3)
+
+### Friction
+- User had to ask what "failed welcome email still marks welcomed_at" meant — the review-changes skill should either explain non-obvious findings in plain terms upfront or note that a finding is a trade-off the plan already accepted.
+- User asked why the plan specified 400 instead of 405 — should have explained the "it's unreachable in practice" context in the review rather than just flagging it as a recommendation.
+
+### Mistakes
+- None.
+
+### Observations
+- When surfacing code-review findings, flag the spec-vs-code tension explicitly: if the plan specified something that's technically imprecise (e.g. 400 vs 405) but benign in practice, say so in the review so the user knows it's a deliberate trade-off, not an oversight.
+- Non-technical explanations of trade-offs (e.g. "double welcome vs missed welcome") are more useful than code-level descriptions when helping the user decide whether to fix something.
