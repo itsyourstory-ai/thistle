@@ -121,12 +121,12 @@ verify_jwt = false
 
 | Template | Required variable(s) | Recipient | From / reply |
 |---|---|---|---|
-| Confirm your email | `confirmationUrl` | account email | `notify@thistlebook.com` |
-| Password reset | `resetUrl` | account email | `notify@thistlebook.com` |
-| Account deleted | `deletedAt` | account email | `notify@thistlebook.com` |
-| Welcome | safe always-present vars only (e.g. `firstName`) | account email | `notify@thistlebook.com` |
+| Confirm your email | `confirmationUrl` | account email | `notify@mail.thistlebook.com` |
+| Password reset | `resetUrl` | account email | `notify@mail.thistlebook.com` |
+| Account deleted | `deletedAt` | account email | `notify@mail.thistlebook.com` |
+| Welcome | none | account email | `notify@mail.thistlebook.com` |
 
-Sender/reply convention: `notify@thistlebook.com` for transactional/account email;
+Sender/reply convention: `notify@mail.thistlebook.com` for transactional/account email;
 `support@thistlebook.com` only for user-initiated support; `hello@thistlebook.com`
 as the general inbox.
 

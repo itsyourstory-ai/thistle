@@ -121,7 +121,7 @@
 **In scope:**
 
 - New `_shared/accountEmails.ts`:
-  - `maybeSendWelcome(db, user, profile): Promise<boolean>` — if `profile` is null → return `false` (skip). If `profile.welcomed_at` is null → `sendTransactional(LOOPS_TEMPLATES.welcome, user.email, { ...safe always-present vars })`, then `db.from("profiles").update({ welcomed_at: new Date().toISOString() }).eq("id", user.id)`, return `true`. Otherwise return `false`. Welcome vars limited to reliably-present values only (no `childName`/brief fields).
+  - `maybeSendWelcome(db, user, profile): Promise<boolean>` — if `profile` is null → return `false` (skip). If `profile.welcomed_at` is null → `sendTransactional(LOOPS_TEMPLATES.welcome, user.email, {})`, then `db.from("profiles").update({ welcomed_at: new Date().toISOString() }).eq("id", user.id)`, return `true`. Otherwise return `false`. Welcome sends an empty `dataVariables` object — the dashboard template uses no variables.
   - `sendAccountDeletionEmail(email): Promise<boolean>` — `return sendTransactional(LOOPS_TEMPLATES.accountDeletion, email, { deletedAt: new Date().toISOString() })`.
 - New `_shared/accountEmails.test.ts`: welcome sends + records update when `welcomed_at` null (minimal chainable fake `db`); welcome skips when `welcomed_at` set; welcome skips when `profile` null; deletion email records correct template/email/`deletedAt`.
 
@@ -195,7 +195,7 @@
 **In scope:**
 
 - Add `SEND_EMAIL_HOOK_SECRET` to the server-side secrets section: Standard Webhooks secret (`v1,whsec_…`) from the Supabase Send-Email hook config; set in Supabase Functions → Secrets. Never commit a real value.
-- Add a short note documenting the 4 templates + their required variables (`confirmEmail`→`confirmationUrl`, `passwordReset`→`resetUrl`, `accountDeletion`→`deletedAt`, `welcome`→safe vars) and that IDs are filled into `LOOPS_TEMPLATES`.
+- Add a short note documenting the 4 templates + their required variables (`confirmEmail`→`confirmationUrl`, `passwordReset`→`resetUrl`, `accountDeletion`→`deletedAt`, `welcome`→no variables) and that IDs are filled into `LOOPS_TEMPLATES`. Note transactional email sends from the `mail.thistlebook.com` subdomain (configured in the Loops dashboard; no code impact).
 
 **NOT in scope:**
 
