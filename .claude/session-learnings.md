@@ -41,3 +41,18 @@ None notable.
 - `geist` package was installed but never imported anywhere — likely an accidental `npm install` during a prior session. Worth a quick `grep` check before committing unexpected lockfile changes.
 - The `setTimeout(fn, 0)` pattern for avoiding the Supabase auth-lock deadlock is testable with RTL's `waitFor` (positive case) and `await act(async () => { await new Promise(r => setTimeout(r, 0)); })` (negative case) — no fake timers needed.
 - Deno test suite runs under `--allow-env` only (no `--allow-net`), so any accidental `fetch` call in mock transport would throw a permission error — this is the implicit "zero network calls" enforcement. The `LOOPS_TRANSPORT=mock` prefix in `test:deno` ensures mock mode is forced even if the env has a live key.
+
+## Catchup 2026-06-27
+
+### Friction
+- User had to explicitly ask to commit after the plan was complete. The `/execute-plan` skill should prompt about committing (or proceed if already authorized) at the end rather than leaving everything staged.
+- User asked "what are you talking about with AGENTS.md" — Task 7 was docs-only and wasn't explained upfront in the summary. Should explicitly call out what doc changes were made and why.
+
+### Mistakes
+- None.
+
+### Observations
+- Parallel clone delegation worked well for this plan (Tasks 2+4 in parallel, 5+6 in parallel). Both pairs completed without conflicts since all four wrote to different files.
+- The `deno.lock` file grew by ~3700 lines from caching `npm:standardwebhooks@1`. This is expected and correct — the lock file ensures deterministic installs. Staging it alongside the implementation files is the right move.
+- Pre-existing `npm run build` failure (`environmentManager` not exported by `@tanstack/query-core`) was caused by a stale `node_modules` (query-core@5.83.0 vs react-query@5.101.2). `npm install` reconciled it without touching package.json or package-lock.json.
+- Clone A (authEmailHook) needed to run `deno eval` to pre-fetch and cache `npm:standardwebhooks` before the test suite could find it. This is a Deno module-caching quirk — if a new `npm:` import is added in a test file, the first run may fail until the package is cached.

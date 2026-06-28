@@ -1,3 +1,3 @@
 # What's Next
 
-No pending work. Last completed: TIC-27 — Loops email infrastructure + contact sync (migration, `_shared/loops.ts` transport helper, `sync-contact` edge function, `AuthContext` SIGNED_IN wiring, env/docs). Branch `feature/tic-27-loops-infrastructure` committed, ready to PR.
+No pending work. Last completed: auth & account emails via Loops — `auth-email-hook` function (HMAC-verified Supabase send-email hook for signup/recovery), `accountEmails` shared helpers (welcome + deletion), wired into `sync-contact` and `delete-account`. All 7 plan tasks done, committed on `feature/auth-account-emails-via-loops`, ready to PR.
