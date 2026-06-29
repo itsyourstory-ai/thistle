@@ -28,6 +28,9 @@ coverage
 # Claude Code local settings (may contain tokens)
 .claude/settings.local.json
 
+# Local Claude debugging notes (project-specific, not shared)
+CLAUDE.local.md
+
 # Supabase CLI temp state
 supabase/.temp/
 

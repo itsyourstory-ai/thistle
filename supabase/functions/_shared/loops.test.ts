@@ -11,7 +11,8 @@ import {
 
 Deno.test("sendTransactional: records transactional payload in mock mode", async () => {
   __resetLoopsMock();
-  await sendTransactional("tmpl_123", "user@example.com", { foo: "bar" });
+  const result = await sendTransactional("tmpl_123", "user@example.com", { foo: "bar" });
+  assertEquals(result, true);
   assertEquals(mockSentEmails.length, 1);
   assertEquals(mockSentEmails[0].kind, "transactional");
   assertEquals(mockSentEmails[0].payload.transactionalId, "tmpl_123");

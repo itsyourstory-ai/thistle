@@ -1,4 +1,5 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { sendAccountDeletionEmail } from "../_shared/accountEmails.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -46,6 +47,16 @@ Deno.serve(async (req) => {
         await adminClient.storage.from("draft-photos").remove(paths);
       }
     }
+  }
+
+  // Send the deletion confirmation email before the user is deleted —
+  // best-effort, never block deletion if the email fails.
+  try {
+    if (user.email) {
+      await sendAccountDeletionEmail(user.email);
+    }
+  } catch (err) {
+    console.error("[delete-account] sendAccountDeletionEmail failed:", err);
   }
 
   const { error: deleteError } = await adminClient.auth.admin.deleteUser(user.id);
