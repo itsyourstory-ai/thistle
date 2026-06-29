@@ -4,11 +4,11 @@
 
 | Task | Description | Assign | Done |
 | ---- | ----------- | ------ | ---- |
-| 1 | Migration: 4 `*_email_sent_at` columns on `orders` | Master | |
-| 2 | `_shared/orderEmails.ts` decision helper + template IDs + Deno tests | Master | |
-| 3 | `stripe-webhook`: receipt + payment-failed + new `charge.refunded` branch | Master | |
+| 1 | Migration: 4 `*_email_sent_at` columns on `orders` | Master | x |
+| 2 | `_shared/orderEmails.ts` decision helper + template IDs + Deno tests | Master | x |
+| 3 | `stripe-webhook`: receipt + payment-failed + new `charge.refunded` branch | Master | x |
 | 4 | `nudge-abandoned-orders` edge function + Deno tests + config | Clone | |
-| 5 | `/resume/:draftId` route (extract resume helper, page, route) | Master | |
+| 5 | `/resume/:draftId` route (extract resume helper, page, route) | Master | x |
 | 6 | Enable `pg_cron`/`pg_net` + schedule the nudge job (SQL editor) | Master | |
 | 7 | Turn off Stripe receipts (manual) + full verification | Master | |
 

@@ -30,6 +30,7 @@ const Step10Preview = lazy(() => import("./pages/steps/Step10Preview"));
 const StepSecretIngredient = lazy(() => import("./pages/steps/StepSecretIngredient"));
 const StepPlaceholder = lazy(() => import("./pages/steps/StepPlaceholder"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
+const ResumeDraft = lazy(() => import("./pages/ResumeDraft"));
 const Account = lazy(() => import("./pages/Account"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
@@ -62,6 +63,7 @@ const App = () => (
               <Route path="/" element={<RootRedirect />} />
               <Route path="/login" element={<Login />} />
               <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+              <Route path="/resume/:draftId" element={<ProtectedRoute><ResumeDraft /></ProtectedRoute>} />
               {/* Wizard steps — WizardLayout stays mounted across step navigation for draft persistence */}
               <Route element={<ProtectedRoute><WizardLayout /></ProtectedRoute>}>
                 <Route path="/step/1-name" element={<Step1Name />} />
