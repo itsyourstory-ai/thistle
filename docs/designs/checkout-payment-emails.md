@@ -1,5 +1,7 @@
 # Feature: Checkout & payment emails via Loops (TIC-29)
 
+> Plan created: docs/plans/checkout-payment-emails.md
+
 Notion ticket: https://app.notion.com/p/3840fc47bb8b811fa97fda8432143c19
 
 > Part of epic **All email via Loops** (TIC-17). Ticket 3 of 5. Depends on TIC-27
