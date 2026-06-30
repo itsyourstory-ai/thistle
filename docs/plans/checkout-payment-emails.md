@@ -10,7 +10,7 @@
 | 4 | `nudge-abandoned-orders` edge function + Deno tests + config | Clone | x |
 | 5 | `/resume/:draftId` route (extract resume helper, page, route) | Master | x |
 | 6 | Enable `pg_cron`/`pg_net` + schedule the nudge job (SQL editor) | Master | x |
-| 7 | Turn off Stripe receipts (manual) + full verification | Master | |
+| 7 | Turn off Stripe receipts (manual) + full verification | Master | x |
 
 ## Prerequisites
 
