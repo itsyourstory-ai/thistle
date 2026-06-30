@@ -1,3 +1,3 @@
 # What's Next
 
-No pending work. Last completed: auth & account emails via Loops — all 7 plan tasks done and committed on `feature/auth-account-emails-via-loops`. Includes `auth-email-hook` edge function (HMAC-verified Supabase send-email hook for signup/recovery), `accountEmails.ts` shared helpers (welcome + deletion), wired into `sync-contact` and `delete-account`. 114 Deno tests pass. Ready to PR.
+No pending work. Last completed: full `review-changes` pass on `feature/tic-29-checkout-payment-emails-via-loops` (all 7 plan tasks done, lint/test/test:deno/build all green, no blocking issues) plus an `AIDEV-NOTE` documenting the refund-email once-per-order/cumulative-amount coupling in [`supabase/functions/_shared/orderEmails.ts`](../supabase/functions/_shared/orderEmails.ts) — PR [#38](https://github.com/itsyourstory-ai/thistle/pull/38) is open.
