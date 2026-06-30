@@ -5,7 +5,7 @@ import DashboardHeader from "@/components/DashboardHeader";
 import DraftCard from "@/components/DraftCard";
 import BookCard from "@/components/BookCard";
 import { supabase } from "@/integrations/supabase/client";
-import { deserializeAnswers } from "@/lib/draftPhotos";
+import { resumeDraftById } from "@/lib/resumeDraft";
 import { useWizard } from "@/contexts/WizardContext";
 
 interface BookParsed {
@@ -69,16 +69,7 @@ export default function Dashboard() {
   });
 
   async function resumeDraft(draft: { id: string }) {
-    const { data, error } = await supabase
-      .from("book_drafts")
-      .select("answers, current_step")
-      .eq("id", draft.id)
-      .single();
-    if (error || !data) { console.error("Resume draft fetch error:", error); return; }
-    const deserialized = await deserializeAnswers(data.answers as Record<string, unknown>);
-    seedAnswers(deserialized);
-    setDraftId(draft.id);
-    navigate(data.current_step);
+    await resumeDraftById(draft.id, { seedAnswers, setDraftId, navigate });
   }
 
   async function deleteDraft(id: string) {

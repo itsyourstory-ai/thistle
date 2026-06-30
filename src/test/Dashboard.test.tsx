@@ -35,6 +35,12 @@ vi.mock("@/lib/draftPhotos", () => ({
   deserializeAnswers: vi.fn(async (answers: Record<string, unknown>) => answers),
 }));
 
+const mockResumeDraftById = vi.hoisted(() => vi.fn());
+
+vi.mock("@/lib/resumeDraft", () => ({
+  resumeDraftById: mockResumeDraftById,
+}));
+
 const mockSeedAnswers = vi.fn();
 const mockSetDraftId = vi.fn();
 const mockResetWizard = vi.fn();
@@ -78,7 +84,7 @@ vi.mock("@/components/DashboardHeader", () => ({
 // --- Helpers ---
 
 import Dashboard from "@/pages/Dashboard";
-import { deserializeAnswers } from "@/lib/draftPhotos";
+import { resumeDraftById } from "@/lib/resumeDraft";
 
 function renderDashboard() {
   return render(
@@ -108,6 +114,7 @@ function mockQueries({
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mockResumeDraftById.mockResolvedValue(true);
 });
 
 describe("Dashboard", () => {
@@ -169,8 +176,7 @@ describe("Dashboard", () => {
     expect(mockNavigate).toHaveBeenCalledWith("/step/1-name");
   });
 
-  it("clicking Resume fetches answers for the single draft, then seeds and navigates", async () => {
-    const draftAnswers = { childName: "Aria" };
+  it("clicking Resume delegates to the shared resume helper", async () => {
     const drafts = [
       {
         id: "draft-42",
@@ -179,11 +185,6 @@ describe("Dashboard", () => {
         updated_at: new Date().toISOString(),
       },
     ];
-    // Simulate the targeted .select().eq().single() fetch returning answers
-    mockSingle.mockResolvedValueOnce({
-      data: { answers: draftAnswers, current_step: "/step/5-interests" },
-      error: null,
-    });
 
     mockQueries({ drafts, books: [] });
     renderDashboard();
@@ -191,12 +192,11 @@ describe("Dashboard", () => {
     fireEvent.click(screen.getByRole("button", { name: /resume/i }));
 
     await waitFor(() => {
-      expect(mockSelect).toHaveBeenCalledWith("answers, current_step");
-      expect(mockEq).toHaveBeenCalledWith("id", "draft-42");
-      expect(deserializeAnswers).toHaveBeenCalledWith(draftAnswers);
-      expect(mockSeedAnswers).toHaveBeenCalledWith(draftAnswers);
-      expect(mockSetDraftId).toHaveBeenCalledWith("draft-42");
-      expect(mockNavigate).toHaveBeenCalledWith("/step/5-interests");
+      expect(resumeDraftById).toHaveBeenCalledWith("draft-42", {
+        seedAnswers: mockSeedAnswers,
+        setDraftId: mockSetDraftId,
+        navigate: mockNavigate,
+      });
     });
   });
 });

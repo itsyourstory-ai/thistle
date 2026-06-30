@@ -1,0 +1,14 @@
+{
+  "id": "cmqzpm8n1039e0jz66to5yotq",
+  "transactionalId": "cmqzpm8mt039d0jz6t4gfx0fc",
+  "subject": "There was a problem with your payment",
+  "previewText": "Your card wasn't charged — tap to try again",
+  "fromName": "Thistle Book",
+  "fromEmail": "notify",
+  "replyToEmail": "notify@thistlebook.com",
+  "languageCode": "en",
+  "emailFormat": "styled",
+  "lmx": "\u003cStyle backgroundColor=\"\" backgroundXPadding=\"0\" backgroundYPadding=\"0\" bodyColor=\"\" bodyXPadding=\"0\" bodyYPadding=\"0\" bodyFontFamily=\"Default\" bodyFontCategory=\"sans-serif\" borderColor=\"\" borderWidth=\"0\" borderRadius=\"4\" buttonBodyColor=\"\" buttonBodyXPadding=\"16\" buttonBodyYPadding=\"12\" buttonBorderColor=\"\" buttonBorderWidth=\"0\" buttonBorderRadius=\"4\" buttonTextColor=\"\" buttonTextFormat=\"0\" buttonTextFontSize=\"16\" dividerColor=\"\" dividerBorderWidth=\"1\" textBaseColor=\"\" textBaseFontSize=\"14\" textBaseLineHeight=\"150\" textBaseLetterSpacing=\"0\" textLinkColor=\"\" heading1Color=\"\" heading1FontSize=\"28\" heading1LineHeight=\"125\" heading1LetterSpacing=\"0\" heading2Color=\"\" heading2FontSize=\"24\" heading2LineHeight=\"125\" heading2LetterSpacing=\"0\" heading3Color=\"\" heading3FontSize=\"20\" heading3LineHeight=\"125\" heading3LetterSpacing=\"0\" /\u003e\n\u003cH2 align=\"start\"\u003e\u003cStrong\u003eWe couldn't process your payment\u003c/Strong\u003e\u003c/H2\u003e\n\u003cParagraph align=\"start\"\u003e\u003c/Paragraph\u003e\n\u003cParagraph\u003eYour card wasn't charged, so your order isn't complete yet. This usually happens for a small reason like an expired card or a mistyped number.\u003c/Paragraph\u003e\n\u003cParagraph align=\"start\"\u003e\u003c/Paragraph\u003e\n\u003cParagraph\u003eYou can pick up right where you left off and try again:\u003c/Paragraph\u003e\n\u003cParagraph align=\"start\"\u003e\u003c/Paragraph\u003e\n\u003cButton href=\"{data.retryUrl}\"\u003eTry payment again\u003c/Button\u003e\n\u003cParagraph align=\"start\"\u003e\u003c/Paragraph\u003e\n\u003cParagraph\u003eIf it still won't go through, reply to this email and we'll sort it out together.\u003c/Paragraph\u003e",
+  "contentRevisionId": "cmqzpof6225jx0jvk8tg46fp6",
+  "updatedAt": "2026-06-29T21:09:56.810Z"
+}

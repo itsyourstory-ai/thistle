@@ -30,6 +30,7 @@ See [docs/test-suite.md](docs/test-suite.md) for the full testing guide (layers,
 - `LOOPS_API_KEY` — Loops API key; get from Loops dashboard → Settings → API Keys. Set in the Supabase dashboard (Functions → Secrets) and in Vercel environment variables. Never commit a real value.
 - `LOOPS_TRANSPORT` — `"live"` in production; omit or set to `"mock"` for local dev and tests. The `test:deno` script forces `mock` automatically.
 - `SEND_EMAIL_HOOK_SECRET` — Standard Webhooks secret (format `v1,whsec_…`) for the Supabase Send-Email auth hook. Generated when you enable the hook in the Supabase dashboard (Authentication → Hooks → Send Email); copy it from there. The `auth-email-hook` function strips the `v1,whsec_` prefix and verifies incoming requests with it. Set in the Supabase dashboard (Functions → Secrets). Never commit a real value.
+- `APP_BASE_URL` — Public app origin used by server-side emails for resume/retry links, e.g. `https://thistlebook.com`. Set in Supabase function secrets and Vercel environment variables.
 
 ### Auth & account transactional emails (Loops)
 
@@ -41,8 +42,12 @@ Auth and account-lifecycle emails are sent through Loops transactional templates
 | `passwordReset` | Password reset (Supabase `recovery` hook action) | `resetUrl` |
 | `welcome` | First successful contact sync after sign-in | none |
 | `accountDeletion` | Account deletion, before the user is deleted | none |
+| `orderReceipt` | Stripe `payment_intent.succeeded` | `buyerName`, `orderId`, `productLabel`, `amountFormatted`, `shippingAddress` |
+| `paymentFailed` | Stripe `payment_intent.payment_failed` | `retryUrl` |
+| `refund` | Stripe `charge.refunded` | `orderId`, `amountFormatted` |
+| `abandonedCheckout` | Scheduled abandoned checkout nudge | `resumeUrl` |
 
-The `confirmEmail` / `passwordReset` sends are driven by the Supabase Send-Email hook → `auth-email-hook` function; `welcome` and `accountDeletion` are sent from `sync-contact` and `delete-account` respectively. Transactional email sends from the `mail.thistlebook.com` subdomain (configured in the Loops dashboard; no code impact).
+The `confirmEmail` / `passwordReset` sends are driven by the Supabase Send-Email hook → `auth-email-hook` function; `welcome` and `accountDeletion` are sent from `sync-contact` and `delete-account` respectively. Checkout and payment emails are sent from `stripe-webhook` and `nudge-abandoned-orders`. Transactional email sends from the `mail.thistlebook.com` subdomain (configured in the Loops dashboard; no code impact).
 
 ## Architecture
 
@@ -150,3 +155,7 @@ campaign details — run `loops agent-context` and read the output first.
 
 Do NOT run it for: general Loops API questions, reviewing existing Loops code,
 or tasks where no account-specific IDs or field names are needed.
+
+## Other notes
+
+Refer to CLAUDE.local.md for additional local development instructions.
