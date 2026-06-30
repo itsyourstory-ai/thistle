@@ -155,3 +155,7 @@ campaign details — run `loops agent-context` and read the output first.
 
 Do NOT run it for: general Loops API questions, reviewing existing Loops code,
 or tasks where no account-specific IDs or field names are needed.
+
+## Other notes
+
+Refer to CLAUDE.local.md for additional local development instructions.
