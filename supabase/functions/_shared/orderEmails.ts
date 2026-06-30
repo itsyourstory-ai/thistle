@@ -172,6 +172,13 @@ export async function maybeSendPaymentFailed(
   );
 }
 
+// AIDEV-NOTE: Refund emails are once-per-order — the `refund_email_sent_at`
+// stamp suppresses every refund after the first, so sequential partial refunds
+// go unnotified. The amount source (`charge.amount_refunded`, Stripe's
+// cumulative total) is only correct *because* of that gate: on the first refund
+// cumulative == delta. If you ever want an email per refund, drop the stamp gate
+// (the stripe_webhook_events ledger already dedupes by event id) AND switch to
+// the individual refund amount — change both or neither.
 export async function maybeSendRefund(
   db: DbClient,
   order: OrderRow,
