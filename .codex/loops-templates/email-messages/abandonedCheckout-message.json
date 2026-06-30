@@ -1,0 +1,14 @@
+{
+  "id": "cmqzpsdxf03gx0jxhqbyu0yl3",
+  "transactionalId": "cmqzpsdx203gw0jxhtdcbsvzc",
+  "subject": "Your book is waiting for you",
+  "previewText": "Pick up right where you left off",
+  "fromName": "Thistle Book",
+  "fromEmail": "notify",
+  "replyToEmail": "notify@thistlebook.com",
+  "languageCode": "en",
+  "emailFormat": "styled",
+  "lmx": "\u003cStyle backgroundColor=\"\" backgroundXPadding=\"0\" backgroundYPadding=\"0\" bodyColor=\"\" bodyXPadding=\"0\" bodyYPadding=\"0\" bodyFontFamily=\"Default\" bodyFontCategory=\"sans-serif\" borderColor=\"\" borderWidth=\"0\" borderRadius=\"4\" buttonBodyColor=\"\" buttonBodyXPadding=\"16\" buttonBodyYPadding=\"12\" buttonBorderColor=\"\" buttonBorderWidth=\"0\" buttonBorderRadius=\"4\" buttonTextColor=\"\" buttonTextFormat=\"0\" buttonTextFontSize=\"16\" dividerColor=\"\" dividerBorderWidth=\"1\" textBaseColor=\"\" textBaseFontSize=\"14\" textBaseLineHeight=\"150\" textBaseLetterSpacing=\"0\" textLinkColor=\"\" heading1Color=\"\" heading1FontSize=\"28\" heading1LineHeight=\"125\" heading1LetterSpacing=\"0\" heading2Color=\"\" heading2FontSize=\"24\" heading2LineHeight=\"125\" heading2LetterSpacing=\"0\" heading3Color=\"\" heading3FontSize=\"20\" heading3LineHeight=\"125\" heading3LetterSpacing=\"0\" /\u003e\n\u003cH2\u003e\u003cStrong\u003eYour book is waiting\u003c/Strong\u003e\u003c/H2\u003e\n\u003cParagraph\u003e\u003c/Paragraph\u003e\n\u003cParagraph align=\"start\"\u003eYou were just one step away from finishing your personalized book. Everything you created is saved, so you can pick up right where you left off.\u003c/Paragraph\u003e\n\u003cParagraph align=\"start\"\u003e\u003c/Paragraph\u003e\n\u003cButton href=\"{data.resumeUrl}\"\u003eFinish your book\u003c/Button\u003e\n\u003cParagraph align=\"start\"\u003e\u003c/Paragraph\u003e\n\u003cParagraph\u003eNeed a hand? Reply to this email and we'll help you get it across the line.\u003c/Paragraph\u003e",
+  "contentRevisionId": "cmqzptp6v2q6g0jyj1oe595dt",
+  "updatedAt": "2026-06-29T21:14:03.079Z"
+}

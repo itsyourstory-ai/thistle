@@ -1,0 +1,14 @@
+{
+  "id": "cmqzpppo703c90j0qr6kwsl7t",
+  "transactionalId": "cmqzpppnu03c70j0qk4f8i5z8",
+  "subject": "Your refund is on the way",
+  "previewText": "We've refunded your Thistle order",
+  "fromName": "Thistle Book",
+  "fromEmail": "notify",
+  "replyToEmail": "notify@thistlebook.com",
+  "languageCode": "en",
+  "emailFormat": "styled",
+  "lmx": "\u003cStyle backgroundColor=\"\" backgroundXPadding=\"0\" backgroundYPadding=\"0\" bodyColor=\"\" bodyXPadding=\"0\" bodyYPadding=\"0\" bodyFontFamily=\"Default\" bodyFontCategory=\"sans-serif\" borderColor=\"\" borderWidth=\"0\" borderRadius=\"4\" buttonBodyColor=\"\" buttonBodyXPadding=\"16\" buttonBodyYPadding=\"12\" buttonBorderColor=\"\" buttonBorderWidth=\"0\" buttonBorderRadius=\"4\" buttonTextColor=\"\" buttonTextFormat=\"0\" buttonTextFontSize=\"16\" dividerColor=\"\" dividerBorderWidth=\"1\" textBaseColor=\"\" textBaseFontSize=\"14\" textBaseLineHeight=\"150\" textBaseLetterSpacing=\"0\" textLinkColor=\"\" heading1Color=\"\" heading1FontSize=\"28\" heading1LineHeight=\"125\" heading1LetterSpacing=\"0\" heading2Color=\"\" heading2FontSize=\"24\" heading2LineHeight=\"125\" heading2LetterSpacing=\"0\" heading3Color=\"\" heading3FontSize=\"20\" heading3LineHeight=\"125\" heading3LetterSpacing=\"0\" /\u003e\n\u003cH2\u003e\u003cStrong\u003eYour refund is on its way\u003c/Strong\u003e\u003c/H2\u003e\n\u003cParagraph\u003e\u003c/Paragraph\u003e\n\u003cParagraph align=\"start\"\u003eWe've refunded {data.amountFormatted} to your original payment method for order {data.orderId}.\u003c/Paragraph\u003e\n\u003cParagraph align=\"start\"\u003e\u003c/Paragraph\u003e\n\u003cParagraph\u003eRefunds usually take 5 to 10 days to appear, depending on your bank.\u003c/Paragraph\u003e\n\u003cParagraph align=\"start\"\u003e\u003c/Paragraph\u003e\n\u003cParagraph\u003eIf anything looks off or you have questions, just reply and we'll help.\u003c/Paragraph\u003e",
+  "contentRevisionId": "cmqzprvej2lta0j0o3eic5t3h",
+  "updatedAt": "2026-06-29T21:12:37.819Z"
+}

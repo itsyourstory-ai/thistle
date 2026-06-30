@@ -42,9 +42,9 @@ Auth and account-lifecycle emails are sent through Loops transactional templates
 | `passwordReset` | Password reset (Supabase `recovery` hook action) | `resetUrl` |
 | `welcome` | First successful contact sync after sign-in | none |
 | `accountDeletion` | Account deletion, before the user is deleted | none |
-| `orderReceipt` | Stripe `payment_intent.succeeded` | `orderId`, `product`, `amountCents`, `buyerName`, `shipping` for hardcover |
+| `orderReceipt` | Stripe `payment_intent.succeeded` | `buyerName`, `orderId`, `productLabel`, `amountFormatted`, `shippingAddress` |
 | `paymentFailed` | Stripe `payment_intent.payment_failed` | `retryUrl` |
-| `refund` | Stripe `charge.refunded` | `orderId`, `amount` |
+| `refund` | Stripe `charge.refunded` | `orderId`, `amountFormatted` |
 | `abandonedCheckout` | Scheduled abandoned checkout nudge | `resumeUrl` |
 
 The `confirmEmail` / `passwordReset` sends are driven by the Supabase Send-Email hook → `auth-email-hook` function; `welcome` and `accountDeletion` are sent from `sync-contact` and `delete-account` respectively. Checkout and payment emails are sent from `stripe-webhook` and `nudge-abandoned-orders`. Transactional email sends from the `mail.thistlebook.com` subdomain (configured in the Loops dashboard; no code impact).

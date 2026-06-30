@@ -51,12 +51,13 @@ with stripe-checkout's deferred "refund UI"); the webhook reacts to `charge.refu
 ## Acceptance Criteria
 
 - A simulated `payment_intent.succeeded` (Stripe CLI) fires **exactly one** order-confirmation
-  / receipt send to `orders.buyer_email` (mock-asserted), with `orderId`, `product`,
-  `amountCents`, `buyerName`, and shipping vars for hardcover.
+  / receipt send to `orders.buyer_email` (mock-asserted), with `buyerName`, `orderId`,
+  `productLabel`, `amountFormatted`, and `shippingAddress`.
 - A simulated `payment_intent.payment_failed` fires exactly one payment-failed send with a
   working `retryUrl`.
 - A simulated `charge.refunded` (incl. a **partial** refund) sets order status `refunded`
-  and fires exactly one refund send with `orderId` and the **event's refunded amount**.
+  and fires exactly one refund send with `orderId` and the **event's refunded amount**
+  formatted as `amountFormatted`.
 - The scheduled `nudge-abandoned-orders` job nudges a stale `pending` order (>24h, not yet
   nudged) **exactly once** and stamps it.
 - A re-delivered/retried event or repeated cron tick does **not** produce a duplicate send,
@@ -93,9 +94,9 @@ One migration adding columns to the existing `orders` table (no new tables):
 
 | Email | Trigger | Recipient | Vars |
 |---|---|---|---|
-| Order confirmation / receipt | `stripe-webhook` → `payment_intent.succeeded` | `orders.buyer_email` | `orderId`, `product`, `amountCents`, `buyerName`, shipping (hardcover) |
+| Order confirmation / receipt | `stripe-webhook` → `payment_intent.succeeded` | `orders.buyer_email` | `buyerName`, `orderId`, `productLabel`, `amountFormatted`, `shippingAddress` |
 | Payment failed | `stripe-webhook` → `payment_intent.payment_failed` | `orders.buyer_email` | `retryUrl` |
-| Refund | `stripe-webhook` → `charge.refunded` (new branch) | `orders.buyer_email` | `orderId`, `amount` (event's refunded amount) |
+| Refund | `stripe-webhook` → `charge.refunded` (new branch) | `orders.buyer_email` | `orderId`, `amountFormatted` (event's refunded amount) |
 | Abandoned checkout | `nudge-abandoned-orders` cron job | `orders.buyer_email` | `resumeUrl` |
 
 Four new template IDs added to `LOOPS_TEMPLATES` in `_shared/loops.ts`. Run

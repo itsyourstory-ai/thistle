@@ -1,6 +1,7 @@
 import { assertEquals, assertExists } from "jsr:@std/assert";
 import { __resetLoopsMock, LOOPS_TEMPLATES, mockSentEmails } from "./loops.ts";
 import {
+  isAbandonedOrderNudgeCandidate,
   maybeSendAbandoned,
   maybeSendPaymentFailed,
   maybeSendReceipt,
@@ -89,9 +90,12 @@ Deno.test("maybeSendReceipt: sends receipt with hardcover shipping and stamps or
   assertEquals(mockSentEmails[0].payload.dataVariables, {
     orderId: "order-1",
     product: "hardcover",
+    productLabel: "Hardcover book",
     amountCents: 5499,
+    amountFormatted: "$54.99",
     buyerName: "Jordan",
     shipping: order.shipping,
+    shippingAddress: "Jordan\n123 Main St\nApt 4\nDenver, CO 80202\nUS",
   });
   assertSingleOrderStamp(db, "receipt_email_sent_at");
 });
@@ -106,8 +110,11 @@ Deno.test("maybeSendReceipt: sends digital receipt without shipping", async () =
   assertEquals(mockSentEmails[0].payload.dataVariables, {
     orderId: "order-1",
     product: "digital",
+    productLabel: "Digital book",
     amountCents: 499,
+    amountFormatted: "$4.99",
     buyerName: "Jordan",
+    shippingAddress: "Digital delivery",
   });
   assertSingleOrderStamp(db, "receipt_email_sent_at");
 });
@@ -201,6 +208,7 @@ Deno.test("maybeSendRefund: sends partial refund amount and stamps order", async
   assertEquals(mockSentEmails[0].payload.dataVariables, {
     orderId: "order-1",
     amount: 1234,
+    amountFormatted: "$12.34",
   });
   assertSingleOrderStamp(db, "refund_email_sent_at");
 });
@@ -296,4 +304,58 @@ Deno.test("resumeLink: uses localhost fallback when APP_BASE_URL is unset", () =
 
   assertExists(link);
   assertEquals(link, "http://localhost:8080/resume/draft-1");
+});
+
+Deno.test("isAbandonedOrderNudgeCandidate: accepts pending unstamped orders older than 24 hours", () => {
+  const now = new Date("2026-06-29T12:00:00.000Z");
+
+  assertEquals(
+    isAbandonedOrderNudgeCandidate(
+      makeOrder({
+        status: "pending",
+        created_at: "2026-06-28T11:59:59.000Z",
+        abandoned_email_sent_at: null,
+      }),
+      now,
+    ),
+    true,
+  );
+});
+
+Deno.test("isAbandonedOrderNudgeCandidate: rejects non-pending, stamped, and newer orders", () => {
+  const now = new Date("2026-06-29T12:00:00.000Z");
+
+  assertEquals(
+    isAbandonedOrderNudgeCandidate(
+      makeOrder({
+        status: "paid",
+        created_at: "2026-06-28T11:59:59.000Z",
+        abandoned_email_sent_at: null,
+      }),
+      now,
+    ),
+    false,
+  );
+  assertEquals(
+    isAbandonedOrderNudgeCandidate(
+      makeOrder({
+        status: "pending",
+        created_at: "2026-06-28T11:59:59.000Z",
+        abandoned_email_sent_at: "2026-06-29T00:00:00.000Z",
+      }),
+      now,
+    ),
+    false,
+  );
+  assertEquals(
+    isAbandonedOrderNudgeCandidate(
+      makeOrder({
+        status: "pending",
+        created_at: "2026-06-28T12:00:00.000Z",
+        abandoned_email_sent_at: null,
+      }),
+      now,
+    ),
+    false,
+  );
 });

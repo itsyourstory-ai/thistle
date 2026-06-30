@@ -7,9 +7,9 @@
 | 1 | Migration: 4 `*_email_sent_at` columns on `orders` | Master | x |
 | 2 | `_shared/orderEmails.ts` decision helper + template IDs + Deno tests | Master | x |
 | 3 | `stripe-webhook`: receipt + payment-failed + new `charge.refunded` branch | Master | x |
-| 4 | `nudge-abandoned-orders` edge function + Deno tests + config | Clone | |
+| 4 | `nudge-abandoned-orders` edge function + Deno tests + config | Clone | x |
 | 5 | `/resume/:draftId` route (extract resume helper, page, route) | Master | x |
-| 6 | Enable `pg_cron`/`pg_net` + schedule the nudge job (SQL editor) | Master | |
+| 6 | Enable `pg_cron`/`pg_net` + schedule the nudge job (SQL editor) | Master | x |
 | 7 | Turn off Stripe receipts (manual) + full verification | Master | |
 
 ## Prerequisites
@@ -58,9 +58,9 @@
 
 - Add 4 keys to `LOOPS_TEMPLATES` in `loops.ts` using IDs from `loops agent-context`: `orderReceipt`, `paymentFailed`, `refund`, `abandonedCheckout`.
 - New `supabase/functions/_shared/orderEmails.ts` exporting an `OrderRow` type and four functions, each mirroring `maybeSendWelcome`'s shape (skip if the relevant `*_email_sent_at` is set; skip + `console.warn` if `buyer_email` is null; `sendTransactional`; stamp the column via `db.from("orders").update({...}).eq("id", order.id)`; return boolean):
-  - `maybeSendReceipt(db, order)` → vars `{ orderId, product, amountCents, buyerName, shipping }` (include shipping fields only when `order.product` is hardcover); stamps `receipt_email_sent_at`.
+  - `maybeSendReceipt(db, order)` → vars `{ buyerName, orderId, productLabel, amountFormatted, shippingAddress }` (also keeps legacy `{ product, amountCents, shipping }` for compatibility); stamps `receipt_email_sent_at`.
   - `maybeSendPaymentFailed(db, order)` → vars `{ retryUrl }`; stamps `payment_failed_email_sent_at`.
-  - `maybeSendRefund(db, order, refundedAmountCents)` → vars `{ orderId, amount: refundedAmountCents }`; stamps `refund_email_sent_at`.
+  - `maybeSendRefund(db, order, refundedAmountCents)` → vars `{ orderId, amountFormatted }` (also keeps legacy `{ amount: refundedAmountCents }` for compatibility); stamps `refund_email_sent_at`.
   - `maybeSendAbandoned(db, order)` → vars `{ resumeUrl }`; stamps `abandoned_email_sent_at`.
 - A small exported `resumeLink(order)` that builds `${APP_BASE_URL}/resume/${order.draft_id}`, falling back to `${APP_BASE_URL}/dashboard` when `draft_id` is null. Read base from `Deno.env.get("APP_BASE_URL")`.
 - `supabase/functions/_shared/orderEmails.test.ts` (mirror `accountEmails.test.ts`): for each function assert send vs. skip on stamp-set, skip on null `buyer_email`, correct `transactionalId`, correct `dataVariables`, and that the stamp update targets `orders`/`id`. Test partial-refund amount and the `resumeLink` null-draft fallback.
