@@ -3,61 +3,86 @@
 ## Work completed and current state
 Branch: `feature/tic-29-checkout-payment-emails-via-loops`.
 
-Committed on this branch before catchup:
+Committed on this branch:
 - `75abc65 docs: add design for checkout & payment emails (TIC-29)`
 - `566372d docs: add plan for checkout & payment emails (TIC-29)`
+- `60eaa70 docs: update session handoff`
+- `cfbe55c feat: add checkout payment email foundation`
 
-Draft implementation work is present but not staged or committed. In `docs/plans/checkout-payment-emails.md`, Tasks 1, 2, 3, and 5 are marked done. Tasks 4, 6, and 7 remain open.
+Draft implementation work is present but not staged or committed. In `docs/plans/checkout-payment-emails.md`, Tasks 1 through 6 are marked done. Task 7 remains open.
 
-Completed draft work:
-- Task 1: Added `supabase/migrations/20260629000001_add_order_email_stamps.sql`, applied it to the linked Thistle Supabase project `uglsyitjasajubfvbiry`, and verified the four columns exist: `receipt_email_sent_at`, `payment_failed_email_sent_at`, `refund_email_sent_at`, and `abandoned_email_sent_at`.
-- Task 2: Added `supabase/functions/_shared/orderEmails.ts` and `supabase/functions/_shared/orderEmails.test.ts`; added Loops template IDs in `supabase/functions/_shared/loops.ts`; documented `APP_BASE_URL` and payment email template variables in `AGENTS.md`.
-- Task 3: Updated `supabase/functions/stripe-webhook/index.ts` to re-select orders and send receipt/payment-failed/refund emails best-effort via the new order email helper, including a new `charge.refunded` branch.
-- Task 5: Added `src/lib/resumeDraft.ts`, `src/pages/ResumeDraft.tsx`, `src/test/ResumeDraft.test.tsx`; refactored `src/pages/Dashboard.tsx`; updated `src/test/Dashboard.test.tsx`; added the protected `/resume/:draftId` route in `src/App.tsx`.
+Completed current-session work:
+- Task 4: Added `supabase/functions/nudge-abandoned-orders/index.ts`, registered `[functions.nudge-abandoned-orders] verify_jwt = false` in `supabase/config.toml`, and added the pure abandoned-order cutoff/candidate helpers plus Deno tests in `supabase/functions/_shared/orderEmails.ts` and `orderEmails.test.ts`.
+- Task 6: Added `supabase/migrations/20260629000002_schedule_abandoned_order_nudges.sql` to document the `pg_cron`/`pg_net` schedule. The user manually configured the Supabase Vault secret and invoked the deployed function. A read-only check confirmed cron job `nudge-abandoned-orders-hourly` exists with schedule `0 * * * *` and `active = true`.
+- Loops variable alignment: The user created `.codex/loops-templates/` files from the Loops API. Those files showed the four transactional templates are draft-only (`publishedEmailMessageId: null`) and exposed the actual LMX variables. `orderEmails.ts`, tests, `AGENTS.md`, and the design/plan docs were updated to match:
+  - Order confirmation: `buyerName`, `orderId`, `productLabel`, `amountFormatted`, `shippingAddress`.
+  - Payment failed: `retryUrl`.
+  - Refund issued: `orderId`, `amountFormatted`.
+  - Abandoned checkout: `resumeUrl`.
+- Deployments already performed successfully:
+  - `supabase functions deploy nudge-abandoned-orders`
+  - `supabase functions deploy stripe-webhook`
+  - `supabase functions deploy stripe-webhook nudge-abandoned-orders`
 
-Verification already run successfully:
-- `npm test`: 34 files passed, 285 tests passed.
-- `npm run lint`: exit 0 with existing warning baseline only.
-- `mise exec -- npm run test:deno`: 129 passed, 0 failed.
-- `mise exec -- deno check supabase/functions/stripe-webhook/index.ts`: passed.
-- `mise exec -- deno fmt --check supabase/functions/_shared/orderEmails.ts supabase/functions/_shared/orderEmails.test.ts supabase/functions/stripe-webhook/index.ts`: passed.
-- `npm test -- ResumeDraft Dashboard`: 2 files passed, 9 tests passed.
+Current uncommitted/draft files from the implementation work:
+- `AGENTS.md`
+- `docs/designs/checkout-payment-emails.md`
+- `docs/plans/checkout-payment-emails.md`
+- `supabase/config.toml`
+- `supabase/functions/_shared/orderEmails.test.ts`
+- `supabase/functions/_shared/orderEmails.ts`
+- `supabase/functions/nudge-abandoned-orders/`
+- `supabase/migrations/20260629000002_schedule_abandoned_order_nudges.sql`
+- `.codex/loops-templates/` from the user-provided Loops template pull; do not stage this unless the user explicitly wants local template JSON committed.
+
+Verification already run successfully after the current implementation work:
+- `npm test`: 35 files passed, 288 tests passed.
+- `mise exec -- npm run test:deno`: 131 passed, 0 failed.
 - `npm run build`: passed.
+- `npm run lint`: exit 0 with existing warning baseline only, 64 warnings.
 - `git diff --check`: clean.
+- `mise exec -- deno test --allow-env supabase/functions/_shared/orderEmails.test.ts`: 17 passed.
+- `mise exec -- deno fmt --check supabase/functions/_shared/orderEmails.ts supabase/functions/_shared/orderEmails.test.ts supabase/functions/stripe-webhook/index.ts supabase/functions/nudge-abandoned-orders/index.ts`: passed.
+- `mise exec -- deno check supabase/functions/stripe-webhook/index.ts supabase/functions/nudge-abandoned-orders/index.ts`: passed.
 
 Important environment note: plain `npm run test:deno` fails in this shell because `deno` is not on `PATH`; use `mise exec -- npm run test:deno`.
 
 ## Work Remaining
-Continue from `docs/plans/checkout-payment-emails.md`.
+Continue from Task 7 in `docs/plans/checkout-payment-emails.md`.
 
-1. Task 4: Implement `nudge-abandoned-orders`.
-   - Add `supabase/functions/nudge-abandoned-orders/index.ts`.
-   - Register `[functions.nudge-abandoned-orders] verify_jwt = false` in `supabase/config.toml`.
-   - Use `createServiceRoleClient`, select `orders` with `status = 'pending'`, `abandoned_email_sent_at is null`, and `created_at < now() - 24 hours`, call `maybeSendAbandoned`, return `{ nudged: n }`.
-   - Keep filtering thin; if a pure helper is needed, add it to `supabase/functions/_shared/orderEmails.ts` with tests.
-   - Verify with `mise exec -- npm run test:deno` and preferably `mise exec -- deno check supabase/functions/nudge-abandoned-orders/index.ts`.
+1. Confirm external Stripe/Loops setup.
+   - Confirm Stripe customer emails/receipts/refund emails are turned off so Loops is the only payment-email sender.
+   - Confirm the four Loops transactional templates are published. The latest local metadata showed `publishedEmailMessageId: null` for all four, so this may still be blocking live sends.
 
-2. Task 6: Enable/schedule `pg_cron` and `pg_net`.
-   - Depends on Task 4 being implemented and deployed.
-   - Add a migration/SQL record for creating extensions and scheduling hourly POST to the deployed function.
-   - Apply via Supabase SQL editor or direct `supabase db query --linked`, not `supabase db push`.
-   - Verify with `select * from cron.job`.
-   - Manually invoke/verify one stale pending order is nudged once and stamped.
+2. Re-run a fresh successful payment test after the variable fix and redeploy.
+   - Create a fresh unconfirmed test PaymentIntent.
+   - Update the test `orders.stripe_payment_intent_id` to that PaymentIntent before confirmation.
+   - Confirm the PaymentIntent.
+   - Verify the order becomes `paid`, `receipt_email_sent_at` is not null, and exactly one Loops order confirmation email is sent to the test buyer email with real values for `buyerName`, `orderId`, `productLabel`, `amountFormatted`, and `shippingAddress`.
+   - Redeliver the same Stripe event and confirm no second Loops email is sent.
 
-3. Task 7: Stripe cutover and final verification.
-   - Turn off Stripe dashboard email receipts.
-   - Run Stripe CLI scenarios for `payment_intent.succeeded`, `payment_intent.payment_failed`, and partial `charge.refunded`.
-   - Confirm no duplicate sends on redelivered events and that `retryUrl`/`resumeUrl` land on `/resume/:draftId`.
-   - Run final gate: `npm run lint`, `npm test`, `mise exec -- npm run test:deno`, and `npm run build`.
-   - Review changes and open the PR.
+3. Run the remaining Stripe CLI scenarios.
+   - Payment failed: verify `payment_failed_email_sent_at` is set and the Loops email contains a `retryUrl` pointing to `/resume/:draftId`.
+   - Partial refund: verify `refund_email_sent_at` is set and exactly one refund email is sent with `orderId` and `amountFormatted`.
+
+4. Run the final gate in the current message before claiming completion.
+   - `npm run lint`
+   - `npm test`
+   - `mise exec -- npm run test:deno`
+   - `npm run build`
+   - `git diff`
+
+5. Review, mark Task 7 done, and open the PR if requested.
 
 ## Dead Ends
-- `loops agent-context` ran successfully but only returned CLI metadata, not the four transactional template IDs. The user supplied the IDs manually.
-- `loops transactional list --output json` failed because no Loops auth profile was stored locally.
-- `npm run test:deno` failed initially because `deno` is not on `PATH`; `mise exec -- npm run test:deno` works.
-- The first Deno test run needed network/cache access to fetch JSR/esm.sh dependencies; rerunning with approval succeeded.
-- `supabase projects list` and Supabase help commands need elevated access in this sandbox because the CLI writes telemetry under `~/.supabase`.
-- A Task 4 clone was spawned as required by the plan, but it stayed running through repeated waits, did not respond to an immediate status request, and was shut down without returning changes.
+- Supabase DB mutation via CLI was rejected by approvals for this session, so the user applied the Vault/SQL pieces manually.
+- Supabase API key listing/revealing was rejected by approvals. The user provided the service-role JWT directly, then the Vault secret was handled manually.
+- Reading `net._http_response` hung and was interrupted; the manual function response plus cron row check was used instead.
+- Loops CLI keyring auth was not usable in Codex: `auth list` showed `thistle` active, but `auth status` and `transactional get` still reported no active team. Escalated keyring access was rejected, so the user exported `LOOPS_API_KEY` and wrote the template JSON files locally.
+- `loops transactional get` metadata had `dataVariables: []` and only draft message IDs. The actual variables were only visible after inspecting the Loops email-message JSON/LMX files.
+- Stripe PaymentIntents that are confirmed before the order row is pointed at them can leave the webhook unable to match the order and may consume the Stripe event ledger as a duplicate. Use this sequence for fresh tests: create unconfirmed PI, update the order to that PI, then confirm.
 
 ## Open Questions
-- None blocking for code. External/manual work remains for Task 6 database scheduling/deployment verification and Task 7 Stripe dashboard receipt settings plus Stripe CLI end-to-end checks.
+- Are the four Loops transactional templates published now? Local metadata showed draft-only templates.
+- Are Stripe customer payment/refund emails off in test mode and live mode?
+- Which specific test order/draft should be used for the remaining payment-failed and refund scenarios?
