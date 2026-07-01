@@ -1,5 +1,7 @@
 # Feature: Book generation lifecycle emails via Loops (TIC-30)
 
+> Plan created: docs/plans/book-generation-lifecycle-emails.md
+
 Notion ticket: https://app.notion.com/p/3840fc47bb8b811982a8e593b25b9bb8
 
 > Part of epic **All email via Loops** (TIC-17). Ticket 4 of 5. Depends on TIC-27
