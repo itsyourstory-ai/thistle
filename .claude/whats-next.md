@@ -2,10 +2,10 @@
 
 ## Work completed and current state
 
-Branch: `feature/tic-30-lifecycle-emails` (TIC-30 — Book generation lifecycle emails via Loops). All 6 plan tasks in [`docs/plans/book-generation-lifecycle-emails.md`](../docs/plans/book-generation-lifecycle-emails.md) are done and committed; plan is marked complete.
+Branch: `feature/tic-30-lifecycle-emails` (TIC-30 — Book generation lifecycle emails via Loops). All 6 plan tasks in [`docs/plans/done/book-generation-lifecycle-emails.md`](../docs/plans/done/book-generation-lifecycle-emails.md) are done and committed; plan is marked complete and archived.
 
 Committed (6 commits, all vs `main`):
-- Design + plan docs (`docs/designs/generation-lifecycle-emails.md`, `docs/plans/book-generation-lifecycle-emails.md`).
+- Design + plan docs (`docs/designs/done/generation-lifecycle-emails.md`, `docs/plans/done/book-generation-lifecycle-emails.md`).
 - Migration `supabase/migrations/20260701000001_add_book_email_stamps.sql` — three nullable `*_email_sent_at` columns on `generated_books` (idempotency stamps).
 - `supabase/functions/_shared/bookEmails.ts` (new) — `maybeSendCreating` / `maybeSendReady` / `maybeSendFailed`, mirroring `orderEmails.ts`. Plus `bookEmails.test.ts` (12 Deno tests).
 - `LOOPS_TEMPLATES` gains `bookCreating` / `bookReady` / `bookFailed` (real IDs) in `loops.ts`; matching rows in `AGENTS.md`; `appBaseUrl` exported from `orderEmails.ts`.
