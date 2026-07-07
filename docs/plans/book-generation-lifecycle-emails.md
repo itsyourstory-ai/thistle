@@ -4,12 +4,12 @@
 
 | Task | Description | Assign | Done |
 | ---- | ----------- | ------ | ---- |
-| 1 | Migration: three `*_email_sent_at` columns on `generated_books` | Master | |
-| 2 | Add 3 template IDs to `LOOPS_TEMPLATES` + AGENTS.md doc rows | Master | |
-| 3 | `_shared/bookEmails.ts` decision helper + Deno tests | Master | |
-| 4 | Wire `generate-book` (creating + failed sends) | Clone | |
-| 5 | Wire `generate-book-images` (ready + failed sends) | Clone | |
-| 6 | Full verification + `git diff` review | Master | |
+| 1 | Migration: three `*_email_sent_at` columns on `generated_books` | Master | ✓ |
+| 2 | Add 3 template IDs to `LOOPS_TEMPLATES` + AGENTS.md doc rows | Master | ✓ |
+| 3 | `_shared/bookEmails.ts` decision helper + Deno tests | Master | ✓ |
+| 4 | Wire `generate-book` (creating + failed sends) | Clone | ✓ |
+| 5 | Wire `generate-book-images` (ready + failed sends) | Clone | ✓ |
+| 6 | Full verification + `git diff` review | Master | ✓ |
 
 ## Prerequisites
 
