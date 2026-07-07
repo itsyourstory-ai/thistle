@@ -55,15 +55,29 @@ async function maybeSendBookEmail(
     return false;
   }
 
-  const sent = await sendTransactional(
-    templateId,
-    book.buyer_email,
-    dataVariables,
-  );
-  if (!sent) return false;
+  // Never let an email-layer failure break book generation. A misconfigured
+  // LOOPS_API_KEY makes sendTransactional throw (rather than resolve falsy);
+  // because these sends run inline in the generation pipeline, an uncaught
+  // throw could 500 a paid user's request or flip a done book to failed.
+  // Swallow here so the worst case is a missing email, and (stamp not written)
+  // a later invocation retries.
+  try {
+    const sent = await sendTransactional(
+      templateId,
+      book.buyer_email,
+      dataVariables,
+    );
+    if (!sent) return false;
 
-  await stampBook(db, book, stampColumn);
-  return true;
+    await stampBook(db, book, stampColumn);
+    return true;
+  } catch (err) {
+    console.warn(
+      `[bookEmails] send failed for ${stampColumn} on book ${book.id}:`,
+      err,
+    );
+    return false;
+  }
 }
 
 export async function maybeSendCreating(

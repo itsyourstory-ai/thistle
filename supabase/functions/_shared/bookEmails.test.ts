@@ -207,3 +207,26 @@ Deno.test("maybeSendReady: preview URL resolves from APP_BASE_URL with dashboard
     bookId: "book-1",
   });
 });
+
+Deno.test("maybeSend*: swallows send/stamp errors and resolves false", async () => {
+  __resetLoopsMock();
+  const throwingDb = {
+    from() {
+      return {
+        update() {
+          return {
+            eq() {
+              throw new Error("db unavailable");
+            },
+          };
+        },
+      };
+    },
+  } as unknown as Parameters<typeof maybeSendCreating>[0];
+
+  // The email is sent (mock) but the stamp write throws — the helper must not
+  // reject, so an email-layer failure can never break book generation.
+  const result = await maybeSendCreating(throwingDb, makeBook());
+
+  assertEquals(result, false);
+});
