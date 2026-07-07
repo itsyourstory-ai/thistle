@@ -34,7 +34,7 @@ type StampColumn =
 
 const ABANDONED_ORDER_NUDGE_DELAY_MS = 24 * 60 * 60 * 1000;
 
-function appBaseUrl(): string {
+export function appBaseUrl(): string {
   return (Deno.env.get("APP_BASE_URL") ?? "http://localhost:8080").replace(
     /\/+$/,
     "",
