@@ -30,6 +30,7 @@ import {
   ensureBookFolder,
   uploadByKindSlot,
 } from "../_shared/driveUpload.ts";
+import { maybeSendFailed, maybeSendReady } from "../_shared/bookEmails.ts";
 
 // Fire-and-forget Drive upload for a single (kind, slot). Safe to call
 // without awaiting — surface failures only via console + the row's error
@@ -560,6 +561,7 @@ Deno.serve(async (req) => {
 
   let bookId: string | null = null;
   let supabase: any = null;
+  let bookRow: any = null;
   try {
     const apiKey = getEnv("OPENROUTER_API_KEY");
     const body = await req.json();
@@ -580,11 +582,12 @@ Deno.serve(async (req) => {
 
     const { data: row, error } = await supabase
       .from("generated_books")
-      .select("id,user_id,brief,parsed")
+      .select("id,user_id,brief,parsed,buyer_email,ready_email_sent_at,failed_email_sent_at")
       .eq("id", bookId)
       .maybeSingle();
     if (error) throw new Error(`DB read failed: ${error.message}`);
     if (!row) throw new Error(`Book ${bookId} not found`);
+    bookRow = row;
     if (!isInternal && row.user_id !== callerUserId) {
       return unauthorized(corsHeaders, 403, "Forbidden.");
     }
@@ -628,6 +631,7 @@ Deno.serve(async (req) => {
         .from("generated_books")
         .update({ pipeline_status: "failed", pipeline_error: fatal.slice(0, 1000) })
         .eq("id", bookId);
+      await maybeSendFailed(supabase, bookRow);
       return new Response(
         JSON.stringify({ ok: false, error: fatal }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
@@ -695,6 +699,7 @@ Deno.serve(async (req) => {
           pipeline_error: summary.slice(0, 1000),
         })
         .eq("id", bookId);
+      await maybeSendFailed(supabase, bookRow);
       return new Response(
         JSON.stringify({ ok: false, book_id: bookId, error: summary, gaps: verdict.gaps }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
@@ -704,6 +709,7 @@ Deno.serve(async (req) => {
     await setPipeline(supabase, bookId, "done", {
       stage: "done", current: 1, total: 1, message: "All done!",
     });
+    await maybeSendReady(supabase, bookRow);
 
     return new Response(
       JSON.stringify({ ok: true, book_id: bookId, done: true, drive_export: exportResult }),
@@ -724,6 +730,7 @@ Deno.serve(async (req) => {
             pipeline_error: msg.slice(0, 1000),
           })
           .eq("id", bookId);
+        if (bookRow) await maybeSendFailed(supabase, bookRow);
       } catch (_) { /* ignore */ }
     }
     return new Response(JSON.stringify({ ok: false, error: msg }), {

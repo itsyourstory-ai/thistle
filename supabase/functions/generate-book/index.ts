@@ -14,6 +14,7 @@ import Stripe from "https://esm.sh/stripe@14.21.0?target=deno";
 import { isValidEmail, sanitizeUserText } from "../_shared/sanitize.ts";
 import { rateLimitExceeded } from "../_shared/auth.ts";
 import { checkRateLimit } from "../_shared/rateLimit.ts";
+import { maybeSendCreating, maybeSendFailed } from "../_shared/bookEmails.ts";
 import {
   ageToBand,
   applyDedication,
@@ -503,6 +504,17 @@ Deno.serve(async (req) => {
         .eq("id", order_id);
     }
 
+    const book = {
+      id: bookId,
+      buyer_email: buyer_email || null,
+      brief: { ...brief, approvedConcept },
+      creating_email_sent_at: null,
+      ready_email_sent_at: null,
+      failed_email_sent_at: null,
+    };
+
+    await maybeSendCreating(supabase, book);
+
     // Background work — story AI call + persist + chain image pipeline.
     const work = async () => {
       const startedAt = Date.now();
@@ -657,6 +669,7 @@ Deno.serve(async (req) => {
             pipeline_error: msg,
           })
           .eq("id", bookId);
+        await maybeSendFailed(supabase, book);
       }
     };
 

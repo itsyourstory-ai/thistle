@@ -26,6 +26,9 @@ export const LOOPS_TEMPLATES: Record<string, string> = {
   paymentFailed: "cmqzpm8mt039d0jz6t4gfx0fc",
   refund: "cmqzpppnu03c70j0qk4f8i5z8",
   abandonedCheckout: "cmqzpsdx203gw0jxhtdcbsvzc",
+  bookCreating: "cmrb2qmp201n40j33xtmisfzu",
+  bookReady: "cmrb2wnuv01r60j2jq6d4vie5",
+  bookFailed: "cmrb32ry401qq0j2sq2aigd8f",
 };
 
 export const mockSentEmails: LoopsRecordedCall[] = [];
