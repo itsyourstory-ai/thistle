@@ -9,7 +9,7 @@ Linear ticket: THI-6
 The app's display name was recently changed slightly, but the rename never landed
 everywhere. Three different variants currently exist in user-visible copy:
 
-- **"Thistle Books"** — `index.html` (title, author meta, og:title, twitter:title),
+- the old plural brand spelling — `index.html` (title, author meta, og:title, twitter:title),
   `src/pages/Landing.tsx` nav wordmark, and its test
 - **"Thistle"** alone — `README.md` title, `AGENTS.md` prose,
   `src/components/DashboardHeader.tsx` wordmark
@@ -45,8 +45,8 @@ This is a text-only rename — no logic changes.
 
 ### Files to change
 
-1. `index.html` — title, author meta, og:title, twitter:title: "Thistle Books" → "Thistle Book"
-2. `src/pages/Landing.tsx` — nav wordmark: "Thistle Books" → "Thistle Book"
+1. `index.html` — title, author meta, og:title, twitter:title: old plural brand spelling → "Thistle Book"
+2. `src/pages/Landing.tsx` — nav wordmark: old plural brand spelling → "Thistle Book"
 3. `src/pages/Landing.test.tsx` — update description + assertion to match
 4. `src/components/DashboardHeader.tsx` — "Thistle" → "Thistle Book"
 5. `README.md` — "# Thistle" → "# Thistle Book"
@@ -60,7 +60,7 @@ This is a text-only rename — no logic changes.
 
 - No user-facing surface (browser tab title, meta tags, landing page, dashboard
   header, README, AGENTS.md, email subject/preview copy) reads "Thistle" or
-  "Thistle Books" — all read "Thistle Book".
+  the old plural brand spelling — all read "Thistle Book".
 - `Landing.test.tsx` passes against the updated wordmark text.
 - Domains, infra slugs, internal storage keys, and `package.json` are unchanged.
 - `npm run lint && npm test` pass; `npm run build` succeeds.

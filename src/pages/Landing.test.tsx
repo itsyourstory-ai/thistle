@@ -16,9 +16,9 @@ function renderLanding() {
 }
 
 describe("Landing", () => {
-  it("renders the Thistle Books wordmark", () => {
+  it("renders the Thistle Book wordmark", () => {
     renderLanding();
-    expect(screen.getByText(/Thistle Books/i)).toBeInTheDocument();
+    expect(screen.getByText("📖 Thistle Book")).toBeInTheDocument();
   });
 
   it("renders the hero headline", () => {

@@ -11,7 +11,7 @@ export default function Landing() {
       {/* Nav */}
       <nav className="flex items-center justify-between px-6 py-4 max-w-5xl mx-auto w-full">
         <span className="font-heading text-xl font-semibold text-wizard">
-          📖 Thistle Books
+          📖 Thistle Book
         </span>
         <div className="flex items-center gap-2">
           <Button asChild variant="wizardOutline" size="sm">

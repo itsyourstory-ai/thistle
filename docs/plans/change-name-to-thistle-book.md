@@ -4,9 +4,9 @@
 
 | Task | Description | Assign | Done |
 | ---- | ----------- | ------ | ---- |
-| 1 | Web surfaces: `index.html` meta + landing wordmark + test | Master | |
-| 2 | Dashboard header + docs (`DashboardHeader`, `README`, `AGENTS`) | Clone | |
-| 3 | Loops template snapshot copy (`orderReceipt`, `refund`) | Clone | |
+| 1 | Web surfaces: `index.html` meta + landing wordmark + test | Master | ✅ |
+| 2 | Dashboard header + docs (`DashboardHeader`, `README`, `AGENTS`) | Clone | ✅ |
+| 3 | Loops template snapshot copy (`orderReceipt`, `refund`) | Clone | ✅ |
 
 ## Prerequisites
 
@@ -21,10 +21,10 @@
 
 **In scope:**
 
-- `index.html` — 4 occurrences of `"Thistle Books"` → `"Thistle Book"`:
+- `index.html` — 4 occurrences of the old plural brand spelling → `"Thistle Book"`:
   - line 7 `<title>`, line 9 `author` meta, line 22 `og:title`, line 23 `twitter:title`
-- `src/pages/Landing.tsx` line 14 — `📖 Thistle Books` → `📖 Thistle Book`
-- `src/pages/Landing.test.tsx` lines 19 & 21 — test description string and the `getByText(/Thistle Books/i)` matcher → `Thistle Book`
+- `src/pages/Landing.tsx` line 14 — old plural wordmark → `📖 Thistle Book`
+- `src/pages/Landing.test.tsx` lines 19 & 21 — test description string and the old plural matcher → `Thistle Book`
 
 **NOT in scope:**
 
@@ -33,7 +33,7 @@
 
 **Build order:**
 
-1. **Test:** Update `src/pages/Landing.test.tsx` matcher to `/Thistle Book/i` and the `it(...)` description to "renders the Thistle Book wordmark". (Test-first: it should fail against the current `Thistle Books` markup.)
+1. **Test:** Update `src/pages/Landing.test.tsx` matcher to `/Thistle Book/i` and the `it(...)` description to "renders the Thistle Book wordmark". (Test-first: it should fail against the old plural markup.)
 2. **Implement:** Edit `src/pages/Landing.tsx` and `index.html` strings.
 3. **Verify:** `npx vitest run src/pages/Landing.test.tsx`
 4. **Review:** Run review-changes before proceeding.
@@ -81,7 +81,7 @@
 
 - `npm run lint && npm test` — all green
 - `npm run build` — succeeds (catches TS errors)
-- `git grep -n "Thistle Books"` returns nothing; no user-facing surface reads bare "Thistle"
+- `git grep` for the old plural brand spelling returns nothing; no user-facing surface reads bare "Thistle"
 
 ## Task Dependencies
 

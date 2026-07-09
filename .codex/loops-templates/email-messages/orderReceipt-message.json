@@ -1,7 +1,7 @@
 {
   "id": "cmqzoonwa02df0jzbrnjv1qix",
   "transactionalId": "cmqzoonw402de0jzbgmmcfcqn",
-  "subject": "Your Thistle order is confirmed",
+  "subject": "Your Thistle Book order is confirmed",
   "previewText": "Thanks {DATA_VARIABLE:buyerName} — here's your receipt and what's next",
   "fromName": "Thistle Book",
   "fromEmail": "notify",
