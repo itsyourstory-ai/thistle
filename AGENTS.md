@@ -2,7 +2,7 @@ This file provides guidance to AI's when working with code in this repository.
 
 ## What this app is
 
-Thistle is a personalized children's book creator. Users walk through a 10-step wizard collecting the child's name, age, interests, personality, art style, and photos. That data is assembled into a `StoryBrief` and sent to Supabase Edge Functions that call AI models to generate the story, cover image, character portraits, and page illustrations.
+Thistle Book is a personalized children's book creator. Users walk through a 10-step wizard collecting the child's name, age, interests, personality, art style, and photos. That data is assembled into a `StoryBrief` and sent to Supabase Edge Functions that call AI models to generate the story, cover image, character portraits, and page illustrations.
 
 ## Commands
 

@@ -1,4 +1,4 @@
-# Thistle
+# Thistle Book
 
 Vite + React SPA. Backend: Supabase (database, auth, edge functions). Hosting: Vercel.
 

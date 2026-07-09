@@ -7,7 +7,7 @@ export default function DashboardHeader() {
 
   return (
     <header className="sticky top-0 z-30 flex items-center justify-between px-4 py-3 border-b border-black/10 w-full bg-wizard-bg">
-      <span className="text-xl font-semibold tracking-tight">Thistle</span>
+      <span className="text-xl font-semibold tracking-tight">Thistle Book</span>
 
       <div className="flex items-center gap-3">
         <Link
