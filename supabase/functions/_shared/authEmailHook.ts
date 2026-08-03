@@ -1,6 +1,8 @@
 import { Webhook } from "npm:standardwebhooks@1";
 import { sendTransactional, LOOPS_TEMPLATES } from "./loops.ts";
 
+declare const EdgeRuntime: { waitUntil(p: Promise<unknown>): void };
+
 export async function handleAuthEmailHook(req: Request): Promise<Response> {
   // 1. Non-POST → 400
   if (req.method !== "POST") {
@@ -55,9 +57,22 @@ export async function handleAuthEmailHook(req: Request): Promise<Response> {
     `${supabaseUrl}/auth/v1/verify?token=${email_data.token_hash}&type=${email_data.email_action_type}&redirect_to=${encodeURIComponent(email_data.redirect_to ?? "")}`;
 
   // 7. Send transactional email
-  const sent = await sendTransactional(templateId, user.email, { [varName]: url });
-  if (!sent) {
-    console.error("[auth-email-hook] sendTransactional failed for", user.email);
+  const sendPromise = sendTransactional(templateId, user.email, { [varName]: url })
+    .then((sent) => {
+      if (!sent) console.error("[auth-email-hook] sendTransactional failed for", user.email);
+    })
+    .catch((err) => {
+      console.error("[auth-email-hook] sendTransactional threw for", user.email, err);
+    });
+
+  // AIDEV-NOTE: Supabase caps auth hooks at 5s total and a blown budget fails the
+  // signup itself, not just the email. Loops latency must never enter that budget.
+  // EdgeRuntime is absent under plain `deno test`, so await there to keep tests
+  // deterministic.
+  if (typeof EdgeRuntime !== "undefined") {
+    EdgeRuntime.waitUntil(sendPromise);
+  } else {
+    await sendPromise;
   }
 
   return new Response("OK", { status: 200 });

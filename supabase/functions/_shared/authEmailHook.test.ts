@@ -92,6 +92,34 @@ Deno.test("recovery → sends passwordReset", async () => {
   }
 });
 
+Deno.test("sendTransactional throws → 200, no send", async () => {
+  __resetLoopsMock();
+  const prevSecret = Deno.env.get("SEND_EMAIL_HOOK_SECRET");
+  const prevUrl = Deno.env.get("SUPABASE_URL");
+  const prevTransport = Deno.env.get("LOOPS_TRANSPORT");
+  const prevApiKey = Deno.env.get("LOOPS_API_KEY");
+  try {
+    Deno.env.set("SEND_EMAIL_HOOK_SECRET", "v1," + TEST_SECRET);
+    Deno.env.set("SUPABASE_URL", "https://supabase.test");
+    Deno.env.set("LOOPS_TRANSPORT", "live");
+    Deno.env.delete("LOOPS_API_KEY");
+
+    const res = await handleAuthEmailHook(makeRequest("signup"));
+
+    assertEquals(res.status, 200);
+    assertEquals(mockSentEmails.length, 0);
+  } finally {
+    if (prevSecret !== undefined) Deno.env.set("SEND_EMAIL_HOOK_SECRET", prevSecret);
+    else Deno.env.delete("SEND_EMAIL_HOOK_SECRET");
+    if (prevUrl !== undefined) Deno.env.set("SUPABASE_URL", prevUrl);
+    else Deno.env.delete("SUPABASE_URL");
+    if (prevTransport !== undefined) Deno.env.set("LOOPS_TRANSPORT", prevTransport);
+    else Deno.env.delete("LOOPS_TRANSPORT");
+    if (prevApiKey !== undefined) Deno.env.set("LOOPS_API_KEY", prevApiKey);
+    else Deno.env.delete("LOOPS_API_KEY");
+  }
+});
+
 // ── invalid signature ─────────────────────────────────────────────────────────
 
 Deno.test("invalid signature → 401, no send", async () => {
