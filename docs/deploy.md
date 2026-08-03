@@ -45,6 +45,8 @@ Same Supabase project is used for both staging and production.
 
 Local development uses `.env` (gitignored). See `.env.example`.
 
+For the production authentication-email cutover, follow the [Loops auth-email cutover runbook](runbooks/loops-auth-email-cutover.md).
+
 ## Node version
 
 Pinned to Node 22 via `.nvmrc` (used by CI and Vercel). Run `nvm use` locally.

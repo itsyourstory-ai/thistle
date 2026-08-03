@@ -7,8 +7,8 @@
 
 | Task | Phase | Checkpoint | Description | Assign | Done |
 | ---- | ----- | ---------- | ----------- | ------ | ---- |
-| 1 | 1 | 1 | Harden `authEmailHook.ts` (waitUntil + catch) + `config.toml` `secrets` key | Master | |
-| 2 | 1 | 1 | Cutover runbook doc + signed pre-flight script | Clone | |
+| 1 | 1 | 1 | Harden `authEmailHook.ts` (waitUntil + catch) + `config.toml` `secrets` key | Master | ✅ |
+| 2 | 1 | 1 | Cutover runbook doc + signed pre-flight script | Clone | ✅ |
 | 3 | 2 | 2 | Deploy function, set secret, run signed pre-flight, enable hook | Master | |
 | 4 | 2 | 2 | End-to-end verification (signup, reset, delete) + record open-question answers | Master | |
 | 5 | 3 | 3 | Audit Part A — DB stamp-gap counts | Master | |
