@@ -74,7 +74,7 @@ For each ticket, in order:
    - deletes user data
    - adds a new npm or Deno dependency
    - has review findings you couldn't resolve, or CI you couldn't get to pass
-6. **Report.** Comment on the ticket: what changed, the PR link, how it was tested, and anything a person needs to do next, with an @mention. If the PR changed `supabase/`, say it needs a Supabase deploy. AI runs can't deploy, so a person follows [Deploying Supabase changes](docs/deploy.md#deploying-supabase-changes).
+6. **Report.** Comment on the ticket: what changed, the PR link, how it was tested, and anything a person needs to do next, with an @mention. If the PR changed `supabase/functions/`, say the functions deploy automatically on merge and link the **Deploy edge functions** run once it finishes (or say it still needs to run). If the PR adds a migration, say a person must apply it and then start that workflow by hand; the automatic deploy stops until then. If it needs new secrets, say a person must set them. AI runs can't apply migrations or set secrets; see [Deploying Supabase changes](docs/deploy.md#deploying-supabase-changes).
 
 When working a whole project:
 
@@ -276,7 +276,9 @@ Child photos are stored in the `draft-photos` Storage bucket (configured in the 
 
 GitHub Actions runs lint, test, and build on every PR — all must pass before merge. Merging to `main` auto-deploys the website to Vercel staging. To promote to production, use the [Vercel deployments dashboard](https://vercel.com/its-your-story/thistle/deployments).
 
-- **Vercel only deploys the website.** Edge functions and migrations are deployed to Supabase separately. A merged change to `supabase/` is not live until someone deploys it. The PR author deploys right after merging and says so on the PR; follow [Deploying Supabase changes](docs/deploy.md#deploying-supabase-changes).
+- **Vercel only deploys the website.** Supabase is deployed separately:
+  - **Edge functions deploy automatically.** When a merge to `main` changes `supabase/functions/`, the **Deploy edge functions** workflow (`.github/workflows/deploy-functions.yml`) deploys every function to Thistle's project (`uglsyitjasajubfvbiry`, hard-wired). The run's summary lists what it deployed. It can also be started by hand from the Actions tab.
+  - **Migrations and secrets stay manual.** If a merge adds a file in `supabase/migrations/`, the workflow stops without deploying. The PR author applies the migration, then starts the workflow by hand. New secrets are set in the Supabase dashboard. Follow [Deploying Supabase changes](docs/deploy.md#deploying-supabase-changes).
 - **Staging and production share one Supabase project** (database, functions, secrets, users). Testing on staging creates real users and sends real emails. Follow the [shared-backend testing rules](docs/manual-testing.md#testing-on-the-shared-backend-team-rules). See THI-34.
 
 See [docs/deploy.md](docs/deploy.md) for details.

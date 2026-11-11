@@ -1,0 +1,102 @@
+name: Deploy edge functions
+
+# THI-61: deploys every Supabase edge function to Thistle's project when a
+# change to supabase/functions/ lands on main. Migrations are NOT applied here;
+# if a merge adds one, this stops and a person applies it first (docs/deploy.md).
+#
+# Only push-to-main and manual runs. Never add a pull_request trigger: this job
+# holds the production deploy token.
+on:
+  push:
+    branches: [main]
+    paths:
+      - "supabase/functions/**"
+  workflow_dispatch:
+
+# One deploy at a time; a newer merge waits instead of cancelling a half-done deploy.
+concurrency:
+  group: deploy-edge-functions
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    name: Deploy to Supabase (Thistle)
+    runs-on: ubuntu-latest
+    # Holds the SUPABASE_ACCESS_TOKEN secret. Limit it to the main branch in
+    # repo Settings → Environments → production → Deployment branches.
+    environment: production
+    # Belt and braces: never deploy from anything but main.
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Full history so the migration guard can diff the whole push range.
+          fetch-depth: 0
+
+      - name: Check config.toml points at Thistle
+        run: |
+          grep -qxF 'project_id = "uglsyitjasajubfvbiry"' supabase/config.toml || {
+            echo "::error::supabase/config.toml project_id isn't uglsyitjasajubfvbiry. Refusing to deploy."
+            exit 1
+          }
+
+      # Manual runs skip this: they're how a person deploys after applying a migration.
+      - name: Stop if this merge adds a migration
+        if: github.event_name == 'push'
+        run: bash scripts/check-no-new-migrations.sh "${{ github.event.before }}" "${{ github.sha }}"
+
+      - uses: supabase/setup-cli@v1
+        with:
+          # Pinned: CLI v3 renames --project-ref. Bump deliberately.
+          version: 2.121.0
+
+      - name: Deploy all edge functions
+        id: deploy
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          # `functions deploy` validates all of supabase/config.toml first, and
+          # [auth.hook.send_email] secrets = "env(SEND_EMAIL_HOOK_SECRET)" fails
+          # validation when the variable is unset. The deploy doesn't push auth
+          # config, so a correctly formatted placeholder is enough. Not a real secret.
+          SEND_EMAIL_HOOK_SECRET: "v1,whsec_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
+        run: |
+          set -o pipefail
+          # The project ref is hard-wired on purpose: this must never target another
+          # project. No `supabase link`, no inputs.
+          # Deploys every function (deploys are idempotent, and a _shared/ change
+          # affects many). verify_jwt settings come from config.toml. --yes because
+          # the CLI won't deploy to a hosted project non-interactively without it.
+          supabase functions deploy --project-ref uglsyitjasajubfvbiry --use-api --yes 2>&1 | tee deploy.log
+
+      - name: Summary
+        if: always()
+        run: |
+          {
+            echo "## Edge functions deploy"
+            echo
+            echo "Project: \`uglsyitjasajubfvbiry\` · Commit: \`${{ github.sha }}\` · Trigger: \`${{ github.event_name }}\`"
+            echo
+            if [ "${{ steps.deploy.outcome }}" = "success" ]; then
+              echo "**Deployed:**"
+              if grep -q "Deployed Functions" deploy.log; then
+                grep "Deployed Functions" deploy.log | sed 's/.*: //' | tr ',' '\n' | sed 's/^ *//; s/^/- /'
+              else
+                # Fallback if the CLI's wording changes: every function folder.
+                find supabase/functions -mindepth 1 -maxdepth 1 -type d ! -name '_*' -printf '- %f\n' | sort
+              fi
+            else
+              echo "**Nothing was deployed.** See the failed step above for why."
+            fi
+            if [ -f deploy.log ]; then
+              echo
+              echo "<details><summary>CLI output</summary>"
+              echo
+              echo '```'
+              cat deploy.log
+              echo '```'
+              echo "</details>"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
