@@ -54,14 +54,18 @@ When a change touches a request between the app and an edge function, add a test
 
 This applies when an AI tool works Linear tickets with no person watching, for example a Claude Code cloud session given one ticket or a whole project. The brief that starts the run should point to this section. Everything else in this file still applies.
 
+- **Linear access** comes from the `linear-thistle` server in `.mcp.json` (see [Setting up Linear access](#setting-up-linear-access-for-ai-runs) below). If you can't reach the Thistle Linear workspace, stop and report in the chat that started the run.
+- **Label your comments.** The Linear connection acts as the person who set it up, so start every comment you post in Linear with `🤖 AI run:`. That's how readers tell your comments from theirs.
+
 For each ticket, in order:
 
-0. **Check it's ready.** Skip the ticket, and comment why, if it has the `Human` label, any "blocked by" ticket isn't Done, or it's assigned to someone else. Otherwise assign it to yourself and comment that you're starting.
+0. **Check it's ready.** Skip the ticket, and comment why, if it has the `Human` label, any "blocked by" ticket isn't Done, or it's assigned to someone else. Otherwise assign it to the account your Linear connection uses and comment that you're starting.
 1. **Read.** The ticket, its comments, linked tickets, and the parts of this file and `docs/` that apply. If it's unclear what "done" means, or the ticket needs a decision, stop: comment with your question and @mention the person who started the run.
 2. **Plan.** Post a short plan as a comment on the ticket: what you'll change, which files, which tests.
 3. **Build, test first.** Write a failing test, then the code that makes it pass. Stay inside the ticket. If you find other work, propose a new ticket in a comment instead of doing it.
 4. **Review.** Run every check in [Before merging](#before-merging) and confirm each "Done when" item. Then have the diff reviewed by a fresh reviewer that didn't build it (for example a separate review agent), and fix what it finds.
-5. **Ship.** Branch, commit, push, and open a PR with the template filled in (see [Git](#git)). Wait for CI to pass, then squash-merge.
+5. **Ship.** Branch, commit, push, and open a PR with the template filled in (see [Git](#git)). Wait for CI to pass, then squash-merge. Use `gh` or whichever GitHub tools your environment provides.
+   If your environment assigns you a branch (cloud sessions use `claude/…`), use it. Linear can't link that branch by name, so start the PR title with the ticket id (`THI-37: …`) and put `Fixes THI-37` in the PR description. Linear then links the PR and closes the ticket on merge.
    **Don't merge** (leave the PR open, then stop and @mention a person) if the PR:
    - adds or changes a migration, RLS policy or GRANT
    - changes what customers are charged, refunds, or Stripe handling
@@ -75,6 +79,16 @@ When working a whole project:
 - Take tickets in priority order, respecting blockers. Finish one (merged or stopped) before starting the next.
 - A stopped ticket doesn't stop the run. Skip the tickets it blocks and keep going.
 - At the end, post a project update in Linear: what merged, what stopped and why, and what needs a person.
+
+#### Setting up Linear access for AI runs
+
+`.mcp.json` adds a Linear server named `linear-thistle` that signs in with a Linear API key from the `LINEAR_API_KEY` environment variable. The file holds no secret. A claude.ai Linear connector signed in to another workspace can't be used here, and claude.ai allows only one Linear connector per account, so the key is how AI runs reach Thistle's workspace. Set it up once per person:
+
+1. In Linear, switch to the **thistlebooks** workspace → Settings → Security & access → Personal API keys → create a key. It only works in that workspace. Save it in your password manager; Linear shows it once.
+2. **Cloud sessions:** at claude.ai/code, add `LINEAR_API_KEY` as an environment variable on the environment you use for this repo.
+3. **Local Claude Code (optional):** export `LINEAR_API_KEY` in your shell, or keep your own Linear setup. A server you added yourself with the same name takes priority over `.mcp.json`.
+
+Never commit the key. The repo is public.
 
 ## Commands
 
