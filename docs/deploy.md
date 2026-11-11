@@ -90,4 +90,4 @@ For the production authentication-email cutover, follow the [Loops auth-email cu
 
 ## Node version
 
-Pinned to Node 22 via `.nvmrc` (used by CI and Vercel). Run `nvm use` locally.
+Pinned to Node 24 via `.nvmrc` and `engines` in `package.json` (used by CI and Vercel). Run `nvm use` locally.

@@ -1,5 +1,7 @@
 # Plan: Prior Page Continuity References
 
+**Ticket:** THI-58
+
 ## Goal
 
 Feed the 1–2 most recently generated page images into each new page image generation request. This reduces page-to-page drift in illustration style, palette, lighting, and environment — without changing story content or layouts.
