@@ -60,6 +60,19 @@ The wizard state is held in React memory. **`window.location.href = '/step/X'` c
 
 ---
 
+## Testing on the shared backend (team rules)
+
+Staging, local dev (when test mode is off) and production all use **the same Supabase project**: same database, same users, same edge functions, same email sending. Anything you do while testing happens for real. Until staging gets its own project (THI-34), follow these rules:
+
+- **Test accounts:** sign up with your own address plus a tag, e.g. `yourname+thi-test-1@gmail.com`. Every email lands in your own inbox, and test users are easy to find and delete later.
+- **Never use a real customer's email address** for testing, and never sign up a made-up address at a real domain (it may belong to someone, and they'd get our emails).
+- **Payments:** Stripe test cards only (see [Test cards](#test-cards-test-mode-only)). Never put live Stripe keys on staging or in local `.env`.
+- **Clean up** when you're done: delete your test users (Supabase dashboard → Authentication → Users) and any leftover drafts and orders.
+- **UI-only work:** turn on **test mode** (above, or `VITE_DEV_TEST_MODE=1`). It fakes the AI and server responses, so nothing reaches the real backend and no AI credits are spent.
+- **Before a full real generation**, remember it costs real AI money and sends real "book creating / ready" emails to the buyer address you entered.
+
+---
+
 ## Test user (local login)
 
 - **Email:** test@itsyourstory.ai

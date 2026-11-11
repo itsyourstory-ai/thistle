@@ -31,6 +31,10 @@ coverage
 # Local Claude debugging notes (project-specific, not shared)
 CLAUDE.local.md
 
+# Personal AI session handoff files (not shared)
+.claude/whats-next.md
+.claude/session-learnings.md
+
 # Supabase CLI temp state
 supabase/.temp/
 
