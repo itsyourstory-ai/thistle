@@ -50,6 +50,32 @@ Most app tests run with **test mode** on, so `callEdge()` returns fixture respon
 
 When a change touches a request between the app and an edge function, add a test that checks the request body the app sends matches what the function reads.
 
+### When an AI works tickets on its own
+
+This applies when an AI tool works Linear tickets with no person watching, for example a Claude Code cloud session given one ticket or a whole project. The brief that starts the run should point to this section. Everything else in this file still applies.
+
+For each ticket, in order:
+
+0. **Check it's ready.** Skip the ticket, and comment why, if it has the `Human` label, any "blocked by" ticket isn't Done, or it's assigned to someone else. Otherwise assign it to yourself and comment that you're starting.
+1. **Read.** The ticket, its comments, linked tickets, and the parts of this file and `docs/` that apply. If it's unclear what "done" means, or the ticket needs a decision, stop: comment with your question and @mention the person who started the run.
+2. **Plan.** Post a short plan as a comment on the ticket: what you'll change, which files, which tests.
+3. **Build, test first.** Write a failing test, then the code that makes it pass. Stay inside the ticket. If you find other work, propose a new ticket in a comment instead of doing it.
+4. **Review.** Run every check in [Before merging](#before-merging) and confirm each "Done when" item. Then have the diff reviewed by a fresh reviewer that didn't build it (for example a separate review agent), and fix what it finds.
+5. **Ship.** Branch, commit, push, and open a PR with the template filled in (see [Git](#git)). Wait for CI to pass, then squash-merge.
+   **Don't merge** (leave the PR open, then stop and @mention a person) if the PR:
+   - adds or changes a migration, RLS policy or GRANT
+   - changes what customers are charged, refunds, or Stripe handling
+   - deletes user data
+   - adds a new npm or Deno dependency
+   - has review findings you couldn't resolve, or CI you couldn't get to pass
+6. **Report.** Comment on the ticket: what changed, the PR link, how it was tested, and anything a person needs to do next, with an @mention. If the PR changed `supabase/`, say it needs a Supabase deploy. AI runs can't deploy, so a person follows [Deploying Supabase changes](docs/deploy.md#deploying-supabase-changes).
+
+When working a whole project:
+
+- Take tickets in priority order, respecting blockers. Finish one (merged or stopped) before starting the next.
+- A stopped ticket doesn't stop the run. Skip the tickets it blocks and keep going.
+- At the end, post a project update in Linear: what merged, what stopped and why, and what needs a person.
+
 ## Commands
 
 ```bash
