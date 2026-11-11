@@ -9,7 +9,7 @@ The wizard has a **🧪 test: off** pill in the header next to "⚙ dev: skip st
 | Control | What it does |
 |---|---|
 | **Test mode toggle (on/off)** | When ON, all 6 AI edge functions return instant fake responses instead of calling Supabase. Walk the entire wizard for $0. |
-| **Bypass checkout** | Skip the Stripe payment step entirely and jump straight to generation. Use this for wizard testing when you don't care about the payment flow. |
+| **Bypass checkout** | Skip the Stripe payment step entirely and jump straight to generation. Use this for wizard testing when you don't care about the payment flow. With test mode on, generation is faked, so this works unless `generate-book` is set to **Run live** (or a cache replay misses). A *real* `generate-book` call only honors it when the functions run locally with `ALLOW_CHECKOUT_BYPASS=true` (see below); the shared backend rejects it. |
 | **Seed profile dropdown** | Picks which of the 4 pre-filled child profiles to load. Each has very different shape: photo vs no-photo, supporting characters, edge-case names, special pet. |
 | **Load → Step 1 (button)** | Fills all wizard answers from the selected profile and goes to Step 1. Navigate normally from there — every step will already show the seeded selections. |
 | **Jump → Checkout (button)** | Seeds answers from the selected profile and navigates directly to the checkout step (step 11). If a draft ID is entered below, injects it so the Stripe payment form loads. |
@@ -93,7 +93,7 @@ cards are rejected; only the test cards below work.
 
 | Goal | How |
 |---|---|
-| **Skip payment entirely** (most wizard testing) | Turn on `bypassCheckout` in the 🧪 test panel. Step 11 skips the Payment Element and routes straight to generation. No Stripe involved. |
+| **Skip payment entirely** (most wizard testing) | Turn on `bypassCheckout` in the 🧪 test panel. Step 11 skips the Payment Element and routes straight to generation. No Stripe involved. To run a *real* `generate-book` this way, serve the functions locally with `ALLOW_CHECKOUT_BYPASS=true` in `supabase/.env`, and point the app at them (`VITE_SUPABASE_URL=http://localhost:54321`). Otherwise generation fails with 402 "order_id is required." The shared Supabase project never has that secret, so it always requires a paid order (THI-37). |
 | **Test the real payment UI against deployed staging** | Merge the checkout functions to `main` (auto-deploys), register the dashboard webhook (manual-setup Part B), then run the flow on the staging URL. Stripe sends webhooks directly to the deployed endpoint — no `stripe listen` needed. |
 | **Test the real payment UI against functions running locally** | Run the functions locally + forward webhooks with the Stripe CLI (below). |
 
