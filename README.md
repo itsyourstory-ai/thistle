@@ -35,7 +35,7 @@ Fill in the PR template (ticket, testing, Supabase deploy, Human steps).
 
 **6. Merge the PR on GitHub.** GitHub deletes the branch on GitHub automatically.
 
-**7. If the PR changed anything in `supabase/`, deploy it now** and comment on the PR with what you deployed. Merging doesn't deploy edge functions or migrations. Steps: [docs/deploy.md → Deploying Supabase changes](docs/deploy.md#deploying-supabase-changes).
+**7. If the PR changed anything in `supabase/`, check the deploy.** Edge functions deploy automatically on merge (Actions → **Deploy edge functions**). Migrations and new secrets don't: apply them by hand, then start the deploy workflow if it stopped. Steps: [docs/deploy.md → Deploying Supabase changes](docs/deploy.md#deploying-supabase-changes).
 
 **8. Clean up locally**
 ```bash

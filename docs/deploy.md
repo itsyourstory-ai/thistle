@@ -30,11 +30,36 @@ deployment → click **"Promote to Production"**. That's it — no git branch ne
 
 ## Deploying Supabase changes
 
-Vercel only deploys the website. **Edge functions and migrations don't deploy on merge.** Until someone deploys them, the live backend runs the old code, even though `main` has the new code.
+Vercel only deploys the website. Supabase changes go out like this:
 
-**Rule:** if a PR changes anything in `supabase/`, the PR author deploys it right after merging and leaves a comment on the PR saying what was deployed. The PR template has a checkbox for this.
+| Change | How it goes live |
+| --- | --- |
+| Edge functions (`supabase/functions/`, `supabase/config.toml`) | **Automatically** when the PR merges to `main` |
+| Migrations (`supabase/migrations/`) | **By hand**, by the PR author, right after merge |
+| Edge-function secrets | **By hand**, in the Supabase dashboard (Functions → Secrets) |
 
-Steps (from an up-to-date `main`):
+Staging and production share this one Supabase project, so a Supabase deploy is live for **both** at once. There's no staging-only backend (see THI-34).
+
+### Edge functions: automatic
+
+The **Deploy edge functions** workflow (`.github/workflows/deploy-functions.yml`) runs when a merge to `main` changes anything under `supabase/functions/`, `supabase/config.toml` or `supabase/migrations/`. It:
+
+1. Checks `supabase/config.toml` still points at Thistle (`uglsyitjasajubfvbiry`).
+2. Stops if a migration was added since the last successful deploy (see below).
+3. Deploys **every** function with `supabase functions deploy --project-ref uglsyitjasajubfvbiry`. The project is hard-wired; the workflow can't target another one. `verify_jwt` settings come from `config.toml`.
+4. Lists the deployed functions in the run's summary.
+
+**After merging,** open GitHub → Actions → **Deploy edge functions** and check the run for your merge commit passed. Merges that only change app code or docs don't start it.
+
+**Start it by hand:** Actions → **Deploy edge functions** → **Run workflow** (branch `main`). Do this after applying a migration, or to redeploy. Manual runs skip the migration check.
+
+It uses the `SUPABASE_ACCESS_TOKEN` secret and runs in the `production` GitHub environment. A repo admin should limit that environment to `main` (Settings → Environments → production → Deployment branches and tags). The token expires; if a run fails with an auth or permission error, create a new token in Supabase (Account → Access tokens) and update the secret.
+
+### Migrations: by hand, first
+
+If a file was added in `supabase/migrations/` since the last successful deploy, the deploy workflow **fails on purpose without deploying**, and the run lists the new migration files. It keeps failing on later merges too, until a person applies the migration and starts the workflow by hand. Migrations go before functions so new code never runs against an old database.
+
+From an up-to-date `main`:
 
 1. **Check the CLI is linked to Thistle** (project ref `uglsyitjasajubfvbiry`):
 
@@ -44,33 +69,32 @@ Steps (from an up-to-date `main`):
 
    The linked project is marked. If it's `coiobrdbqledpzvcttto`, stop: that's a different app.
 
-2. **Apply new migrations first**, one file at a time, oldest first. Don't use `supabase db push` (it's unreliable for this project):
+2. **Apply each new migration**, one file at a time, oldest first. Don't use `supabase db push` (it's unreliable for this project):
 
    ```bash
    supabase db query --linked --file supabase/migrations/<file>.sql
    ```
 
-   Or paste the file into the Supabase SQL editor. Migrations go before functions so new code never runs against an old database.
+   Or paste the file into the Supabase SQL editor.
 
-3. **Deploy the changed edge functions:**
+3. **Set any new secrets** in the Supabase dashboard (Functions → Secrets). New secrets are listed in AGENTS.md.
 
-   ```bash
-   supabase functions deploy <function-name>
-   ```
+4. **Deploy the functions:** start **Deploy edge functions** by hand (above).
 
-   A change to `supabase/functions/_shared/` affects every function that imports it. Deploy all of those (or deploy everything with `supabase functions deploy`).
+5. **Comment on the PR:** e.g. "Applied migration `20261112_add_x.sql`; deploy run passed: <link>."
 
-4. **Set any new secrets** in the Supabase dashboard (Functions → Secrets) before or along with the deploy. New secrets are listed in AGENTS.md.
+### Deploying from your machine (fallback)
 
-5. **Comment on the PR:** e.g. "Deployed: migration `20261112_add_x.sql`, functions `generate-book`, `stripe-webhook`."
-
-Staging and production share this one Supabase project, so a Supabase deploy is live for **both** at once. There's no staging-only backend (see THI-34).
+If GitHub Actions is down, you can still deploy by hand: `supabase functions deploy --project-ref uglsyitjasajubfvbiry --use-api --yes`. A change to `_shared/` affects every function that imports it, so deploy everything. If it fails with `auth.hook.send_email.secrets must be formatted as "v1,whsec_…"`, export the placeholder `SEND_EMAIL_HOOK_SECRET` from the workflow file first (the deploy only validates it).
 
 ## CI (GitHub Actions)
 
 `.github/workflows/ci.yml` runs `lint`, `test`, and `build` on every PR to
 `main` and on direct pushes to `main`. Configured as a **required status check**
 via branch protection — a failing run blocks the merge.
+
+`.github/workflows/deploy-functions.yml` deploys edge functions after a merge
+(see [Edge functions: automatic](#edge-functions-automatic)). It never runs on PRs.
 
 ## Environment variables (set in Vercel)
 

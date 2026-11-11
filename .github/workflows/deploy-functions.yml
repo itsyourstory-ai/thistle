@@ -1,0 +1,133 @@
+name: Deploy edge functions
+
+# THI-61: deploys every Supabase edge function to Thistle's project when a
+# change to supabase/functions/ (or config.toml) lands on main. Migrations are
+# NOT applied here; if one is waiting, this stops and a person applies it first
+# (docs/deploy.md).
+#
+# Only push-to-main and manual runs. Never add a pull_request trigger: this job
+# holds the production deploy token.
+on:
+  push:
+    branches: [main]
+    paths:
+      - "supabase/functions/**"
+      # verify_jwt settings live here and are applied by the deploy.
+      - "supabase/config.toml"
+      # So a migration-only merge fails visibly instead of passing silently.
+      - "supabase/migrations/**"
+  workflow_dispatch:
+
+# One deploy at a time; a newer merge waits instead of cancelling a half-done deploy.
+concurrency:
+  group: deploy-edge-functions
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  # To look up the last successful deploy for the migration check.
+  actions: read
+
+jobs:
+  deploy:
+    name: Deploy to Supabase (Thistle)
+    runs-on: ubuntu-latest
+    # Holds the SUPABASE_ACCESS_TOKEN secret. Limit it to the main branch in
+    # repo Settings → Environments → production → Deployment branches.
+    environment: production
+    # Belt and braces: never deploy from anything but main.
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          # Full history so the migration check can diff back to the last deploy.
+          fetch-depth: 0
+
+      - name: Check config.toml points at Thistle
+        run: |
+          grep -qxF 'project_id = "uglsyitjasajubfvbiry"' supabase/config.toml || {
+            echo "::error::supabase/config.toml project_id isn't uglsyitjasajubfvbiry. Refusing to deploy."
+            exit 1
+          }
+
+      # Checks everything merged since the last successful deploy, not just this
+      # push: otherwise a functions-only merge right after a migration merge would
+      # deploy code that needs the unapplied migration.
+      # Manual runs skip this: they're how a person deploys after applying a migration.
+      - name: Stop if a migration is waiting to be applied
+        if: github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PUSH_BEFORE: ${{ github.event.before }}
+        run: |
+          base="$(gh api "repos/$REPO/actions/workflows/deploy-functions.yml/runs?branch=main&status=success&per_page=1" \
+            --jq '.workflow_runs[0].head_sha // empty')"
+          if [ -z "$base" ]; then
+            echo "No earlier successful deploy found; checking this push only."
+            base="$PUSH_BEFORE"
+          else
+            echo "Last successful deploy: $base"
+          fi
+          bash scripts/check-no-new-migrations.sh "$base" "$GITHUB_SHA"
+
+      - uses: supabase/setup-cli@1dedf2c611547ede7232d26866dd3c56ab903bbb # v1.7.3
+        with:
+          # Pinned: CLI v3 renames --project-ref. Bump deliberately.
+          version: 2.121.0
+
+      - name: Deploy all edge functions
+        id: deploy
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          # `functions deploy` validates all of supabase/config.toml first, and
+          # [auth.hook.send_email] secrets = "env(SEND_EMAIL_HOOK_SECRET)" fails
+          # validation when the variable is unset. The deploy doesn't push auth
+          # config, so a correctly formatted placeholder is enough. Not a real secret.
+          SEND_EMAIL_HOOK_SECRET: "v1,whsec_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
+        run: |
+          set -o pipefail
+          # The project ref is hard-wired on purpose: this must never target another
+          # project. No `supabase link`, no inputs.
+          # Deploys every function (deploys are idempotent, and a _shared/ change
+          # affects many). verify_jwt settings come from config.toml. --yes because
+          # the CLI won't deploy to a hosted project non-interactively without it.
+          supabase functions deploy --project-ref uglsyitjasajubfvbiry --use-api --yes 2>&1 | tee deploy.log
+
+      - name: Summary
+        if: always()
+        env:
+          DEPLOY_OUTCOME: ${{ steps.deploy.outcome }}
+        run: |
+          {
+            echo "## Edge functions deploy"
+            echo
+            echo "Project: \`uglsyitjasajubfvbiry\` · Commit: \`$GITHUB_SHA\` · Trigger: \`$GITHUB_EVENT_NAME\`"
+            echo
+            case "$DEPLOY_OUTCOME" in
+              success)
+                if grep -q "Deployed Functions" deploy.log; then
+                  echo "**Deployed:**"
+                  grep "Deployed Functions" deploy.log | sed 's/.*: //' | tr ',' '\n' | sed 's/^ *//; s/^/- /'
+                else
+                  echo "**Deploy passed**, but the CLI output couldn't be parsed. Functions in the repo:"
+                  find supabase/functions -mindepth 1 -maxdepth 1 -type d ! -name '_*' -printf '- %f\n' | sort
+                fi
+                ;;
+              failure)
+                echo "**Deploy failed.** Some functions may already be live. See the CLI output below."
+                ;;
+              *)
+                echo "**Nothing was deployed.** An earlier step stopped the run; see it above for why."
+                ;;
+            esac
+            if [ -f deploy.log ]; then
+              echo
+              echo "<details><summary>CLI output</summary>"
+              echo
+              echo '```'
+              cat deploy.log
+              echo '```'
+              echo "</details>"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
