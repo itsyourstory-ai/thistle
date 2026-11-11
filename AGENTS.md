@@ -22,13 +22,13 @@ All planned work lives in **Linear** (workspace `thistlebooks`, team **THI**). I
 - **Projects run in order:** `0 · Decisions` → `1 · Checkout & payments` → `2 · Book delivery` → `3 · Launch readiness` → `4 · Go live` → `5 · Printed books (Lulu)` → `6 · Polish` → `7 · After launch`. THI-32 (production launch checklist) is blocked by every launch ticket.
 - **Blocking relations are kept up to date.** Check a ticket's "blocked by" list before starting it.
 - **The `Human` label** marks tasks a person has to do (dashboards, accounts, decisions, legal, reviewing printed proofs). Don't try to do those; point them out.
-- **Ticket descriptions** are written for people first. Implementation detail (files, functions, gotchas) goes in a collapsible **Agent notes** section at the end (`+++ Agent notes` … `+++`).
+- **Ticket descriptions** follow [docs/linear-ticket-template.md](docs/linear-ticket-template.md): written for people first, with a "Done when" section. Implementation detail (files, functions, gotchas) goes in a collapsible **Agent notes** section at the end (`+++ Agent notes` … `+++`).
 - **Found new work?** Propose a Linear ticket rather than quietly expanding the current change. Check for an existing ticket first.
 - Status updates are automatic: Linear's GitHub integration links branches and PRs and moves tickets when the ticket identifier is in the branch name. Don't set ticket status by hand for work that has a branch.
 
 ### Git
 
-**Direct pushes to `main` are blocked.** Always work on a branch and open a PR.
+**Direct pushes to `main` are blocked.** Always work on a branch and open a PR. `main` is protected: a PR is required, the CI check must pass, and force pushes and branch deletion are blocked. Approvals are **not** required, so you can merge your own PR once CI is green. Admins can bypass protection in an emergency.
 
 1. **Always branch before making any changes.** Never commit directly to `main`.
 2. **Branch names:** `<type>/<slug>`, where type is `feature`, `fix` or `chore`. For ticket work, include the lowercased ticket id: `feature/thi-20-book-viewer`.
@@ -37,6 +37,7 @@ All planned work lives in **Linear** (workspace `thistlebooks`, team **THI**). I
 
 ### Before merging
 
+- Fill in the PR template (`.github/pull_request_template.md`): ticket, what changed, how it was tested, whether it needs a Supabase deploy, and any Human steps
 - Run `npm run lint && npm test` — do not skip even for small changes
 - If you touched `supabase/functions/`, also run `mise exec -- npm run test:deno`
 - After any multi-file edit, run `npm run build` to catch TypeScript errors
@@ -196,7 +197,7 @@ Most functions have `verify_jwt = false` in `supabase/config.toml` and do their 
 
 ### Database
 
-Migrations live in `supabase/migrations/`. `supabase db push` is unreliable for this project; see CLAUDE.local.md for how migrations are applied. Key tables:
+Migrations live in `supabase/migrations/`. Don't use `supabase db push` (see [Known gotchas](#known-gotchas)); apply them as described in [docs/deploy.md](docs/deploy.md#deploying-supabase-changes). Key tables:
 
 - `profiles` — one row per user (`subscribed` marketing flag, `welcomed_at`)
 - `book_drafts` — in-progress wizard answers; users manage their own
@@ -221,10 +222,32 @@ Child photos are stored in the `draft-photos` Storage bucket (configured in the 
 
 GitHub Actions runs lint, test, and build on every PR — all must pass before merge. Merging to `main` auto-deploys the website to Vercel staging. To promote to production, use the [Vercel deployments dashboard](https://vercel.com/its-your-story/thistle/deployments).
 
-- **Vercel only deploys the website.** Edge functions (`supabase functions deploy`) and migrations are deployed to Supabase separately. A merged change to `supabase/` is not live until someone deploys it.
-- **Staging and production share one Supabase project** (database, functions, secrets, users). Testing on staging creates real users and sends real emails. See THI-34.
+- **Vercel only deploys the website.** Edge functions and migrations are deployed to Supabase separately. A merged change to `supabase/` is not live until someone deploys it. The PR author deploys right after merging and says so on the PR; follow [Deploying Supabase changes](docs/deploy.md#deploying-supabase-changes).
+- **Staging and production share one Supabase project** (database, functions, secrets, users). Testing on staging creates real users and sends real emails. Follow the [shared-backend testing rules](docs/manual-testing.md#testing-on-the-shared-backend-team-rules). See THI-34.
 
 See [docs/deploy.md](docs/deploy.md) for details.
+
+## Known gotchas
+
+### Supabase / edge functions
+
+- **Check you're on the right Supabase project before touching the database.** Thistle's project ref is `uglsyitjasajubfvbiry`. The project `coiobrdbqledpzvcttto` belongs to a different app (`its-your-story`), not Thistle. Run `supabase projects list` to confirm which one the CLI is linked to.
+- **Don't use `supabase db push`.** The remote migration history was created outside the CLI (by Lovable), so `db push` is unreliable. Apply a migration file with `supabase db query --linked --file <path>`, or paste it into the Supabase SQL editor.
+- **`SUPABASE_ANON_KEY` is deprecated** in newer Supabase projects, which use `SUPABASE_PUBLISHABLE_KEYS` (a JSON object) instead. Fallback pattern:
+  `Deno.env.get("SUPABASE_ANON_KEY") || (JSON.parse(Deno.env.get("SUPABASE_PUBLISHABLE_KEYS") ?? "{}").default ?? "")`
+- **Loops template variables:** the exported templates in `.codex/loops-templates/` are the reference copy. The real variables live in the draft *message* content (`email-messages/`), not the template metadata.
+- The app originally ran on Lovable. All Lovable services have been replaced (AI → OpenRouter, Drive → a direct Google service account). Don't reintroduce `ai.gateway.lovable.dev` or `LOVABLE_API_KEY`.
+
+### Deno tests
+
+- **Deno isn't on `PATH`**; it's provided by `mise`. Run the suite with `mise exec -- npm run test:deno`, and type-check a single edge-function entrypoint with `mise exec -- deno check <file>` (needed for files outside `_shared/`).
+- The Deno suite runs with `--allow-env` only (no network), so any stray `fetch` throws a permission error. That's deliberate: tests must make zero network calls. `LOOPS_TRANSPORT=mock` is forced by the script.
+- A new `npm:` import in a Deno test can fail on the first run until the package is cached. Pre-cache it (e.g. `deno eval` importing the module), then re-run. `deno.lock` changes from new `npm:` dependencies are expected; commit them.
+
+### JS / build
+
+- `npm run build` failing with "X not exported by `@tanstack/query-core`" usually means a stale `node_modules`. Run `npm install`; it fixes it without changing `package.json` or the lockfile.
+- If the lockfile changes unexpectedly, check that the added package is actually imported somewhere before committing it.
 
 ## Loops
 
@@ -237,4 +260,6 @@ or tasks where no account-specific IDs or field names are needed.
 
 ## Other notes
 
-Refer to CLAUDE.local.md (if you have one; it isn't committed) for additional local development instructions.
+Personal, machine-specific notes go in `CLAUDE.local.md` (gitignored, so only you see it). Anything a teammate would also need belongs in this file or in `docs/`, not there.
+
+Session handoff files from AI tools (e.g. `.claude/whats-next.md`) are personal too and are gitignored.
