@@ -14,6 +14,7 @@ import Stripe from "https://esm.sh/stripe@14.21.0?target=deno";
 import { isValidEmail, sanitizeUserText } from "../_shared/sanitize.ts";
 import { rateLimitExceeded } from "../_shared/auth.ts";
 import { checkRateLimit } from "../_shared/rateLimit.ts";
+import { isCheckoutBypassAllowed } from "../_shared/checkoutBypass.ts";
 import { maybeSendCreating, maybeSendFailed } from "../_shared/bookEmails.ts";
 import {
   ageToBand,
@@ -378,15 +379,18 @@ Deno.serve(async (req) => {
     const model: string = body.modelOverride || MODELS.book;
     const seed_portrait_data_url: string | null = body.seed_portrait_data_url || null;
     const order_id: string | null = body.order_id ?? null;
-    const bypass_checkout: boolean = body.bypass_checkout === true;
-    // Bypass is only honored with a Stripe test key — production is fully protected.
-    const isTestEnv = (Deno.env.get("STRIPE_SECRET_KEY") ?? "").startsWith("sk_test_");
+    // Dev bypass is only honored when the ALLOW_CHECKOUT_BYPASS secret is "true"
+    // (never set in the shared project) and the Stripe key isn't live. See THI-37.
+    const bypassCheckout = isCheckoutBypassAllowed(body.bypass_checkout === true, {
+      ALLOW_CHECKOUT_BYPASS: Deno.env.get("ALLOW_CHECKOUT_BYPASS"),
+      STRIPE_SECRET_KEY: Deno.env.get("STRIPE_SECRET_KEY"),
+    });
 
     // ── Paid-order gate ────────────────────────────────────────────────────────
     // All generation requires a paid order. If the webhook hasn't landed yet,
     // fall back to retrieving the PaymentIntent from Stripe directly.
-    // Dev bypass skips the gate entirely when running against a Stripe test key.
-    if (!(bypass_checkout && isTestEnv)) {
+    // The dev bypass (above) skips the gate entirely.
+    if (!bypassCheckout) {
       if (!order_id) {
         return new Response(
           JSON.stringify({ error: "order_id is required." }),

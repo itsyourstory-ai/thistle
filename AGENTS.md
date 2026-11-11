@@ -124,6 +124,7 @@ Set in the Supabase dashboard (Functions → Secrets). Never commit a real value
 - `STRIPE_SECRET_KEY` — Stripe secret key (`sk_test_…` or `sk_live_…`).
 - `STRIPE_WEBHOOK_SECRET` — signing secret for the `stripe-webhook` endpoint, from the Stripe dashboard webhook settings.
 - `OPENROUTER_API_KEY` — all AI text and image generation goes through OpenRouter.
+- `ALLOW_CHECKOUT_BYPASS` — `"true"` lets `generate-book` honor the dev "Bypass checkout" toggle (skip the paid-order check). **Local `supabase/.env` only. Never set it in the shared Supabase project.** Always refused on a live Stripe key.
 - `GOOGLE_SERVICE_ACCOUNT_JSON` — service account used by the Google Drive export functions.
 - `LOOPS_API_KEY` — Loops API key; get from Loops dashboard → Settings → API Keys. Also set in Vercel environment variables.
 - `LOOPS_TRANSPORT` — `"live"` in production; omit or set to `"mock"` for local dev and tests. The `test:deno` script forces `mock` automatically. **Never set it to `mock` in production as a "rollback"** — mock mode silently drops every email.
