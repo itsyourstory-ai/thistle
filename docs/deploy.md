@@ -34,7 +34,7 @@ Vercel only deploys the website. Supabase changes go out like this:
 
 | Change | How it goes live |
 | --- | --- |
-| Edge functions (`supabase/functions/`) | **Automatically** when the PR merges to `main` |
+| Edge functions (`supabase/functions/`, `supabase/config.toml`) | **Automatically** when the PR merges to `main` |
 | Migrations (`supabase/migrations/`) | **By hand**, by the PR author, right after merge |
 | Edge-function secrets | **By hand**, in the Supabase dashboard (Functions → Secrets) |
 
@@ -42,10 +42,10 @@ Staging and production share this one Supabase project, so a Supabase deploy is 
 
 ### Edge functions: automatic
 
-The **Deploy edge functions** workflow (`.github/workflows/deploy-functions.yml`) runs when a merge to `main` changes anything under `supabase/functions/`. It:
+The **Deploy edge functions** workflow (`.github/workflows/deploy-functions.yml`) runs when a merge to `main` changes anything under `supabase/functions/`, `supabase/config.toml` or `supabase/migrations/`. It:
 
 1. Checks `supabase/config.toml` still points at Thistle (`uglsyitjasajubfvbiry`).
-2. Stops if the merge adds a migration (see below).
+2. Stops if a migration was added since the last successful deploy (see below).
 3. Deploys **every** function with `supabase functions deploy --project-ref uglsyitjasajubfvbiry`. The project is hard-wired; the workflow can't target another one. `verify_jwt` settings come from `config.toml`.
 4. Lists the deployed functions in the run's summary.
 
@@ -53,11 +53,11 @@ The **Deploy edge functions** workflow (`.github/workflows/deploy-functions.yml`
 
 **Start it by hand:** Actions → **Deploy edge functions** → **Run workflow** (branch `main`). Do this after applying a migration, or to redeploy. Manual runs skip the migration check.
 
-It uses the `SUPABASE_ACCESS_TOKEN` secret in the `production` GitHub environment (limited to `main`). The token expires; if a run fails with an auth or permission error, create a new token in Supabase (Account → Access tokens) and update the secret.
+It uses the `SUPABASE_ACCESS_TOKEN` secret and runs in the `production` GitHub environment. A repo admin should limit that environment to `main` (Settings → Environments → production → Deployment branches and tags). The token expires; if a run fails with an auth or permission error, create a new token in Supabase (Account → Access tokens) and update the secret.
 
 ### Migrations: by hand, first
 
-If a merge adds a file in `supabase/migrations/`, the deploy workflow **fails on purpose without deploying**, and the run lists the new migration files. Migrations go before functions so new code never runs against an old database.
+If a file was added in `supabase/migrations/` since the last successful deploy, the deploy workflow **fails on purpose without deploying**, and the run lists the new migration files. It keeps failing on later merges too, until a person applies the migration and starts the workflow by hand. Migrations go before functions so new code never runs against an old database.
 
 From an up-to-date `main`:
 
@@ -85,7 +85,7 @@ From an up-to-date `main`:
 
 ### Deploying from your machine (fallback)
 
-If GitHub Actions is down, you can still deploy by hand: `supabase functions deploy --project-ref uglsyitjasajubfvbiry`. A change to `_shared/` affects every function that imports it, so deploy everything. If it fails with `auth.hook.send_email.secrets must be formatted as "v1,whsec_…"`, export the placeholder `SEND_EMAIL_HOOK_SECRET` from the workflow file first (the deploy only validates it).
+If GitHub Actions is down, you can still deploy by hand: `supabase functions deploy --project-ref uglsyitjasajubfvbiry --use-api --yes`. A change to `_shared/` affects every function that imports it, so deploy everything. If it fails with `auth.hook.send_email.secrets must be formatted as "v1,whsec_…"`, export the placeholder `SEND_EMAIL_HOOK_SECRET` from the workflow file first (the deploy only validates it).
 
 ## CI (GitHub Actions)
 

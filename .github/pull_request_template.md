@@ -18,7 +18,7 @@
 ## Supabase deploy
 
 - [ ] No changes in `supabase/`
-- [ ] Has changes in `supabase/functions/` only. They deploy automatically on merge; I'll check the **Deploy edge functions** run passed
+- [ ] Has changes in `supabase/functions/` or `supabase/config.toml` only. They deploy automatically on merge; I'll check the **Deploy edge functions** run passed
 - [ ] Has a new migration or new secrets. I'll apply/set them right after merge, then run **Deploy edge functions** by hand, and comment here with what was deployed ([steps](https://github.com/itsyourstory-ai/thistle/blob/main/docs/deploy.md#deploying-supabase-changes))
 
 <!-- List new migrations and any new secrets. -->

@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # Fails if the commit range BEFORE..AFTER adds a file under supabase/migrations/.
+# The workflow passes the last successfully deployed commit as BEFORE.
 # Used by .github/workflows/deploy-functions.yml (THI-61): migrations must be
 # applied by a person before new edge functions go live, so the automatic
 # deploy stops when a merge brings a new migration.
@@ -27,8 +28,8 @@ fi
 added="$(git diff --no-renames --name-only --diff-filter=A "$before" "$after" -- supabase/migrations/)"
 
 if [[ -n "$added" ]]; then
-  echo "::error::This merge adds a database migration, so edge functions were NOT deployed."
-  echo "Migrations go first and a person applies them. New migration files:"
+  echo "::error::A database migration was added since the last deploy, so edge functions were NOT deployed."
+  echo "Migrations go first and a person applies them. Migration files added since $before:"
   while IFS= read -r file; do echo "  - $file"; done <<< "$added"
   echo
   echo "Next steps:"

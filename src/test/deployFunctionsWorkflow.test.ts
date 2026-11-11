@@ -59,6 +59,17 @@ describe("check-no-new-migrations.sh", () => {
     expect(res.stdout + res.stderr).toMatch(/migration/i);
   });
 
+  it("treats a file moved into supabase/migrations/ as added", () => {
+    commitFile("supabase/drafts/20261113_moved.sql");
+    const before = git("rev-parse", "HEAD");
+    mkdirSync(path.join(dir, "supabase/migrations"), { recursive: true });
+    git("mv", "supabase/drafts/20261113_moved.sql", "supabase/migrations/20261113_moved.sql");
+    git("commit", "-q", "-m", "move");
+    const res = runGuard(before, git("rev-parse", "HEAD"));
+    expect(res.status).not.toBe(0);
+    expect(res.stdout + res.stderr).toContain("20261113_moved.sql");
+  });
+
   it("fails when the push range can't be checked", () => {
     const after = git("rev-parse", "HEAD");
     const res = runGuard("0000000000000000000000000000000000000000", after);
@@ -93,10 +104,26 @@ describe("deploy-functions workflow", () => {
     expect(config).toMatch(new RegExp(`^project_id = "${THISTLE_REF}"`, "m"));
   });
 
-  it("runs the migration guard on pushes before deploying", () => {
+  it("runs the migration guard on pushes only, before deploying", () => {
     const guard = workflow.indexOf("check-no-new-migrations.sh");
     const deploy = workflow.indexOf("supabase functions deploy");
     expect(guard).toBeGreaterThan(-1);
     expect(deploy).toBeGreaterThan(guard);
+    expect(workflow).toMatch(
+      /- name: Stop if a migration is waiting to be applied\s*\n\s*if: github\.event_name == 'push'/,
+    );
+    // Diffs from the last successful deploy, not just this push.
+    expect(workflow).toContain("status=success");
+  });
+
+  it("deploys non-interactively with the token from secrets", () => {
+    expect(workflow).toMatch(/supabase functions deploy --project-ref uglsyitjasajubfvbiry --use-api --yes/);
+    expect(workflow).toContain("SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}");
+    expect(workflow).toContain("environment: production");
+  });
+
+  it("also runs when config.toml or a migration changes", () => {
+    expect(workflow).toContain('- "supabase/config.toml"');
+    expect(workflow).toContain('- "supabase/migrations/**"');
   });
 });
