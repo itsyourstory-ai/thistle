@@ -17,6 +17,12 @@ import { checkRateLimit } from "../_shared/rateLimit.ts";
 import { isCheckoutBypassAllowed } from "../_shared/checkoutBypass.ts";
 import { maybeSendCreating, maybeSendFailed } from "../_shared/bookEmails.ts";
 import {
+  type BookDecision,
+  claimOrderBook,
+  decideBookForOrder,
+  orderPaymentState,
+} from "../_shared/orderBook.ts";
+import {
   ageToBand,
   applyDedication,
   BookEngineInput,
@@ -336,6 +342,14 @@ function stripDataUrls<T>(value: T): T {
   return value;
 }
 
+/** The order already has a book in progress or done: hand back its id. */
+function existingBookResponse(bookId: string): Response {
+  return new Response(
+    JSON.stringify({ id: bookId, queued: false, existing: true }),
+    { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+  );
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -390,6 +404,15 @@ Deno.serve(async (req) => {
     // All generation requires a paid order. If the webhook hasn't landed yet,
     // fall back to retrieving the PaymentIntent from Stripe directly.
     // The dev bypass (above) skips the gate entirely.
+    //
+    // One paid order = one book (THI-36). `bookDecision` says whether to create
+    // a book, return the order's existing one, or restart it after a failure.
+    let bookDecision: BookDecision = { action: "create", claimFrom: null };
+    let existingBookStamps = {
+      creating_email_sent_at: null as string | null,
+      ready_email_sent_at: null as string | null,
+      failed_email_sent_at: null as string | null,
+    };
     if (!bypassCheckout) {
       if (!order_id) {
         return new Response(
@@ -400,7 +423,7 @@ Deno.serve(async (req) => {
 
       const { data: order, error: orderErr } = await supabase
         .from("orders")
-        .select("id, status, stripe_payment_intent_id")
+        .select("id, status, stripe_payment_intent_id, book_id")
         .eq("id", order_id)
         .eq("user_id", user.id)
         .maybeSingle();
@@ -412,7 +435,16 @@ Deno.serve(async (req) => {
         );
       }
 
-      if (order.status !== "paid") {
+      const paymentState = orderPaymentState(order);
+      if (paymentState === "refunded") {
+        // Checked before the Stripe fallback: a refunded PaymentIntent stays "succeeded".
+        return new Response(
+          JSON.stringify({ error: "This order was refunded, so it can't be used to make a book." }),
+          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+
+      if (paymentState === "check_stripe") {
         // Webhook may not have landed yet — check Stripe directly as a fallback.
         const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY")!, {
           // @ts-ignore — Deno requires the fetch http client
@@ -436,6 +468,76 @@ Deno.serve(async (req) => {
           })
           .eq("id", order.id)
           .neq("status", "paid");
+      }
+
+      // Does this order already have a book?
+      let existingBook: {
+        id: string;
+        pipeline_status: string | null;
+        status: string | null;
+        creating_email_sent_at: string | null;
+        ready_email_sent_at: string | null;
+        failed_email_sent_at: string | null;
+      } | null = null;
+      if (order.book_id) {
+        const { data: bookRow, error: bookErr } = await supabase
+          .from("generated_books")
+          .select("id, pipeline_status, status, creating_email_sent_at, ready_email_sent_at, failed_email_sent_at")
+          .eq("id", order.book_id)
+          .eq("user_id", user.id)
+          .maybeSingle();
+        if (bookErr) throw new Error(`Book lookup failed: ${bookErr.message}`);
+        existingBook = bookRow;
+      }
+      bookDecision = decideBookForOrder(
+        order.book_id ?? null,
+        existingBook && {
+          id: existingBook.id,
+          pipeline_status: existingBook.pipeline_status,
+          // status moves from "pending" to "ok"/"needs_review" in the same
+          // update that saves the story (parsed), so it marks "story written".
+          has_story: existingBook.status === "ok" || existingBook.status === "needs_review",
+        },
+      );
+      if (existingBook) {
+        existingBookStamps = {
+          creating_email_sent_at: existingBook.creating_email_sent_at,
+          ready_email_sent_at: existingBook.ready_email_sent_at,
+          failed_email_sent_at: existingBook.failed_email_sent_at,
+        };
+      }
+
+      if (bookDecision.action === "existing") {
+        return existingBookResponse(bookDecision.bookId);
+      }
+
+      if (bookDecision.action === "restart" && bookDecision.from === "images") {
+        // The story is written; only the pictures failed. Resume the image
+        // pipeline, which reuses every image it already made.
+        const { data: claimed, error: claimErr } = await supabase
+          .from("generated_books")
+          .update({
+            pipeline_status: "portraits",
+            pipeline_error: null,
+            pipeline_progress: { stage: "portraits", current: 0, total: 1, message: "Picking up where we left off…" },
+          })
+          .eq("id", bookDecision.bookId)
+          .eq("pipeline_status", "failed")
+          .select("id");
+        if (claimErr) throw new Error(`Book restart failed: ${claimErr.message}`);
+        // Another call restarted it first: just return the book.
+        if (!claimed?.length) return existingBookResponse(bookDecision.bookId);
+        try {
+          void supabase.functions.invoke("generate-book-images", {
+            body: { book_id: bookDecision.bookId, seed_portrait_data_url },
+          });
+        } catch (e) {
+          console.error("generate-book-images invoke threw:", e);
+        }
+        return new Response(
+          JSON.stringify({ id: bookDecision.bookId, queued: true, restarted: true }),
+          { status: 202, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
       }
     }
     // ── End paid-order gate ────────────────────────────────────────────────────
@@ -467,54 +569,92 @@ Deno.serve(async (req) => {
       revision_note ? `Revision note: ${revision_note}` : "",
     ].filter(Boolean).join("\n\n");
 
-    // Insert stub row immediately so the client has an id to poll.
-    const { data: stubRow, error: stubErr } = await supabase
-      .from("generated_books")
-      .insert({
-        framework_id,
-        brief: { ...brief, approvedConcept },
-        model,
-        prompt_hash: promptHash,
-        status: "pending",
-        buyer_name: buyer_name || null,
-        buyer_email: buyer_email || null,
-        user_id: user.id,
-        pipeline_status: "story",
-        pipeline_progress: {
-          stage: "story",
-          current: 0,
-          total: 1,
-          message: "Writing the story…",
-        },
-      })
-      .select("id")
-      .single();
+    const storyRowFields = {
+      framework_id,
+      brief: { ...brief, approvedConcept },
+      model,
+      prompt_hash: promptHash,
+      status: "pending",
+      buyer_name: buyer_name || null,
+      buyer_email: buyer_email || null,
+      pipeline_status: "story",
+      pipeline_error: null,
+      pipeline_progress: {
+        stage: "story",
+        current: 0,
+        total: 1,
+        message: "Writing the story…",
+      },
+    };
 
-    if (stubErr || !stubRow?.id) {
-      console.error("Stub insert failed", stubErr);
-      return new Response(
-        JSON.stringify({ error: stubErr?.message || "Could not create book row." }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
-    }
+    let bookId: string;
+    if (bookDecision.action === "restart") {
+      // The book failed before its story was saved: rewrite it in the same row.
+      // Only reset it if it's still failed, so two retries can't both run.
+      const { data: claimed, error: claimErr } = await supabase
+        .from("generated_books")
+        .update(storyRowFields)
+        .eq("id", bookDecision.bookId)
+        .eq("pipeline_status", "failed")
+        .select("id");
+      if (claimErr) throw new Error(`Book restart failed: ${claimErr.message}`);
+      if (!claimed?.length) return existingBookResponse(bookDecision.bookId);
+      bookId = bookDecision.bookId;
+    } else {
+      // Insert stub row immediately so the client has an id to poll.
+      const { data: stubRow, error: stubErr } = await supabase
+        .from("generated_books")
+        .insert({ ...storyRowFields, user_id: user.id })
+        .select("id")
+        .single();
 
-    const bookId = stubRow.id as string;
+      if (stubErr || !stubRow?.id) {
+        console.error("Stub insert failed", stubErr);
+        return new Response(
+          JSON.stringify({ error: stubErr?.message || "Could not create book row." }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
 
-    // Link the generated book back to the order (no-op when bypass_checkout skips order creation).
-    if (order_id) {
-      await supabase
-        .from("orders")
-        .update({ book_id: bookId, updated_at: new Date().toISOString() })
-        .eq("id", order_id);
+      bookId = stubRow.id as string;
+
+      if (!bypassCheckout && order_id) {
+        // Link the book to the order, but only if no other call linked one
+        // first. If we lose that race, drop our stub and return the winner.
+        const won = await claimOrderBook(supabase, {
+          orderId: order_id,
+          userId: user.id,
+          bookId,
+          claimFrom: bookDecision.claimFrom,
+        });
+        if (!won) {
+          await supabase.from("generated_books").delete().eq("id", bookId);
+          const { data: latest } = await supabase
+            .from("orders")
+            .select("book_id")
+            .eq("id", order_id)
+            .eq("user_id", user.id)
+            .maybeSingle();
+          if (latest?.book_id) return existingBookResponse(latest.book_id);
+          return new Response(
+            JSON.stringify({ error: "Could not link the book to this order. Please try again." }),
+            { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+          );
+        }
+      } else if (order_id) {
+        // Dev bypass: link the book back to the order as before (see THI-59).
+        await supabase
+          .from("orders")
+          .update({ book_id: bookId, updated_at: new Date().toISOString() })
+          .eq("id", order_id);
+      }
     }
 
     const book = {
       id: bookId,
       buyer_email: buyer_email || null,
       brief: { ...brief, approvedConcept },
-      creating_email_sent_at: null,
-      ready_email_sent_at: null,
-      failed_email_sent_at: null,
+      ...existingBookStamps,
     };
 
     await maybeSendCreating(supabase, book);
