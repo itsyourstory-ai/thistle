@@ -65,7 +65,9 @@ For each ticket, in order:
 1. **Read.** The ticket, its comments, linked tickets, and the parts of this file and `docs/` that apply. If it's unclear what "done" means, or the ticket needs a decision, stop: comment with your question and @mention the person who started the run.
 2. **Plan.** Post a short plan as a comment on the ticket: what you'll change, which files, which tests.
 3. **Build, test first.** Write a failing test, then the code that makes it pass. Stay inside the ticket. If you find other work, don't do it. Create a Linear ticket for it instead: check for an existing one first, then create it in team THI with status Backlog, in the project it belongs to, written with [the ticket template](docs/linear-ticket-template.md). Link it to the current ticket as related, and list it in your report.
-4. **Review.** Run every check in [Before merging](#before-merging) and confirm each "Done when" item. If you changed an edge-function entrypoint, also run `deno check` on it. Some entrypoints already have type errors on `main`; compare against `main` and make sure you add none. Errors that were already there don't block the merge. Then have the diff reviewed by a fresh reviewer that didn't build it (for example a separate review agent), and fix what it finds.
+4. **Review.** Run every check in [Before merging](#before-merging) and confirm each "Done when" item. If you changed an edge-function entrypoint, also run `deno check` on it. Some entrypoints already have type errors on `main`; compare against `main` and make sure you add none. Errors that were already there don't block the merge. If you changed a GitHub Actions workflow, run `actionlint` on it.
+   **If you changed anything a buyer sees, look at it in a browser.** Start the dev server in test mode (`VITE_DEV_TEST_MODE=1 VITE_DEV_AUTH_BYPASS=1 npm run dev`; it needs no real keys and calls no real backend), then run `node scripts/browser-check.mjs <paths> [--mobile]`. It saves screenshots to `.browser-check/` and lists console errors. Check desktop and `--mobile`, and attach the screenshots to the PR. Wizard answers live in memory, so for steps past step 1 write a short Playwright script that clicks through, or uses the test panel's seed profiles and "Jump → Checkout" ([docs/manual-testing.md](docs/manual-testing.md)). Compare console errors with `main`; with the auth bypass, some pages (like the dashboard) already log errors.
+   Then have the diff reviewed by a fresh reviewer that didn't build it (for example a separate review agent), and fix what it finds.
 5. **Ship.** Branch, commit, push, and open a PR with the template filled in (see [Git](#git)). Wait for CI to pass, then squash-merge. Use `gh` or whichever GitHub tools your environment provides.
    Give every ticket its own branch, created from the latest `main` and named per [Git](#git) (e.g. `fix/thi-35-checkout-buyer-email`), with its own PR. Cloud sessions start on a `claude/…` branch, but they can push new branches, so don't put a ticket's work there. Start the PR title with the ticket id (`THI-35: …`) and put `Fixes THI-35` in the PR description; Linear then links the PR and closes the ticket on merge. (Cloud sessions can't delete remote branches. That's fine: GitHub deletes a PR's branch when it merges.)
    If you can't push finished work, run `git format-patch origin/main`, attach the patch file to the ticket, and stop.
@@ -95,7 +97,11 @@ Each person who starts AI runs sets these up once.
 cd thistle
 npm ci
 curl -fsSL https://deno.land/install.sh | DENO_INSTALL=/usr/local sh
+npx playwright install --with-deps chromium
+bash <(curl -fsSL https://raw.githubusercontent.com/rhysd/actionlint/v1.7.7/scripts/download-actionlint.bash) 1.7.7 /usr/local/bin
 ```
+
+**Command permissions.** `.claude/settings.json` pre-approves the routine checks (lint, tests, build, Deno, `actionlint`, the browser check, reading PRs and workflow runs) so runs don't stall on them. It also blocks `supabase db push` and force pushes for everyone. Personal additions go in `.claude/settings.local.json`, which is gitignored.
 
 **Linear.** `.mcp.json` adds a Linear server named `linear-thistle` that signs in with a Linear API key from the `LINEAR_API_KEY` environment variable. The file holds no secret. A claude.ai Linear connector signed in to another workspace can't be used here, and claude.ai allows only one Linear connector per account, so the key is how AI runs reach Thistle's workspace. Anything done with the key shows up in Linear as the key's owner.
 

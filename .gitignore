@@ -48,3 +48,6 @@ supabase/.temp/
 *.njsproj
 *.sln
 *.sw?
+
+# Screenshots from scripts/browser-check.mjs
+.browser-check/
