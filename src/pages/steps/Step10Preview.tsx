@@ -65,8 +65,11 @@ interface PaymentFormButtonsProps {
   amountLabel: string;
   orderId: string;
   onValidate: () => boolean;
-  /** Runs after validation, before Stripe confirms. Must not throw. */
-  onBeforeConfirm: () => Promise<void>;
+  /**
+   * Runs after validation, before Stripe confirms. Must not throw. Returns a
+   * message to show instead of paying (e.g. the price changed), or null.
+   */
+  onBeforeConfirm: () => Promise<string | null>;
   onSuccess: (orderId: string) => void;
 }
 
@@ -84,7 +87,12 @@ function PaymentFormButtons({ amountLabel, orderId, onValidate, onBeforeConfirm,
     setPaying(true);
     setPayError(null);
 
-    await onBeforeConfirm();
+    const stopMessage = await onBeforeConfirm();
+    if (stopMessage) {
+      setPaying(false);
+      setPayError(stopMessage);
+      return;
+    }
 
     const { error } = await stripe.confirmPayment({
       elements,
@@ -287,11 +295,12 @@ export default function Step9Preview() {
   // Save the buyer's name and email on the order before Stripe confirms, so
   // the receipt and other order emails have an address (THI-35). Re-sends the
   // applied promo code so this update doesn't drop the discount. A failure
-  // here must not block payment, so it's logged and swallowed.
-  const saveBuyerDetails = async () => {
-    if (!draftId) return;
+  // here must not block payment, so it's logged and swallowed. If the server
+  // recalculated a different price, stop so the buyer sees it before paying.
+  const saveBuyerDetails = async (): Promise<string | null> => {
+    if (!draftId) return null;
     try {
-      const { error } = await callEdge("create-payment-intent", {
+      const { data, error } = await callEdge("create-payment-intent", {
         product: selected,
         draft_id: draftId,
         buyer_name: buyerName.trim(),
@@ -299,10 +308,19 @@ export default function Step9Preview() {
         ...(appliedDiscountCode ? { discount_code: appliedDiscountCode } : {}),
         ...shippingPayload(),
       });
-      if (error) console.error("Failed to save buyer details on order:", error);
+      if (error) {
+        console.error("Failed to save buyer details on order:", error);
+        return null;
+      }
+      const newAmount = data?.amount_cents;
+      if (typeof newAmount === "number" && amountCents != null && newAmount !== amountCents) {
+        setAmountCents(newAmount);
+        return "The price changed. Please review the new total and tap Pay again.";
+      }
     } catch (err) {
       console.error("Failed to save buyer details on order:", err);
     }
+    return null;
   };
 
   const handlePaySuccess = (orderId: string) => {

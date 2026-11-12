@@ -351,6 +351,11 @@ describe("Step10Preview — buyer details reach the server before payment (THI-3
     fireEvent.click(screen.getByRole("button", { name: /^apply$/i }));
     await waitFor(() => screen.getByRole("button", { name: /pay \$4\.99/i }));
 
+    // The server keeps the discount, so the price is unchanged.
+    vi.mocked(callEdge).mockResolvedValueOnce({
+      data: { client_secret: "pi_test_secret", order_id: "order-123", amount_cents: 499, discount_cents: 500 },
+      error: null,
+    });
     await fillBuyerAndPay();
     await waitFor(() => expect(mockConfirmPayment).toHaveBeenCalled());
 
@@ -397,6 +402,39 @@ describe("Step10Preview — buyer details reach the server before payment (THI-3
     expect(mockConfirmPayment).toHaveBeenCalled();
     expect(consoleError).toHaveBeenCalled();
     consoleError.mockRestore();
+  });
+
+  it("still takes the payment if the save request throws", async () => {
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+    renderStep({ childName: "Ellie" }, "draft-1");
+    await waitFor(() => screen.getByTestId("payment-element"));
+
+    vi.mocked(callEdge).mockRejectedValueOnce(new Error("network down"));
+    await fillBuyerAndPay();
+
+    await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith("/step/12-generating"));
+    expect(mockConfirmPayment).toHaveBeenCalled();
+    consoleError.mockRestore();
+  });
+
+  it("stops before paying and shows the new total if the server price changed", async () => {
+    vi.mocked(callEdge).mockResolvedValue({
+      data: { client_secret: "pi_test_secret", order_id: "order-123", amount_cents: 999, discount_cents: 0 },
+      error: null,
+    });
+    renderStep({ childName: "Ellie" }, "draft-1");
+    await waitFor(() => screen.getByRole("button", { name: /pay \$9\.99/i }));
+
+    vi.mocked(callEdge).mockResolvedValueOnce({
+      data: { client_secret: "pi_test_secret", order_id: "order-123", amount_cents: 1299, discount_cents: 0 },
+      error: null,
+    });
+    await fillBuyerAndPay();
+
+    await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent(/price changed/i));
+    expect(mockConfirmPayment).not.toHaveBeenCalled();
+    expect(mockNavigate).not.toHaveBeenCalled();
+    expect(screen.getByRole("button", { name: /pay \$12\.99/i })).toBeInTheDocument();
   });
 
   it("does not call the server or Stripe when the buyer form is invalid", async () => {
