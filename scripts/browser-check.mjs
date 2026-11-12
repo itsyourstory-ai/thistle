@@ -3,7 +3,8 @@
 // Used by AI runs to check UI changes (AGENTS.md → "When an AI works tickets
 // on its own" → step 4). Start the dev server first, in test mode:
 //
-//   VITE_DEV_TEST_MODE=1 VITE_DEV_AUTH_BYPASS=1 npm run dev
+//   VITE_DEV_TEST_MODE=1 VITE_DEV_AUTH_BYPASS=1 npm run dev -- --host 127.0.0.1
+//   (--host because cloud sessions have no IPv6, and vite.config.ts binds to "::")
 //   node scripts/browser-check.mjs /dashboard /step/1-name [--mobile]
 //
 // Screenshots go to .browser-check/ (gitignored). Exits 1 if any page logs a
