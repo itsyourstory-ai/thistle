@@ -56,6 +56,7 @@ This applies when an AI tool works Linear tickets with no person watching, for e
 
 - **Linear access** comes from the `linear-thistle` server in `.mcp.json` (see [Setting up AI runs](#setting-up-ai-runs) below). If you can't reach the Thistle Linear workspace, stop and report in the chat that started the run.
 - **Label your comments.** The Linear connection acts as the person who set it up, so start every comment you post in Linear with `🤖 AI run:`. That's how readers tell your comments from theirs.
+- **Reaching a person.** Whenever you need a person (a question, a "Don't merge" stop, or a step only a person can do), do both: @mention them in a comment on the ticket, **and** post the same message in the chat that started the run. Don't wait in the chat for an answer. Mention whoever started the run. Linear handles: Jordan is `@jordan.d.bowman`, Andrew is `@admin`.
 - **Missing tools.** A cloud environment may not have `node_modules`, `mise` or Deno. Run `npm ci` if packages are missing. If `mise` isn't installed, install Deno and run the Deno commands in this file without the `mise exec --` prefix.
 
 For each ticket, in order:
@@ -80,7 +81,7 @@ When working a whole project:
 
 - Take tickets in priority order, respecting blockers. Finish one (merged or stopped) before starting the next.
 - A stopped ticket doesn't stop the run. Skip the tickets it blocks and keep going.
-- At the end, post a project update in Linear: what merged, what stopped and why, and what needs a person.
+- At the end, post a project update in Linear: what merged, what stopped and why, and what needs a person. Post the same summary in the chat that started the run, listing every ticket that needed a person, so nothing is missed if an earlier message scrolled past.
 
 #### Setting up AI runs
 
@@ -88,9 +89,10 @@ Each person who starts AI runs sets these up once.
 
 **GitHub.** The Claude GitHub App must be installed on the `thistle` repo, which it already is. Each person also connects their own GitHub account to their own Claude account the first time they use Claude Code with GitHub. A session uses the Claude usage of whoever starts it.
 
-**Cloud environment setup script.** At claude.ai/code, add this as the setup script on the environment you use for this repo, so sessions start with packages and Deno installed:
+**Cloud environment setup script.** At claude.ai/code, add this as the setup script on the environment you use for this repo, so sessions start with packages and Deno installed. The script starts in the folder above the repo, so it moves into `thistle` first:
 
 ```bash
+cd thistle
 npm ci
 curl -fsSL https://deno.land/install.sh | DENO_INSTALL=/usr/local sh
 ```

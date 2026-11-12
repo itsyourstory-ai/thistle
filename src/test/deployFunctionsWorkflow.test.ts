@@ -119,7 +119,13 @@ describe("deploy-functions workflow", () => {
   it("deploys non-interactively with the token from secrets", () => {
     expect(workflow).toMatch(/supabase functions deploy --project-ref uglsyitjasajubfvbiry --use-api --yes/);
     expect(workflow).toContain("SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}");
-    expect(workflow).toContain("environment: production");
+  });
+
+  it("uses its own GitHub environment, not the one Vercel deploys production to", () => {
+    // GitHub environment names ignore case, so "production" would be Vercel's
+    // "Production" environment and its branch rules would apply to both.
+    expect(workflow).toMatch(/^\s*environment: supabase-production\s*$/m);
+    expect(workflow).not.toMatch(/^\s*environment: production\s*$/im);
   });
 
   it("also runs when config.toml or a migration changes", () => {
