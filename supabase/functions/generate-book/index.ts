@@ -408,6 +408,7 @@ Deno.serve(async (req) => {
     // One paid order = one book (THI-36). `bookDecision` says whether to create
     // a book, return the order's existing one, or restart it after a failure.
     let bookDecision: BookDecision = { action: "create", claimFrom: null };
+    let previousStoryStartedAt: string | null = null;
     let existingBookStamps = {
       creating_email_sent_at: null as string | null,
       ready_email_sent_at: null as string | null,
@@ -474,7 +475,9 @@ Deno.serve(async (req) => {
       let existingBook: {
         id: string;
         pipeline_status: string | null;
-        status: string | null;
+        pipeline_progress: { started_at?: string } | null;
+        created_at: string | null;
+        story_meta: unknown;
         creating_email_sent_at: string | null;
         ready_email_sent_at: string | null;
         failed_email_sent_at: string | null;
@@ -482,7 +485,9 @@ Deno.serve(async (req) => {
       if (order.book_id) {
         const { data: bookRow, error: bookErr } = await supabase
           .from("generated_books")
-          .select("id, pipeline_status, status, creating_email_sent_at, ready_email_sent_at, failed_email_sent_at")
+          .select(
+            "id, pipeline_status, pipeline_progress, created_at, story_meta:parsed->meta, creating_email_sent_at, ready_email_sent_at, failed_email_sent_at",
+          )
           .eq("id", order.book_id)
           .eq("user_id", user.id)
           .maybeSingle();
@@ -494,17 +499,18 @@ Deno.serve(async (req) => {
         existingBook && {
           id: existingBook.id,
           pipeline_status: existingBook.pipeline_status,
-          // status moves from "pending" to "ok"/"needs_review" in the same
-          // update that saves the story (parsed), so it marks "story written".
-          has_story: existingBook.status === "ok" || existingBook.status === "needs_review",
+          has_story: existingBook.story_meta != null,
+          story_started_at: existingBook.pipeline_progress?.started_at ?? existingBook.created_at,
         },
       );
       if (existingBook) {
         existingBookStamps = {
           creating_email_sent_at: existingBook.creating_email_sent_at,
           ready_email_sent_at: existingBook.ready_email_sent_at,
-          failed_email_sent_at: existingBook.failed_email_sent_at,
+          // A restart clears the failed stamp (below), so a second failure emails again.
+          failed_email_sent_at: null,
         };
+        previousStoryStartedAt = existingBook.pipeline_progress?.started_at ?? null;
       }
 
       if (bookDecision.action === "existing") {
@@ -520,6 +526,7 @@ Deno.serve(async (req) => {
             pipeline_status: "portraits",
             pipeline_error: null,
             pipeline_progress: { stage: "portraits", current: 0, total: 1, message: "Picking up where we left off…" },
+            failed_email_sent_at: null,
           })
           .eq("id", bookDecision.bookId)
           .eq("pipeline_status", "failed")
@@ -584,19 +591,29 @@ Deno.serve(async (req) => {
         current: 0,
         total: 1,
         message: "Writing the story…",
+        // Lets a later call spot a story run whose worker died (THI-36).
+        started_at: new Date().toISOString(),
       },
     };
 
     let bookId: string;
     if (bookDecision.action === "restart") {
-      // The book failed before its story was saved: rewrite it in the same row.
-      // Only reset it if it's still failed, so two retries can't both run.
-      const { data: claimed, error: claimErr } = await supabase
+      // The book failed (or its story run died) before its story was saved:
+      // rewrite it in the same row. Only reset it if it's still in the state we
+      // read, so two retries can't both run.
+      let restartQuery = supabase
         .from("generated_books")
-        .update(storyRowFields)
-        .eq("id", bookDecision.bookId)
-        .eq("pipeline_status", "failed")
-        .select("id");
+        .update({ ...storyRowFields, failed_email_sent_at: null })
+        .eq("id", bookDecision.bookId);
+      if (bookDecision.reason === "failed") {
+        restartQuery = restartQuery.eq("pipeline_status", "failed");
+      } else {
+        restartQuery = restartQuery.eq("pipeline_status", "story");
+        restartQuery = previousStoryStartedAt
+          ? restartQuery.eq("pipeline_progress->>started_at", previousStoryStartedAt)
+          : restartQuery.is("pipeline_progress->>started_at", null);
+      }
+      const { data: claimed, error: claimErr } = await restartQuery.select("id");
       if (claimErr) throw new Error(`Book restart failed: ${claimErr.message}`);
       if (!claimed?.length) return existingBookResponse(bookDecision.bookId);
       bookId = bookDecision.bookId;

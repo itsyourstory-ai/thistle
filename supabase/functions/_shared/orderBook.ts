@@ -24,6 +24,27 @@ export interface ExistingBook {
   pipeline_status: string | null;
   /** True once the story text is saved (`generated_books.parsed` is set). */
   has_story: boolean;
+  /**
+   * When the current story attempt started (`pipeline_progress.started_at`,
+   * falling back to `created_at`). Used to spot a story run whose worker died
+   * without marking the book failed.
+   */
+  story_started_at: string | null;
+}
+
+/**
+ * Writing the story normally takes a minute or two. A book still at "story"
+ * after this long lost its worker (timeout, deploy, eviction) and will never
+ * finish or be marked failed, so it's safe to restart.
+ */
+export const STALE_STORY_MS = 10 * 60 * 1000;
+
+function isStaleStory(book: ExistingBook, now: number): boolean {
+  if (book.pipeline_status !== "story" || book.has_story) return false;
+  const started = book.story_started_at ? Date.parse(book.story_started_at) : NaN;
+  // No usable timestamp: treat as stale rather than leave the buyer stuck.
+  if (Number.isNaN(started)) return true;
+  return now - started > STALE_STORY_MS;
 }
 
 export type BookDecision =
@@ -31,8 +52,11 @@ export type BookDecision =
   | { action: "create"; claimFrom: string | null }
   /** A book is in progress or done: return its id, start nothing. */
   | { action: "existing"; bookId: string }
-  /** The book failed: restart the same book, from the story or from the images. */
-  | { action: "restart"; bookId: string; from: "story" | "images" };
+  /**
+   * The book failed (or its story run died): restart the same book, from the
+   * story or from the images. `reason` tells the handler which state to claim.
+   */
+  | { action: "restart"; bookId: string; from: "story" | "images"; reason: "failed" | "stale_story" };
 
 /**
  * What generate-book should do for an order, given `orders.book_id` and the
@@ -41,10 +65,19 @@ export type BookDecision =
 export function decideBookForOrder(
   orderBookId: string | null,
   book: ExistingBook | null,
+  now: number = Date.now(),
 ): BookDecision {
   if (!orderBookId || !book) return { action: "create", claimFrom: orderBookId ?? null };
   if (book.pipeline_status === "failed") {
-    return { action: "restart", bookId: book.id, from: book.has_story ? "images" : "story" };
+    return {
+      action: "restart",
+      bookId: book.id,
+      from: book.has_story ? "images" : "story",
+      reason: "failed",
+    };
+  }
+  if (isStaleStory(book, now)) {
+    return { action: "restart", bookId: book.id, from: "story", reason: "stale_story" };
   }
   return { action: "existing", bookId: book.id };
 }
