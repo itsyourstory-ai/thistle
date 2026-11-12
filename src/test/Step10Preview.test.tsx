@@ -7,6 +7,8 @@
  * 3. The "after checkout" promise is present in the page
  * 4. The pay/checkout CTA is still rendered
  * 5. create-payment-intent is called on mount and plan select
+ * 5a. Only the digital plan is offered while hardcover is off (THI-35)
+ * 5b. Buyer name/email are sent to create-payment-intent before payment (THI-35)
  * 6. Pay button shows server-returned amount
  * 7. Successful payment navigates to step 12 and saves orderId
  * 8. Failed payment shows error message, does not navigate
@@ -21,6 +23,7 @@ import { MemoryRouter, Routes, Route } from "react-router-dom";
 
 let mockDraftId: string | null = null;
 let mockBypassCheckout = false;
+let mockHardcoverEnabled = false;
 const mockSetAnswer = vi.fn();
 const mockNavigate = vi.fn();
 const mockConfirmPayment = vi.fn();
@@ -66,6 +69,12 @@ vi.mock("@/lib/edgeFunctions", () => ({
   callEdge: vi.fn(),
 }));
 
+vi.mock("@/lib/checkoutPlans", () => ({
+  get HARDCOVER_ENABLED() {
+    return mockHardcoverEnabled;
+  },
+}));
+
 vi.mock("@/lib/stripe", () => ({
   stripePromise: Promise.resolve(null),
 }));
@@ -109,6 +118,7 @@ beforeEach(() => {
   mockAnswers = {};
   mockDraftId = null;
   mockBypassCheckout = false;
+  mockHardcoverEnabled = false;
 
   vi.mocked(callEdge).mockResolvedValue({
     data: { client_secret: "pi_test_secret", order_id: "order-123", amount_cents: 5499, discount_cents: 0 },
@@ -164,26 +174,27 @@ describe("Step10Preview — checkout CTA", () => {
 // ── Payment Element (TDD) ──────────────────────────────────────────────────────
 
 describe("Step10Preview — Payment Element", () => {
-  it("calls create-payment-intent on mount with the default hardcover plan", async () => {
+  it("calls create-payment-intent on mount with the default digital plan", async () => {
     renderStep({ childName: "Ellie" }, "draft-1");
     await waitFor(() => {
       expect(callEdge).toHaveBeenCalledWith(
         "create-payment-intent",
-        expect.objectContaining({ product: "hardcover", draft_id: "draft-1" }),
+        expect.objectContaining({ product: "digital", draft_id: "draft-1" }),
       );
     });
   });
 
-  it("calls create-payment-intent when a different plan card is clicked", async () => {
+  it("calls create-payment-intent when a different plan card is clicked (hardcover enabled)", async () => {
+    mockHardcoverEnabled = true;
     renderStep({ childName: "Ellie" }, "draft-1");
     await waitFor(() => expect(vi.mocked(callEdge)).toHaveBeenCalledTimes(1));
 
-    fireEvent.click(screen.getByRole("button", { name: /digital book/i }));
+    fireEvent.click(screen.getByRole("button", { name: /printed hardcover/i }));
 
     await waitFor(() => {
       expect(callEdge).toHaveBeenCalledWith(
         "create-payment-intent",
-        expect.objectContaining({ product: "digital" }),
+        expect.objectContaining({ product: "hardcover" }),
       );
     });
   });
@@ -264,11 +275,153 @@ describe("Step10Preview — Payment Element", () => {
   });
 });
 
+// ── Digital-only soft launch + buyer details (THI-35) ─────────────────────────
+
+describe("Step10Preview — digital-only checkout (THI-35)", () => {
+  it("shows only the digital plan when hardcover is off", () => {
+    renderStep({ childName: "Ellie" });
+    expect(screen.getByRole("button", { name: /digital book/i })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /printed hardcover/i })).not.toBeInTheDocument();
+    expect(screen.queryByText(/most popular/i)).not.toBeInTheDocument();
+    expect(screen.queryByPlaceholderText(/street address/i)).not.toBeInTheDocument();
+  });
+
+  it("selects the digital plan by default", async () => {
+    renderStep({ childName: "Ellie" }, "draft-1");
+    await waitFor(() => expect(callEdge).toHaveBeenCalled());
+    for (const call of vi.mocked(callEdge).mock.calls) {
+      expect(call[1]).toEqual(expect.objectContaining({ product: "digital" }));
+    }
+  });
+});
+
+describe("Step10Preview — buyer details reach the server before payment (THI-35)", () => {
+  async function fillBuyerAndPay() {
+    await waitFor(() => screen.getByTestId("payment-element"));
+    fireEvent.change(screen.getByPlaceholderText(/sarah johnson/i), {
+      target: { value: "  Sarah Johnson " },
+    });
+    fireEvent.change(screen.getByPlaceholderText(/you@example\.com/i), {
+      target: { value: "sarah@example.com " },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /pay \$/i }));
+  }
+
+  it("sends buyer_name and buyer_email to create-payment-intent before confirmPayment", async () => {
+    const order: string[] = [];
+    vi.mocked(callEdge).mockImplementation(async (_name, body) => {
+      if ((body as Record<string, unknown>).buyer_email) order.push("update-order");
+      return {
+        data: { client_secret: "pi_test_secret", order_id: "order-123", amount_cents: 999, discount_cents: 0 },
+        error: null,
+      };
+    });
+    mockConfirmPayment.mockImplementation(async () => {
+      order.push("confirm");
+      return { error: null };
+    });
+
+    renderStep({ childName: "Ellie" }, "draft-1");
+    await fillBuyerAndPay();
+
+    await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith("/step/12-generating"));
+
+    // The request body must use the field names create-payment-intent reads
+    // (body.buyer_name / body.buyer_email / body.product / body.draft_id).
+    expect(callEdge).toHaveBeenCalledWith("create-payment-intent", {
+      product: "digital",
+      draft_id: "draft-1",
+      buyer_name: "Sarah Johnson",
+      buyer_email: "sarah@example.com",
+    });
+    expect(order).toEqual(["update-order", "confirm"]);
+  });
+
+  it("keeps an applied promo code on the pre-payment update", async () => {
+    renderStep({ childName: "Ellie" }, "draft-1");
+    await waitFor(() => screen.getByTestId("payment-element"));
+
+    vi.mocked(callEdge).mockResolvedValueOnce({
+      data: { client_secret: "pi_test_secret", order_id: "order-123", amount_cents: 499, discount_cents: 500 },
+      error: null,
+    });
+    fireEvent.change(screen.getByPlaceholderText(/enter promo code/i), {
+      target: { value: "SAVE50" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /^apply$/i }));
+    await waitFor(() => screen.getByRole("button", { name: /pay \$4\.99/i }));
+
+    await fillBuyerAndPay();
+    await waitFor(() => expect(mockConfirmPayment).toHaveBeenCalled());
+
+    const calls = vi.mocked(callEdge).mock.calls;
+    const preConfirm = calls[calls.length - 1][1] as Record<string, unknown>;
+    expect(preConfirm).toEqual(expect.objectContaining({
+      buyer_email: "sarah@example.com",
+      discount_code: "SAVE50",
+    }));
+  });
+
+  it("does not resend a promo code the server rejected", async () => {
+    renderStep({ childName: "Ellie" }, "draft-1");
+    await waitFor(() => screen.getByTestId("payment-element"));
+
+    vi.mocked(callEdge).mockResolvedValueOnce({
+      data: { client_secret: "pi_test_secret", order_id: "order-123", amount_cents: 999, discount_cents: 0, discount_invalid: true },
+      error: null,
+    });
+    fireEvent.change(screen.getByPlaceholderText(/enter promo code/i), {
+      target: { value: "BADCODE" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /^apply$/i }));
+    await waitFor(() => screen.getByText(/invalid or expired/i));
+
+    await fillBuyerAndPay();
+    await waitFor(() => expect(mockConfirmPayment).toHaveBeenCalled());
+
+    const calls = vi.mocked(callEdge).mock.calls;
+    const preConfirm = calls[calls.length - 1][1] as Record<string, unknown>;
+    expect(preConfirm.buyer_email).toBe("sarah@example.com");
+    expect(preConfirm).not.toHaveProperty("discount_code");
+  });
+
+  it("still takes the payment if saving buyer details fails", async () => {
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+    renderStep({ childName: "Ellie" }, "draft-1");
+    await waitFor(() => screen.getByTestId("payment-element"));
+
+    vi.mocked(callEdge).mockResolvedValueOnce({ data: null, error: new Error("boom") });
+    await fillBuyerAndPay();
+
+    await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith("/step/12-generating"));
+    expect(mockConfirmPayment).toHaveBeenCalled();
+    expect(consoleError).toHaveBeenCalled();
+    consoleError.mockRestore();
+  });
+
+  it("does not call the server or Stripe when the buyer form is invalid", async () => {
+    renderStep({ childName: "Ellie" }, "draft-1");
+    await waitFor(() => screen.getByTestId("payment-element"));
+    const callsBefore = vi.mocked(callEdge).mock.calls.length;
+
+    fireEvent.click(screen.getByRole("button", { name: /pay \$/i }));
+
+    await waitFor(() => screen.getByText(/enter a valid email/i));
+    expect(vi.mocked(callEdge).mock.calls.length).toBe(callsBefore);
+    expect(mockConfirmPayment).not.toHaveBeenCalled();
+  });
+});
+
 // ── Shipping address block (Task 8) ───────────────────────────────────────────
 
 describe("Step10Preview — shipping address block", () => {
+  beforeEach(() => {
+    mockHardcoverEnabled = true;
+  });
+
   it("shows shipping fields when hardcover is selected", () => {
     renderStep({ childName: "Ellie" });
+    fireEvent.click(screen.getByRole("button", { name: /printed hardcover/i }));
     expect(screen.getByPlaceholderText(/street address/i)).toBeInTheDocument();
     expect(screen.getByPlaceholderText(/zip code/i)).toBeInTheDocument();
     expect(screen.getByPlaceholderText(/phone/i)).toBeInTheDocument();
@@ -276,6 +429,7 @@ describe("Step10Preview — shipping address block", () => {
 
   it("hides shipping fields when digital is selected", () => {
     renderStep({ childName: "Ellie" });
+    fireEvent.click(screen.getByRole("button", { name: /printed hardcover/i }));
     fireEvent.click(screen.getByRole("button", { name: /digital book/i }));
     expect(screen.queryByPlaceholderText(/street address/i)).not.toBeInTheDocument();
   });
@@ -285,6 +439,8 @@ describe("Step10Preview — shipping address block", () => {
       { childName: "Ellie", buyer_name: "Test User", buyer_email: "test@example.com" },
       "draft-1",
     );
+    await waitFor(() => screen.getByTestId("payment-element"));
+    fireEvent.click(screen.getByRole("button", { name: /printed hardcover/i }));
     await waitFor(() => screen.getByTestId("payment-element"));
 
     fireEvent.click(screen.getByRole("button", { name: /pay \$54\.99/i }));
@@ -298,6 +454,7 @@ describe("Step10Preview — shipping address block", () => {
 
   it("passes shipping to create-payment-intent when plan changes (last call has hardcover)", async () => {
     renderStep({ childName: "Ellie" }, "draft-1");
+    fireEvent.click(screen.getByRole("button", { name: /printed hardcover/i }));
 
     // Fill in a street to make shipping non-empty
     fireEvent.change(screen.getByPlaceholderText(/street address/i), {
