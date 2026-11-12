@@ -1,0 +1,30 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm ci)",
+      "Bash(npm install)",
+      "Bash(npm run lint)",
+      "Bash(npm run build)",
+      "Bash(npm test)",
+      "Bash(npm run test:deno)",
+      "Bash(npx vitest run:*)",
+      "Bash(mise exec -- npm run test:deno)",
+      "Bash(mise exec -- deno check:*)",
+      "Bash(deno check:*)",
+      "Bash(deno test:*)",
+      "Bash(actionlint:*)",
+      "Bash(npx playwright install:*)",
+      "Bash(node scripts/browser-check.mjs:*)",
+      "Bash(gh pr view:*)",
+      "Bash(gh pr checks:*)",
+      "Bash(gh pr diff:*)",
+      "Bash(gh run view:*)",
+      "Bash(gh run list:*)"
+    ],
+    "deny": [
+      "Bash(supabase db push:*)",
+      "Bash(git push --force:*)",
+      "Bash(git push -f:*)"
+    ]
+  }
+}
