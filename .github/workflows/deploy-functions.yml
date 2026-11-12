@@ -32,9 +32,11 @@ jobs:
   deploy:
     name: Deploy to Supabase (Thistle)
     runs-on: ubuntu-latest
-    # Holds the SUPABASE_ACCESS_TOKEN secret. Limit it to the main branch in
-    # repo Settings → Environments → production → Deployment branches.
-    environment: production
+    # Limit this environment to the main branch in repo Settings → Environments
+    # → supabase-production → Deployment branches and tags. It has its own name
+    # because environment names ignore case: "production" would be the same
+    # environment Vercel deploys the live site to, and its rules would apply there too.
+    environment: supabase-production
     # Belt and braces: never deploy from anything but main.
     if: github.ref == 'refs/heads/main'
     steps:

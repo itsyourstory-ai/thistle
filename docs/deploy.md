@@ -53,7 +53,7 @@ The **Deploy edge functions** workflow (`.github/workflows/deploy-functions.yml`
 
 **Start it by hand:** Actions → **Deploy edge functions** → **Run workflow** (branch `main`). Do this after applying a migration, or to redeploy. Manual runs skip the migration check.
 
-It uses the `SUPABASE_ACCESS_TOKEN` secret and runs in the `production` GitHub environment. A repo admin should limit that environment to `main` (Settings → Environments → production → Deployment branches and tags). The token expires; if a run fails with an auth or permission error, create a new token in Supabase (Account → Access tokens) and update the secret.
+It uses the `SUPABASE_ACCESS_TOKEN` secret and runs in the `supabase-production` GitHub environment. A repo admin should limit that environment to `main` (Settings → Environments → supabase-production → Deployment branches and tags). Don't use the `Production` environment for this: Vercel deploys the live site to it, and GitHub treats environment names as the same regardless of capital letters. The token expires; if a run fails with an auth or permission error, create a new token in Supabase (Account → Access tokens) and update the secret.
 
 ### Migrations: by hand, first
 
