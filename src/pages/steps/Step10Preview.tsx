@@ -6,6 +6,7 @@ import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-
 import { stripePromise } from "@/lib/stripe";
 import { callEdge } from "@/lib/edgeFunctions";
 import { useTestMode } from "@/lib/testMode";
+import { HARDCOVER_ENABLED } from "@/lib/checkoutPlans";
 
 import { Check } from "lucide-react";
 import WizardShell from "@/components/WizardShell";
@@ -64,10 +65,15 @@ interface PaymentFormButtonsProps {
   amountLabel: string;
   orderId: string;
   onValidate: () => boolean;
+  /**
+   * Runs after validation, before Stripe confirms. Must not throw. Returns a
+   * message to show instead of paying (e.g. the price changed), or null.
+   */
+  onBeforeConfirm: () => Promise<string | null>;
   onSuccess: (orderId: string) => void;
 }
 
-function PaymentFormButtons({ amountLabel, orderId, onValidate, onSuccess }: PaymentFormButtonsProps) {
+function PaymentFormButtons({ amountLabel, orderId, onValidate, onBeforeConfirm, onSuccess }: PaymentFormButtonsProps) {
   const stripe = useStripe();
   const elements = useElements();
   const navigate = useNavigate();
@@ -80,6 +86,13 @@ function PaymentFormButtons({ amountLabel, orderId, onValidate, onSuccess }: Pay
 
     setPaying(true);
     setPayError(null);
+
+    const stopMessage = await onBeforeConfirm();
+    if (stopMessage) {
+      setPaying(false);
+      setPayError(stopMessage);
+      return;
+    }
 
     const { error } = await stripe.confirmPayment({
       elements,
@@ -144,7 +157,7 @@ export default function Step9Preview() {
   const title = concept.title || answers.bookTitle || `${name}'s Adventure`;
   const coverImage: string | undefined = concept.coverImage;
 
-  const [selected, setSelected] = useState<Plan>("hardcover");
+  const [selected, setSelected] = useState<Plan>("digital");
 
   // Buyer form state
   const [buyerName, setBuyerName] = useState<string>(answers.buyer_name || "");
@@ -155,6 +168,9 @@ export default function Step9Preview() {
   const [discountCode, setDiscountCode] = useState("");
   const [discountError, setDiscountError] = useState<string | null>(null);
   const [discountApplying, setDiscountApplying] = useState(false);
+  // The promo code the server last accepted. create-payment-intent overwrites
+  // the order's discount on every call, so later calls must resend it.
+  const [appliedDiscountCode, setAppliedDiscountCode] = useState<string | null>(null);
 
   // Shipping state (hardcover only)
   const [shippingName, setShippingName] = useState("");
@@ -172,19 +188,9 @@ export default function Step9Preview() {
   const [amountCents, setAmountCents] = useState<number | null>(null);
   const [piError, setPiError] = useState<string | null>(null);
 
-  // Create / update PI when plan changes (also fires on mount). Skipped in bypass mode.
-  useEffect(() => {
-    if (!draftId || bypassCheckout) return;
-
-    let cancelled = false;
-    setClientSecret(null);
-    setPiOrderId(null);
-    setPiError(null);
-
-    callEdge("create-payment-intent", {
-      product: selected,
-      draft_id: draftId,
-      ...(selected === "hardcover" ? {
+  const shippingPayload = () =>
+    selected === "hardcover"
+      ? {
         shipping: {
           name: shippingName || undefined,
           street1: shippingStreet1 || undefined,
@@ -195,7 +201,23 @@ export default function Step9Preview() {
           country_code: "US",
           phone: shippingPhone || undefined,
         },
-      } : {}),
+      }
+      : {};
+
+  // Create / update PI when plan changes (also fires on mount). Skipped in bypass mode.
+  useEffect(() => {
+    if (!draftId || bypassCheckout) return;
+
+    let cancelled = false;
+    setClientSecret(null);
+    setPiOrderId(null);
+    setPiError(null);
+    setAppliedDiscountCode(null);
+
+    callEdge("create-payment-intent", {
+      product: selected,
+      draft_id: draftId,
+      ...shippingPayload(),
     }).then(({ data, error }) => {
       if (cancelled) return;
       if (error || !data?.client_secret) {
@@ -249,18 +271,7 @@ export default function Step9Preview() {
       product: selected,
       draft_id: draftId,
       discount_code: discountCode.trim(),
-      ...(selected === "hardcover" ? {
-        shipping: {
-          name: shippingName || undefined,
-          street1: shippingStreet1 || undefined,
-          street2: shippingStreet2 || undefined,
-          city: shippingCity || undefined,
-          state_code: shippingState || undefined,
-          postcode: shippingPostcode || undefined,
-          country_code: "US",
-          phone: shippingPhone || undefined,
-        },
-      } : {}),
+      ...shippingPayload(),
     });
 
     setDiscountApplying(false);
@@ -275,9 +286,41 @@ export default function Step9Preview() {
       return;
     }
 
+    setAppliedDiscountCode(discountCode.trim());
     setClientSecret(data.client_secret);
     setPiOrderId(data.order_id);
     setAmountCents(data.amount_cents);
+  };
+
+  // Save the buyer's name and email on the order before Stripe confirms, so
+  // the receipt and other order emails have an address (THI-35). Re-sends the
+  // applied promo code so this update doesn't drop the discount. A failure
+  // here must not block payment, so it's logged and swallowed. If the server
+  // recalculated a different price, stop so the buyer sees it before paying.
+  const saveBuyerDetails = async (): Promise<string | null> => {
+    if (!draftId) return null;
+    try {
+      const { data, error } = await callEdge("create-payment-intent", {
+        product: selected,
+        draft_id: draftId,
+        buyer_name: buyerName.trim(),
+        buyer_email: buyerEmail.trim(),
+        ...(appliedDiscountCode ? { discount_code: appliedDiscountCode } : {}),
+        ...shippingPayload(),
+      });
+      if (error) {
+        console.error("Failed to save buyer details on order:", error);
+        return null;
+      }
+      const newAmount = data?.amount_cents;
+      if (typeof newAmount === "number" && amountCents != null && newAmount !== amountCents) {
+        setAmountCents(newAmount);
+        return "The price changed. Please review the new total and tap Pay again.";
+      }
+    } catch (err) {
+      console.error("Failed to save buyer details on order:", err);
+    }
+    return null;
   };
 
   const handlePaySuccess = (orderId: string) => {
@@ -314,6 +357,7 @@ export default function Step9Preview() {
             amountLabel={amountLabel}
             orderId={piOrderId!}
             onValidate={validateBuyerForm}
+            onBeforeConfirm={saveBuyerDetails}
             onSuccess={handlePaySuccess}
           />
         ) : (
@@ -434,7 +478,8 @@ export default function Step9Preview() {
             </ul>
           </button>
 
-          {/* Hardcover */}
+          {/* Hardcover — hidden for the digital-only soft launch (THI-33, THI-49) */}
+          {HARDCOVER_ENABLED && (
           <button
             type="button"
             onClick={() => setSelected("hardcover")}
@@ -464,6 +509,7 @@ export default function Step9Preview() {
               ))}
             </ul>
           </button>
+          )}
         </div>
 
         {/* Trust signals */}
