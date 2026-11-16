@@ -136,7 +136,7 @@ function PaymentFormButtons({ amountLabel, orderId, onValidate, onBeforeConfirm,
           size="pill"
           onClick={handlePay}
           disabled={paying || !stripe || !elements}
-          className="flex-1"
+          className="min-w-0 flex-1 whitespace-normal"
         >
           {paying ? "Processing…" : `Pay ${amountLabel} & start crafting`}
         </Button>
@@ -378,7 +378,7 @@ export default function Step9Preview() {
               variant="wizard"
               size="pill"
               disabled
-              className="flex-1"
+              className="min-w-0 flex-1 whitespace-normal"
             >
               Pay {amountLabel} & start crafting
             </Button>
