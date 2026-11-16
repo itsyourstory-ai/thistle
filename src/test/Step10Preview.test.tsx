@@ -164,6 +164,15 @@ describe("Step10Preview — checkout CTA", () => {
     expect(screen.getByRole("button", { name: /pay/i })).toBeInTheDocument();
   });
 
+  // jsdom can't measure layout, so check the classes that let the label wrap
+  // instead of pushing the button off a narrow phone screen.
+  it("Pay button can shrink and wrap on a narrow screen", () => {
+    renderStep({ childName: "Ellie" });
+    const pay = screen.getByRole("button", { name: /pay/i });
+    expect(pay).toHaveClass("min-w-0");
+    expect(pay).toHaveClass("whitespace-normal");
+  });
+
   it("renders name and email inputs", () => {
     renderStep({ childName: "Ellie" });
     expect(screen.getByPlaceholderText(/sarah johnson/i)).toBeInTheDocument();
