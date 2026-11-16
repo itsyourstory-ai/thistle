@@ -3,6 +3,17 @@ import { sendTransactional, LOOPS_TEMPLATES } from "./loops.ts";
 
 declare const EdgeRuntime: { waitUntil(p: Promise<unknown>): void };
 
+// AIDEV-NOTE (THI-72): Supabase Auth rejects any hook reply that isn't JSON
+// ("Invalid JSON response. Received content-type: text/plain") and fails the
+// whole sign-up or password reset with it. Every success reply must go through
+// here, never a bare `new Response("OK")`.
+function hookOk(): Response {
+  return new Response(JSON.stringify({}), {
+    status: 200,
+    headers: { "Content-Type": "application/json" },
+  });
+}
+
 export async function handleAuthEmailHook(req: Request): Promise<Response> {
   // 1. Non-POST → 400
   if (req.method !== "POST") {
@@ -48,7 +59,7 @@ export async function handleAuthEmailHook(req: Request): Promise<Response> {
     varName = "resetUrl";
   } else {
     console.warn("[auth-email-hook] unmapped action type:", email_data.email_action_type);
-    return new Response("OK", { status: 200 });
+    return hookOk();
   }
 
   // 6. Build the verification URL
@@ -75,5 +86,5 @@ export async function handleAuthEmailHook(req: Request): Promise<Response> {
     await sendPromise;
   }
 
-  return new Response("OK", { status: 200 });
+  return hookOk();
 }
