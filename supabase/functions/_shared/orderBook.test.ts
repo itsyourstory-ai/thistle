@@ -176,6 +176,6 @@ Deno.test("link: never touches another user's order, even with the bypass on", a
 
 Deno.test("link: never overwrites a book already linked to someone else's order", async () => {
   const fake = makeFakeOrders({ id: "o1", user_id: "someone-else", book_id: "their-book" });
-  await linkBookToOrder(fake.db, { orderId: "o1", userId: "u1", bookId: "b1" });
+  assertEquals(await linkBookToOrder(fake.db, { orderId: "o1", userId: "u1", bookId: "b1" }), false);
   assertEquals(fake.row.book_id, "their-book");
 });

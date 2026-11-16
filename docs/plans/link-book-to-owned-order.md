@@ -31,6 +31,13 @@ has no "first call wins" race to guard, so the helper is a plain
 "link if owned" update, not a copy of `claimOrderBook`. It reuses the
 existing `OrdersDb` fake-friendly client type.
 
+Behaviour change: the old bypass update ignored database errors; the helper
+throws on one (like `claimOrderBook`). The handler catches that, deletes the
+stub `generated_books` row it just created (so no book is left stuck at
+"story" with no order), and rethrows, so the caller gets the usual 500. If the
+order simply isn't the caller's, the helper returns `false` and the handler
+logs a warning and carries on (book created, not linked).
+
 Not changed: the paid path (already correct), the "one paid order, one book"
 logic (THI-36, done), any migration, RLS or GRANT.
 
