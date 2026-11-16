@@ -45,12 +45,15 @@ const US_STATES = [
   { code: "WY", name: "Wyoming" },
 ] as const;
 
+// AIDEV-NOTE: Only list what the app does today (THI-39). THI-21 adds the PDF
+// download line back when it ships.
 const DIGITAL_FEATURES = [
-  "Full illustrated eBook (PDF)",
-  "Delivered instantly by email",
-  "Shareable gift link",
-  "Print it yourself anytime",
+  "Fully illustrated book you can view in the app",
+  "Email when your book is ready",
 ];
+
+// AIDEV-NOTE: Hidden while HARDCOVER_ENABLED is off. Before hardcover returns
+// (THI-49), the shipping line must match Lulu's real timelines.
 
 const HARDCOVER_FEATURES = [
   "Everything in Digital",
@@ -396,32 +399,9 @@ export default function Step9Preview() {
             {name}'s story is ready to print.
           </h1>
           <p className="text-muted-foreground text-lg text-left">
-            Choose your format and place your order. Every page will be yours to review and edit after checkout.
+            Choose your format and place your order. We'll email you when the book is ready.
           </p>
         </div>
-
-        {/* Testimonial */}
-        <figure
-          className="mb-6 rounded-2xl p-5 border"
-          style={{
-            backgroundColor: "hsl(100 52% 20% / 0.08)",
-            borderColor: "hsl(100 52% 20% / 0.2)",
-          }}
-        >
-          <span
-            className="block text-2xl leading-none mb-2 font-serif"
-            style={{ color: "hsl(100 52% 20%)" }}
-            aria-hidden="true"
-          >
-            "
-          </span>
-          <blockquote className="text-sm md:text-base font-serif italic leading-relaxed text-wizard/90">
-            She opened the first page and whispered, "Grandma, it's me." I still can't stop thinking about that moment.
-          </blockquote>
-          <figcaption className="mt-3 text-xs font-medium text-wizard/65">
-            — Carol, grandmother
-          </figcaption>
-        </figure>
 
         {/* Cover */}
         <div className="flex flex-wrap gap-4 mb-8">
@@ -464,7 +444,6 @@ export default function Step9Preview() {
             <div className="flex items-baseline justify-between mb-3">
               <div>
                 <span className="font-semibold">Digital Book</span>
-                <span className="ml-2 text-xs text-muted-foreground">Instant delivery</span>
               </div>
               <span className="text-lg font-bold text-wizard">$9.99</span>
             </div>
@@ -516,7 +495,6 @@ export default function Step9Preview() {
         <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 text-xs text-muted-foreground mb-8">
           <span>🔒 Secure checkout</span>
           <span>💳 All major cards accepted</span>
-          <span>📦 Free shipping to the US</span>
         </div>
 
         {/* Buyer details */}
