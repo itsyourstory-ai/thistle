@@ -20,6 +20,7 @@ import {
   type BookDecision,
   claimOrderBook,
   decideBookForOrder,
+  linkBookToOrder,
   orderPaymentState,
 } from "../_shared/orderBook.ts";
 import {
@@ -659,11 +660,23 @@ Deno.serve(async (req) => {
           );
         }
       } else if (order_id) {
-        // Dev bypass: link the book back to the order as before (see THI-59).
-        await supabase
-          .from("orders")
-          .update({ book_id: bookId, updated_at: new Date().toISOString() })
-          .eq("id", order_id);
+        // Dev bypass: no paid-order check ran, so only link an order the
+        // caller owns (THI-59).
+        let linked = false;
+        try {
+          linked = await linkBookToOrder(supabase, {
+            orderId: order_id,
+            userId: user.id,
+            bookId,
+          });
+        } catch (e) {
+          // Don't leave a stub row stuck at "story" with no order and no worker.
+          await supabase.from("generated_books").delete().eq("id", bookId);
+          throw e;
+        }
+        if (!linked) {
+          console.warn("generate-book: bypass order not linked (not owned by caller)", { order_id });
+        }
       }
     }
 
