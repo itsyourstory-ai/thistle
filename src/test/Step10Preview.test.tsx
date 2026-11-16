@@ -146,9 +146,9 @@ describe("Step10Preview — honest copy", () => {
     expect(heading).not.toBeInTheDocument();
   });
 
-  it("includes an 'after checkout' promise somewhere on the page", () => {
+  it("promises an email when the book is ready, not an editing step (THI-39)", () => {
     renderStep({ childName: "Ellie" });
-    expect(screen.getByText(/after checkout/i)).toBeInTheDocument();
+    expect(screen.getByText(/we'll email you when the book is ready/i)).toBeInTheDocument();
   });
 
   it("renders a heading for the child's name", () => {
@@ -272,6 +272,38 @@ describe("Step10Preview — Payment Element", () => {
     await waitFor(() => {
       expect(screen.getByText(/unable to initialize payment/i)).toBeInTheDocument();
     });
+  });
+});
+
+// ── Checkout promises match what we deliver (THI-39) ──────────────────────────
+
+describe("Step10Preview — checkout only promises what we deliver (THI-39)", () => {
+  it("does not show the invented testimonial", () => {
+    renderStep({ childName: "Ellie" });
+    expect(screen.queryByText(/carol, grandmother/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/grandma, it's me/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole("blockquote")).not.toBeInTheDocument();
+  });
+
+  it("does not promise a PDF, instant delivery, a gift link, printing or editing", () => {
+    const { container } = renderStep({ childName: "Ellie" });
+    const text = container.textContent ?? "";
+    expect(text).not.toMatch(/pdf/i);
+    expect(text).not.toMatch(/instant/i);
+    expect(text).not.toMatch(/gift link/i);
+    expect(text).not.toMatch(/print it yourself/i);
+    expect(text).not.toMatch(/review and edit/i);
+  });
+
+  it("does not promise free shipping while hardcover is off", () => {
+    const { container } = renderStep({ childName: "Ellie" });
+    expect(container.textContent ?? "").not.toMatch(/shipping/i);
+  });
+
+  it("tells the buyer what they get today: a book to view in the app and an email when it's ready", () => {
+    renderStep({ childName: "Ellie" });
+    expect(screen.getByText(/fully illustrated book you can view in the app/i)).toBeInTheDocument();
+    expect(screen.getByText(/email when your book is ready/i)).toBeInTheDocument();
   });
 });
 
