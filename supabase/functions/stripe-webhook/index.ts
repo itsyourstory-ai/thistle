@@ -7,6 +7,7 @@ import {
   maybeSendRefund,
   type OrderRow,
 } from "../_shared/orderEmails.ts";
+import { startBookForOrder } from "../_shared/serverStart.ts";
 
 type SupabaseServiceClient = ReturnType<typeof createServiceRoleClient>;
 
@@ -162,6 +163,42 @@ Deno.serve(async (req) => {
       .eq("stripe_payment_intent_id", pi.id)
       .neq("status", "paid");
     await sendReceiptForPaymentIntent(supabase, pi.id);
+
+    // Start the book from here, so a buyer who closes the tab after paying still
+    // gets one (THI-38). generate-book returns the existing book if the browser
+    // already started it. On a temporary failure, release the idempotency row and
+    // return 500 so Stripe delivers the event again (the order update and receipt
+    // above are safe to repeat).
+    const order = await findOrderByPaymentIntent(supabase, pi.id);
+    if (!order) {
+      console.warn(`stripe-webhook book start skipped: no order for PaymentIntent ${pi.id}`);
+    } else {
+      const result = await startBookForOrder(
+        (name, body) => supabase.functions.invoke(name, { body }),
+        order.id,
+      );
+      if (result.outcome === "retry") {
+        console.error(
+          `stripe-webhook: could not start the book for order ${order.id} (generate-book status ${result.status ?? "none"}); asking Stripe to retry`,
+        );
+        const { error: releaseErr } = await supabase
+          .from("stripe_webhook_events")
+          .delete()
+          .eq("event_id", event.id);
+        // If this fails, Stripe's redelivery is dropped as a duplicate and the start is lost.
+        if (releaseErr) console.error("stripe-webhook: could not release event for retry:", releaseErr);
+        return new Response(JSON.stringify({ error: "Could not start the book." }), {
+          status: 500,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+      if (result.outcome === "skipped") {
+        // A paid order with no book. Nothing retries this, so make it easy to find in the logs.
+        console.error(
+          `stripe-webhook: PAID ORDER WITHOUT BOOK: order ${order.id} was paid but generate-book refused to start a book (status ${result.status}: ${result.detail ?? "no reason given"}). The browser may still start it; if not, a person must.`,
+        );
+      }
+    }
   } else if (event.type === "payment_intent.payment_failed") {
     const pi = event.data.object as Stripe.PaymentIntent;
     await supabase

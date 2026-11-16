@@ -226,9 +226,9 @@ Other routes: `/` (landing, or redirect to dashboard when signed in), `/login`, 
 
 ### Purchase and generation flow
 
-1. Checkout (`Step10Preview`) calls `create-payment-intent`, which creates the Stripe PaymentIntent and an `orders` row (`status = 'pending'`).
-2. The browser confirms payment with Stripe. `stripe-webhook` marks the order `paid` and sends the receipt.
-3. The generating step (`Step9Generating`) calls `generate-book` with the brief and `order_id`. `generate-book` checks the order is paid, writes the story, then starts `generate-book-images` in the background.
+1. Checkout (`Step10Preview`) calls `create-payment-intent`, which creates the Stripe PaymentIntent and an `orders` row (`status = 'pending'`). A second `create-payment-intent` call, made just before payment, saves the brief and approved character portrait in `order_book_inputs` (so the server can start the book without the browser). It is separate from the buyer-details call because the portrait is a multi-MB image.
+2. The browser confirms payment with Stripe. `stripe-webhook` marks the order `paid`, sends the receipt, then starts the book by calling `generate-book` with the service-role key and just the `order_id`. If that fails temporarily it returns 500 so Stripe retries.
+3. The generating step (`Step9Generating`) also calls `generate-book` with the brief and `order_id`. One paid order = one book, so whichever call comes second just gets the existing book back. `generate-book` checks the order is paid, writes the story, then starts `generate-book-images` in the background.
 4. `generate-book-images` generates portraits and pages, re-invoking itself in time slices until done, uploads to Google Drive, and sends the book ready / failed email.
 5. The browser polls `generated_books.pipeline_status` for progress.
 
@@ -244,10 +244,10 @@ All server logic runs in `supabase/functions/`. The client calls them through `c
 | `generate-cover` | Generates the book cover image |
 | `generate-character-portrait` | Generates a portrait for one character |
 | `extract-appearance-traits` | Vision pre-pass: extracts appearance features from an uploaded photo |
-| `create-payment-intent` | Creates/updates the Stripe PaymentIntent and the `orders` row; applies promo codes |
-| `stripe-webhook` | Handles Stripe events (paid, failed, refunded) and sends order emails |
+| `create-payment-intent` | Creates/updates the Stripe PaymentIntent and the `orders` row; applies promo codes; saves the brief + portrait in `order_book_inputs` |
+| `stripe-webhook` | Handles Stripe events (paid, failed, refunded), sends order emails, and starts the book after payment |
 | `nudge-abandoned-orders` | Scheduled (pg_cron) abandoned-checkout email |
-| `generate-book` | Paid-order gate + full story text generation; starts the image pipeline |
+| `generate-book` | Paid-order gate + full story text generation; starts the image pipeline. Called by the browser (user JWT + brief) or by `stripe-webhook` (service-role key + `order_id`, brief read from `order_book_inputs`) |
 | `generate-book-images` | Generates portraits and page illustrations; self-chains until done |
 | `export-book-to-drive` / `export-book-images-to-drive` | Exports the manuscript and images to the team's Google Drive |
 | `sync-contact` | Syncs the signed-in user to Loops; sends the welcome email |
@@ -264,6 +264,7 @@ Migrations live in `supabase/migrations/`. Don't use `supabase db push` (see [Kn
 - `profiles` — one row per user (`subscribed` marketing flag, `welcomed_at`)
 - `book_drafts` — in-progress wizard answers; users manage their own
 - `orders` — one row per checkout: product, amounts, buyer, shipping, Stripe ids, `status`, `book_id`, email stamps
+- `order_book_inputs` — the brief and approved character portrait saved at checkout, one row per order; service_role only. The portrait is cleared when the book is done; the brief stays
 - `generated_books` — one row per book; stores `brief` (jsonb), `status`, `parsed` story output, `pipeline_status` / `pipeline_progress`, email stamps. Users can read their own rows (not the buyer email/name columns).
 - `book_images` — generated portraits and page images (base64 in `image_data_url`); service_role only
 - `book_image_upload_attempts` — Drive upload tracking; service_role only

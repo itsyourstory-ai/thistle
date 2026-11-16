@@ -13,6 +13,7 @@ import {
   type ShippingAddress,
 } from "../_shared/stripe.ts";
 import { sanitizeUserText, isValidEmail } from "../_shared/sanitize.ts";
+import { saveBookInputsIfSent } from "../_shared/serverStart.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -118,12 +119,16 @@ Deno.serve(async (req) => {
     // overwrite a previously applied valid discount or update the PI amount.
     if (discountInvalid && existingOrder?.stripe_payment_intent_id) {
       const pi = await stripe.paymentIntents.retrieve(existingOrder.stripe_payment_intent_id);
+      // This path returns before the order update below, but the book details
+      // still need saving (THI-38).
+      const savedOnInvalidCode = await saveBookInputsIfSent(supabase, existingOrder.id, body);
       return jsonResponse({
         client_secret: pi.client_secret,
         order_id: existingOrder.id,
         amount_cents: existingOrder.amount_cents,
         discount_cents: existingOrder.discount_cents,
         discount_invalid: true,
+        ...(savedOnInvalidCode !== null ? { book_inputs_saved: savedOnInvalidCode } : {}),
       });
     }
 
@@ -203,12 +208,20 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Save the brief and approved portrait so stripe-webhook can start the book
+    // if the buyer's browser never does (THI-38). Only the pre-payment call sends
+    // them. A failure must not block payment, so it is reported in
+    // book_inputs_saved (the app retries) instead of failing the request.
+    const bookInputsSaved = await saveBookInputsIfSent(supabase, orderId, body);
+
     return jsonResponse({
       client_secret: clientSecret,
       order_id: orderId,
       amount_cents: amountCents,
       discount_cents: appliedDiscountCents,
       ...(discountInvalid ? { discount_invalid: true } : {}),
+      // Lets the app retry a failed save before the buyer pays (THI-38).
+      ...(bookInputsSaved !== null ? { book_inputs_saved: bookInputsSaved } : {}),
     });
   } catch (err) {
     console.error("create-payment-intent error:", err);

@@ -19,3 +19,32 @@ export function sanitizeUserText(input: unknown, maxLen = 2000): string {
 export function isValidEmail(s: unknown): boolean {
   return typeof s === "string" && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s);
 }
+
+// Recursively strip base64 `data:` URLs and known photo fields from a brief.
+// The text engine never reads these, and dragging multi-MB strings through
+// JSON.parse + multiple in-memory copies blows the edge-runtime memory ceiling
+// (HTTP 546 "WORKER_LIMIT"). Also keeps reference photos of children out of
+// the database copy of the brief.
+// deno-lint-ignore no-explicit-any
+export function stripDataUrls<T>(value: T): T {
+  if (value == null) return value;
+  if (typeof value === "string") {
+    // deno-lint-ignore no-explicit-any
+    return (value.startsWith("data:") ? null : value) as any;
+  }
+  // deno-lint-ignore no-explicit-any
+  if (Array.isArray(value)) return value.map(stripDataUrls) as any;
+  if (typeof value === "object") {
+    const out: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+      if (k === "photo" || k === "photos" || k === "photoDataUrl") {
+        out[k] = null;
+        continue;
+      }
+      out[k] = stripDataUrls(v);
+    }
+    // deno-lint-ignore no-explicit-any
+    return out as any;
+  }
+  return value;
+}
