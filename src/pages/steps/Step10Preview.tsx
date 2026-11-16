@@ -5,6 +5,7 @@ import { useWizard } from "@/contexts/WizardContext";
 import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
 import { stripePromise } from "@/lib/stripe";
 import { callEdge } from "@/lib/edgeFunctions";
+import { buildBrief } from "@/lib/buildBrief";
 import { useTestMode } from "@/lib/testMode";
 import { HARDCOVER_ENABLED } from "@/lib/checkoutPlans";
 
@@ -295,6 +296,18 @@ export default function Step9Preview() {
     setAmountCents(data.amount_cents);
   };
 
+  const PRICE_CHANGED = "The price changed. Please review the new total and tap Pay again.";
+
+  // If the server recalculated a different price than the one on screen, show it
+  // and return true so the caller stops and the buyer sees it before paying.
+  const priceChanged = (newAmount: unknown): boolean => {
+    if (typeof newAmount === "number" && amountCents != null && newAmount !== amountCents) {
+      setAmountCents(newAmount);
+      return true;
+    }
+    return false;
+  };
+
   // Save the buyer's name and email on the order before Stripe confirms, so
   // the receipt and other order emails have an address (THI-35). Re-sends the
   // applied promo code so this update doesn't drop the discount. A failure
@@ -302,26 +315,57 @@ export default function Step9Preview() {
   // recalculated a different price, stop so the buyer sees it before paying.
   const saveBuyerDetails = async (): Promise<string | null> => {
     if (!draftId) return null;
+    const orderFields = {
+      product: selected,
+      draft_id: draftId,
+      buyer_name: buyerName.trim(),
+      buyer_email: buyerEmail.trim(),
+      ...(appliedDiscountCode ? { discount_code: appliedDiscountCode } : {}),
+      ...shippingPayload(),
+    };
     try {
-      const { data, error } = await callEdge("create-payment-intent", {
-        product: selected,
-        draft_id: draftId,
-        buyer_name: buyerName.trim(),
-        buyer_email: buyerEmail.trim(),
-        ...(appliedDiscountCode ? { discount_code: appliedDiscountCode } : {}),
-        ...shippingPayload(),
-      });
+      const { data, error } = await callEdge("create-payment-intent", orderFields);
       if (error) {
         console.error("Failed to save buyer details on order:", error);
-        return null;
-      }
-      const newAmount = data?.amount_cents;
-      if (typeof newAmount === "number" && amountCents != null && newAmount !== amountCents) {
-        setAmountCents(newAmount);
-        return "The price changed. Please review the new total and tap Pay again.";
+      } else if (priceChanged(data?.amount_cents)) {
+        return PRICE_CHANGED;
       }
     } catch (err) {
       console.error("Failed to save buyer details on order:", err);
+    }
+    // Always try to save the book details too, even if the call above failed:
+    // that is the case this exists for.
+    return saveBookInputs(orderFields);
+  };
+
+  // AIDEV-NOTE (THI-38): saves the brief and the approved portrait on the order
+  // so Stripe's payment-succeeded webhook can start the book even if the buyer
+  // closes the tab. It's a separate call from saveBuyerDetails on purpose: the
+  // portrait is a multi-MB image, and if that upload fails the buyer's email
+  // must already be saved. It re-sends the same order fields so it doesn't blank
+  // them (create-payment-intent writes whatever it is sent). Must finish before
+  // payment is confirmed, or the webhook could fire with nothing saved. It tries
+  // twice (the server says in book_inputs_saved whether its save worked). If both
+  // fail it's logged and payment still goes ahead: the browser starts the book
+  // if the tab stays open, and the server logs a paid order with no book.
+  // Returns a message if the price changed, like saveBuyerDetails.
+  const saveBookInputs = async (orderFields: Record<string, unknown>): Promise<string | null> => {
+    const body = {
+      ...orderFields,
+      brief: buildBrief(answers) as unknown as Record<string, unknown>,
+      seed_portrait_data_url: answers.characterPortrait?.dataUrl || undefined,
+    };
+    for (let attempt = 1; attempt <= 2; attempt++) {
+      try {
+        const { data, error } = await callEdge("create-payment-intent", body);
+        if (!error) {
+          if (priceChanged(data?.amount_cents)) return PRICE_CHANGED;
+          if (data?.book_inputs_saved !== false) return null;
+        }
+        console.error(`Failed to save book details on order (attempt ${attempt}):`, error ?? "not saved");
+      } catch (err) {
+        console.error(`Failed to save book details on order (attempt ${attempt}):`, err);
+      }
     }
     return null;
   };

@@ -18,6 +18,7 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
 import { isServiceRoleRequest, rateLimitExceeded, requireAuthedUser, unauthorized } from "../_shared/auth.ts";
+import { type ClearSeedDb, clearSeedPortraitForBook } from "../_shared/serverStart.ts";
 import { assertUuid } from "../_shared/validation.ts";
 import { checkRateLimit } from "../_shared/rateLimit.ts";
 import {
@@ -710,6 +711,14 @@ Deno.serve(async (req) => {
       stage: "done", current: 1, total: 1, message: "All done!",
     });
     await maybeSendReady(supabase, bookRow);
+
+    // The saved seed portrait (THI-38) isn't needed once the book is done.
+    // Best effort: the book is already finished and the buyer emailed.
+    try {
+      await clearSeedPortraitForBook(supabase as unknown as ClearSeedDb, bookId);
+    } catch (e) {
+      console.error("generate-book-images: could not clear the saved seed portrait:", e);
+    }
 
     return new Response(
       JSON.stringify({ ok: true, book_id: bookId, done: true, drive_export: exportResult }),

@@ -9,6 +9,8 @@
  * 5. create-payment-intent is called on mount and plan select
  * 5a. Only the digital plan is offered while hardcover is off (THI-35)
  * 5b. Buyer name/email are sent to create-payment-intent before payment (THI-35)
+ * 5c. The brief and approved portrait are saved on the order before payment, so the
+ *     server can start the book if the browser never does (THI-38)
  * 6. Pay button shows server-returned amount
  * 7. Successful payment navigates to step 12 and saves orderId
  * 8. Failed payment shows error message, does not navigate
@@ -351,7 +353,9 @@ describe("Step10Preview — buyer details reach the server before payment (THI-3
   it("sends buyer_name and buyer_email to create-payment-intent before confirmPayment", async () => {
     const order: string[] = [];
     vi.mocked(callEdge).mockImplementation(async (_name, body) => {
-      if ((body as Record<string, unknown>).buyer_email) order.push("update-order");
+      const b = body as Record<string, unknown>;
+      // The separate brief-saving call (THI-38) also carries the buyer fields; skip it here.
+      if (b.buyer_email && !b.brief) order.push("update-order");
       return {
         data: { client_secret: "pi_test_secret", order_id: "order-123", amount_cents: 999, discount_cents: 0 },
         error: null,
@@ -378,6 +382,155 @@ describe("Step10Preview — buyer details reach the server before payment (THI-3
     expect(order).toEqual(["update-order", "confirm"]);
   });
 
+  // THI-38: create-payment-intent reads body.brief and body.seed_portrait_data_url
+  // and saves them on the order. Without them the server can't start the book.
+  // They go in their own call, after the buyer details are saved, because the
+  // portrait is a multi-MB image and a failed upload must not lose the buyer's
+  // email (THI-35).
+  it("saves the brief and approved portrait on the order, after the buyer details and before payment (THI-38)", async () => {
+    const portrait = "data:image/png;base64,AAAA";
+    const order: string[] = [];
+    vi.mocked(callEdge).mockImplementation(async (_name, body) => {
+      const b = body as Record<string, unknown>;
+      if (b.brief) order.push("save-inputs");
+      else if (b.buyer_email) order.push("save-buyer");
+      return {
+        data: { client_secret: "pi_test_secret", order_id: "order-123", amount_cents: 999, discount_cents: 0 },
+        error: null,
+      };
+    });
+    mockConfirmPayment.mockImplementation(async () => {
+      order.push("confirm");
+      return { error: null };
+    });
+
+    renderStep(
+      { childName: "Ellie", characterPortrait: { status: "ready", dataUrl: portrait } },
+      "draft-1",
+    );
+    await fillBuyerAndPay();
+    await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith("/step/12-generating"));
+
+    // Same field names create-payment-intent reads; it also gets the buyer
+    // details again so this call doesn't blank them on the order.
+    expect(callEdge).toHaveBeenCalledWith("create-payment-intent", {
+      product: "digital",
+      draft_id: "draft-1",
+      buyer_name: "Sarah Johnson",
+      buyer_email: "sarah@example.com",
+      brief: expect.objectContaining({ child: expect.objectContaining({ name: "Ellie" }) }),
+      seed_portrait_data_url: portrait,
+    });
+    expect(order).toEqual(["save-buyer", "save-inputs", "confirm"]);
+  });
+
+  it("still pays if saving the brief fails, and the buyer details were already saved (THI-38)", async () => {
+    vi.mocked(callEdge).mockImplementation(async (_name, body) => {
+      if ((body as Record<string, unknown>).brief) return { data: null, error: new Error("payload too large") };
+      return {
+        data: { client_secret: "pi_test_secret", order_id: "order-123", amount_cents: 999, discount_cents: 0 },
+        error: null,
+      };
+    });
+
+    renderStep({ childName: "Ellie" }, "draft-1");
+    await fillBuyerAndPay();
+    await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith("/step/12-generating"));
+
+    expect(callEdge).toHaveBeenCalledWith(
+      "create-payment-intent",
+      expect.objectContaining({ buyer_email: "sarah@example.com" }),
+    );
+    expect(mockConfirmPayment).toHaveBeenCalled();
+  });
+
+  it("retries saving the brief once when the server says it was not saved (THI-38)", async () => {
+    let briefCalls = 0;
+    vi.mocked(callEdge).mockImplementation(async (_name, body) => {
+      const data: Record<string, unknown> = {
+        client_secret: "pi_test_secret", order_id: "order-123", amount_cents: 999, discount_cents: 0,
+      };
+      if ((body as Record<string, unknown>).brief) {
+        briefCalls += 1;
+        // create-payment-intent reports book_inputs_saved; false means its save failed.
+        data.book_inputs_saved = briefCalls > 1;
+      }
+      return { data, error: null };
+    });
+
+    renderStep({ childName: "Ellie" }, "draft-1");
+    await fillBuyerAndPay();
+    await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith("/step/12-generating"));
+
+    expect(briefCalls).toBe(2);
+  });
+
+  it("retries the brief save once when the request itself fails, then still pays (THI-38)", async () => {
+    let briefCalls = 0;
+    vi.mocked(callEdge).mockImplementation(async (_name, body) => {
+      if ((body as Record<string, unknown>).brief) {
+        briefCalls += 1;
+        return { data: null, error: new Error("network") };
+      }
+      return {
+        data: { client_secret: "pi_test_secret", order_id: "order-123", amount_cents: 999, discount_cents: 0 },
+        error: null,
+      };
+    });
+
+    renderStep({ childName: "Ellie" }, "draft-1");
+    await fillBuyerAndPay();
+    await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith("/step/12-generating"));
+
+    expect(briefCalls).toBe(2); // one try plus one retry, not more
+    expect(mockConfirmPayment).toHaveBeenCalled();
+  });
+
+  it("still saves the brief when the buyer-details call fails, so the retry covers that case too (THI-38)", async () => {
+    let briefCalls = 0;
+    vi.mocked(callEdge).mockImplementation(async (_name, body) => {
+      const b = body as Record<string, unknown>;
+      if (b.brief) {
+        briefCalls += 1;
+        return { data: { client_secret: "s", order_id: "order-123", amount_cents: 999, discount_cents: 0, book_inputs_saved: true }, error: null };
+      }
+      if (b.buyer_email) return { data: null, error: new Error("rate limited") };
+      return { data: { client_secret: "s", order_id: "order-123", amount_cents: 999, discount_cents: 0 }, error: null };
+    });
+
+    renderStep({ childName: "Ellie" }, "draft-1");
+    await fillBuyerAndPay();
+    await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith("/step/12-generating"));
+
+    expect(briefCalls).toBe(1);
+  });
+
+  it("stops and shows the new total if the price changes during the brief save (THI-38)", async () => {
+    vi.mocked(callEdge).mockImplementation(async (_name, body) => {
+      const amount = (body as Record<string, unknown>).brief ? 499 : 999;
+      return { data: { client_secret: "s", order_id: "order-123", amount_cents: amount, discount_cents: 0, book_inputs_saved: true }, error: null };
+    });
+
+    renderStep({ childName: "Ellie" }, "draft-1");
+    await fillBuyerAndPay();
+
+    await screen.findByText(/the price changed/i);
+    expect(mockConfirmPayment).not.toHaveBeenCalled();
+    expect(mockNavigate).not.toHaveBeenCalledWith("/step/12-generating");
+  });
+
+  it("keeps the large brief and portrait off the mount and promo-code calls (THI-38)", async () => {
+    renderStep(
+      { childName: "Ellie", characterPortrait: { status: "ready", dataUrl: "data:image/png;base64,AAAA" } },
+      "draft-1",
+    );
+    await waitFor(() => screen.getByTestId("payment-element"));
+
+    const mountBody = vi.mocked(callEdge).mock.calls[0][1] as Record<string, unknown>;
+    expect(mountBody).not.toHaveProperty("brief");
+    expect(mountBody).not.toHaveProperty("seed_portrait_data_url");
+  });
+
   it("keeps an applied promo code on the pre-payment update", async () => {
     renderStep({ childName: "Ellie" }, "draft-1");
     await waitFor(() => screen.getByTestId("payment-element"));
@@ -392,20 +545,26 @@ describe("Step10Preview — buyer details reach the server before payment (THI-3
     fireEvent.click(screen.getByRole("button", { name: /^apply$/i }));
     await waitFor(() => screen.getByRole("button", { name: /pay \$4\.99/i }));
 
-    // The server keeps the discount, so the price is unchanged.
-    vi.mocked(callEdge).mockResolvedValueOnce({
+    // The server keeps the discount, so the price is unchanged. Both pre-payment
+    // calls (buyer details, then the brief save from THI-38) hit this mock.
+    vi.mocked(callEdge).mockResolvedValue({
       data: { client_secret: "pi_test_secret", order_id: "order-123", amount_cents: 499, discount_cents: 500 },
       error: null,
     });
     await fillBuyerAndPay();
     await waitFor(() => expect(mockConfirmPayment).toHaveBeenCalled());
 
-    const calls = vi.mocked(callEdge).mock.calls;
-    const preConfirm = calls[calls.length - 1][1] as Record<string, unknown>;
-    expect(preConfirm).toEqual(expect.objectContaining({
-      buyer_email: "sarah@example.com",
-      discount_code: "SAVE50",
-    }));
+    // Every call that writes the order must re-send the code, or it would reset the discount.
+    const preConfirm = vi.mocked(callEdge).mock.calls
+      .map(([, body]) => body as Record<string, unknown>)
+      .filter((body) => body.buyer_email);
+    expect(preConfirm).toHaveLength(2);
+    for (const body of preConfirm) {
+      expect(body).toEqual(expect.objectContaining({
+        buyer_email: "sarah@example.com",
+        discount_code: "SAVE50",
+      }));
+    }
   });
 
   it("does not resend a promo code the server rejected", async () => {

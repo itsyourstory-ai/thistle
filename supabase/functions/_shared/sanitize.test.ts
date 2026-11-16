@@ -1,5 +1,5 @@
 import { assertEquals } from "jsr:@std/assert";
-import { isValidEmail, sanitizeUserText } from "./sanitize.ts";
+import { isValidEmail, sanitizeUserText, stripDataUrls } from "./sanitize.ts";
 
 // ── sanitizeUserText ─────────────────────────────────────────────────────────
 
@@ -58,4 +58,22 @@ Deno.test("isValidEmail: rejects non-string input", () => {
   assertEquals(isValidEmail(undefined), false);
   assertEquals(isValidEmail(null), false);
   assertEquals(isValidEmail(42), false);
+});
+
+// ── stripDataUrls ────────────────────────────────────────────────────────────
+
+Deno.test("stripDataUrls: replaces any base64 data URL string with null, at any depth", () => {
+  const input = { a: "data:image/png;base64,AAAA", b: { c: ["ok", "data:image/jpeg;base64,BBBB"] } };
+  assertEquals<unknown>(stripDataUrls(input), { a: null, b: { c: ["ok", null] } });
+});
+
+Deno.test("stripDataUrls: nulls the known photo fields even when they are not data URLs", () => {
+  const input = { photo: "draft-photos/u/d/photo-0.jpg", photos: ["x"], photoDataUrl: "y", name: "Ellie" };
+  assertEquals<unknown>(stripDataUrls(input), { photo: null, photos: null, photoDataUrl: null, name: "Ellie" });
+});
+
+Deno.test("stripDataUrls: leaves ordinary values alone", () => {
+  assertEquals<unknown>(stripDataUrls({ n: 3, t: true, s: "hello", z: null }), { n: 3, t: true, s: "hello", z: null });
+  assertEquals(stripDataUrls(null), null);
+  assertEquals(stripDataUrls("plain"), "plain");
 });

@@ -11,8 +11,8 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
 import Stripe from "https://esm.sh/stripe@14.21.0?target=deno";
-import { isValidEmail, sanitizeUserText } from "../_shared/sanitize.ts";
-import { rateLimitExceeded } from "../_shared/auth.ts";
+import { isValidEmail, sanitizeUserText, stripDataUrls } from "../_shared/sanitize.ts";
+import { isServiceRoleRequest, rateLimitExceeded } from "../_shared/auth.ts";
 import { checkRateLimit } from "../_shared/rateLimit.ts";
 import { isCheckoutBypassAllowed } from "../_shared/checkoutBypass.ts";
 import { maybeSendCreating, maybeSendFailed } from "../_shared/bookEmails.ts";
@@ -23,6 +23,7 @@ import {
   linkBookToOrder,
   orderPaymentState,
 } from "../_shared/orderBook.ts";
+import { type InputsReadDb, loadServerStartInputs, type ServerStartInputs } from "../_shared/serverStart.ts";
 import {
   ageToBand,
   applyDedication,
@@ -317,32 +318,6 @@ async function shortHash(s: string): Promise<string> {
 
 // ---------- Handler ---------------------------------------------------------
 
-// Recursively strip base64 `data:` URLs and known photo fields from the brief.
-// The text engine never reads these, and dragging multi-MB strings through
-// JSON.parse + multiple in-memory copies blows the edge-runtime memory ceiling
-// (HTTP 546 "WORKER_LIMIT").
-function stripDataUrls<T>(value: T): T {
-  if (value == null) return value;
-  if (typeof value === "string") {
-    return (value.startsWith("data:") ? null : value) as any;
-  }
-  if (Array.isArray(value)) {
-    return value.map(stripDataUrls) as any;
-  }
-  if (typeof value === "object") {
-    const out: Record<string, unknown> = {};
-    for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
-      if (k === "photo" || k === "photos" || k === "photoDataUrl") {
-        out[k] = null;
-        continue;
-      }
-      out[k] = stripDataUrls(v);
-    }
-    return out as any;
-  }
-  return value;
-}
-
 /** The order already has a book in progress or done: hand back its id. */
 function existingBookResponse(bookId: string): Response {
   return new Response(
@@ -358,45 +333,84 @@ Deno.serve(async (req) => {
     const OPENROUTER_API_KEY = Deno.env.get("OPENROUTER_API_KEY");
     if (!OPENROUTER_API_KEY) throw new Error("OPENROUTER_API_KEY is not configured");
 
-    // Resolve the caller from the forwarded JWT. Login is required.
-    // SUPABASE_ANON_KEY is deprecated in newer projects; fall back to parsing
-    // SUPABASE_PUBLISHABLE_KEYS (a JSON dict) if the legacy key is absent.
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const anonKey = Deno.env.get("SUPABASE_ANON_KEY") ||
-      (JSON.parse(Deno.env.get("SUPABASE_PUBLISHABLE_KEYS") ?? "{}").default ?? "");
-    const userClient = createClient(supabaseUrl, anonKey, {
-      global: { headers: { Authorization: req.headers.get("Authorization") ?? "" } },
-    });
-    const { data: { user } } = await userClient.auth.getUser();
-    if (!user) {
-      return new Response(
-        JSON.stringify({ error: "Authentication required." }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
+    const supabase = createClient(supabaseUrl, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+
+    // Two kinds of caller:
+    //  - The buyer's browser: a user JWT, with the brief in the body. Login is required.
+    //  - stripe-webhook (THI-38): the service-role key and just an order_id. It
+    //    starts the book after payment even if the buyer closed the tab. The brief,
+    //    portrait and buyer details come from the order; the book is created for
+    //    the order's owner.
+    // Everything after this point is shared, including the paid-order gate and
+    // the one-order-one-book logic.
+    // deno-lint-ignore no-explicit-any
+    let body: any;
+    let userId: string;
+    let serverStart: Extract<ServerStartInputs, { ok: true }> | null = null;
+    if (isServiceRoleRequest(req)) {
+      body = await req.json();
+      const loaded = await loadServerStartInputs(supabase as unknown as InputsReadDb, body.order_id);
+      if (!loaded.ok) {
+        return new Response(
+          JSON.stringify({ error: loaded.error }),
+          { status: loaded.status, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+      serverStart = loaded;
+      userId = loaded.userId;
+    } else {
+      // SUPABASE_ANON_KEY is deprecated in newer projects; fall back to parsing
+      // SUPABASE_PUBLISHABLE_KEYS (a JSON dict) if the legacy key is absent.
+      const anonKey = Deno.env.get("SUPABASE_ANON_KEY") ||
+        (JSON.parse(Deno.env.get("SUPABASE_PUBLISHABLE_KEYS") ?? "{}").default ?? "");
+      const userClient = createClient(supabaseUrl, anonKey, {
+        global: { headers: { Authorization: req.headers.get("Authorization") ?? "" } },
+      });
+      const { data: { user } } = await userClient.auth.getUser();
+      if (!user) {
+        return new Response(
+          JSON.stringify({ error: "Authentication required." }),
+          { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+      userId = user.id;
+
+      // Per-user rate limit. The service-role path (stripe-webhook) is trusted
+      // server-to-server and is not rate limited.
+      const allowed = await checkRateLimit(supabase, userId, "generate-book", 5, 60);
+      if (!allowed) return rateLimitExceeded(corsHeaders);
+
+      body = await req.json();
     }
 
-    // Per-user rate limit. generate-book is always a client-facing call
-    // (it requires a user JWT), so there is no internal-call case to skip.
-    const supabase = createClient(supabaseUrl, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
-    const allowed = await checkRateLimit(supabase, user.id, "generate-book", 5, 60);
-    if (!allowed) return rateLimitExceeded(corsHeaders);
-
-    const body = await req.json();
-    const rawBrief = stripDataUrls(body.brief || {});
-    const buyer_name: string | undefined = body.buyer_name || rawBrief.buyer_name;
+    // Where the request's inputs come from: the body for a browser call, the
+    // saved order for a server start (which never honors the dev bypass).
+    const input = serverStart
+      ? {
+        brief: serverStart.brief,
+        buyer_name: serverStart.buyerName ?? undefined,
+        buyer_email: serverStart.buyerEmail ?? "",
+        seed_portrait_data_url: serverStart.seedPortraitDataUrl,
+        order_id: serverStart.orderId,
+        bypass_checkout: false,
+      }
+      : body;
+    const rawBrief = stripDataUrls(input.brief || {});
+    const buyer_name: string | undefined = input.buyer_name || rawBrief.buyer_name;
     // Validate buyer_email; drop (store empty string) if malformed.
-    const rawBuyerEmail = body.buyer_email || rawBrief.buyer_email;
+    const rawBuyerEmail = input.buyer_email || rawBrief.buyer_email;
     const buyer_email: string = isValidEmail(rawBuyerEmail) ? rawBuyerEmail : "";
     const brief = { ...rawBrief, buyer_name, buyer_email };
     const revision_note: string | undefined = body.revision_note
       ? sanitizeUserText(body.revision_note, 4000)
       : undefined;
     const model: string = body.modelOverride || MODELS.book;
-    const seed_portrait_data_url: string | null = body.seed_portrait_data_url || null;
-    const order_id: string | null = body.order_id ?? null;
+    const seed_portrait_data_url: string | null = input.seed_portrait_data_url || null;
+    const order_id: string | null = input.order_id ?? null;
     // Dev bypass is only honored when the ALLOW_CHECKOUT_BYPASS secret is "true"
     // (never set in the shared project) and the Stripe key isn't live. See THI-37.
-    const bypassCheckout = isCheckoutBypassAllowed(body.bypass_checkout === true, {
+    const bypassCheckout = isCheckoutBypassAllowed(input.bypass_checkout === true, {
       ALLOW_CHECKOUT_BYPASS: Deno.env.get("ALLOW_CHECKOUT_BYPASS"),
       STRIPE_SECRET_KEY: Deno.env.get("STRIPE_SECRET_KEY"),
     });
@@ -427,10 +441,13 @@ Deno.serve(async (req) => {
         .from("orders")
         .select("id, status, stripe_payment_intent_id, book_id")
         .eq("id", order_id)
-        .eq("user_id", user.id)
+        .eq("user_id", userId)
         .maybeSingle();
 
-      if (orderErr || !order) {
+      // A database error is not "no such order": answer 500 so callers (the
+      // payment webhook) retry instead of giving up.
+      if (orderErr) throw new Error(`Order lookup failed: ${orderErr.message}`);
+      if (!order) {
         return new Response(
           JSON.stringify({ error: "Order not found." }),
           { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } },
@@ -490,7 +507,7 @@ Deno.serve(async (req) => {
             "id, pipeline_status, pipeline_progress, created_at, story_meta:parsed->meta, creating_email_sent_at, ready_email_sent_at, failed_email_sent_at",
           )
           .eq("id", order.book_id)
-          .eq("user_id", user.id)
+          .eq("user_id", userId)
           .maybeSingle();
         if (bookErr) throw new Error(`Book lookup failed: ${bookErr.message}`);
         existingBook = bookRow;
@@ -622,7 +639,7 @@ Deno.serve(async (req) => {
       // Insert stub row immediately so the client has an id to poll.
       const { data: stubRow, error: stubErr } = await supabase
         .from("generated_books")
-        .insert({ ...storyRowFields, user_id: user.id })
+        .insert({ ...storyRowFields, user_id: userId })
         .select("id")
         .single();
 
@@ -641,7 +658,7 @@ Deno.serve(async (req) => {
         // first. If we lose that race, drop our stub and return the winner.
         const won = await claimOrderBook(supabase, {
           orderId: order_id,
-          userId: user.id,
+          userId,
           bookId,
           claimFrom: bookDecision.claimFrom,
         });
@@ -651,7 +668,7 @@ Deno.serve(async (req) => {
             .from("orders")
             .select("book_id")
             .eq("id", order_id)
-            .eq("user_id", user.id)
+            .eq("user_id", userId)
             .maybeSingle();
           if (latest?.book_id) return existingBookResponse(latest.book_id);
           return new Response(
@@ -666,7 +683,7 @@ Deno.serve(async (req) => {
         try {
           linked = await linkBookToOrder(supabase, {
             orderId: order_id,
-            userId: user.id,
+            userId,
             bookId,
           });
         } catch (e) {
@@ -678,6 +695,17 @@ Deno.serve(async (req) => {
           console.warn("generate-book: bypass order not linked (not owned by caller)", { order_id });
         }
       }
+    }
+
+    // A server-started book has no browser to delete the finished draft (the
+    // browser path does it in Step9Generating), so do it here. Best effort.
+    if (serverStart?.draftId) {
+      const { error: draftErr } = await supabase
+        .from("book_drafts")
+        .delete()
+        .eq("id", serverStart.draftId)
+        .eq("user_id", userId);
+      if (draftErr) console.error("generate-book: draft cleanup failed:", draftErr);
     }
 
     const book = {
