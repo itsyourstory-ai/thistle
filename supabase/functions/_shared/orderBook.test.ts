@@ -3,6 +3,7 @@ import {
   claimOrderBook,
   STALE_STORY_MS,
   decideBookForOrder,
+  linkBookToOrder,
   orderPaymentState,
 } from "./orderBook.ts";
 
@@ -157,4 +158,24 @@ Deno.test("claim: never touches another user's order", async () => {
   const fake = makeFakeOrders({ id: "o1", user_id: "someone-else", book_id: null });
   assertEquals(await claimOrderBook(fake.db, { orderId: "o1", userId: "u1", bookId: "b1", claimFrom: null }), false);
   assertEquals(fake.row.book_id, null);
+});
+
+// ── linkBookToOrder (dev-bypass path, THI-59) ────────────────────────────────
+
+Deno.test("link: links the book to the caller's own order", async () => {
+  const fake = makeFakeOrders({ id: "o1", user_id: "u1", book_id: null });
+  assertEquals(await linkBookToOrder(fake.db, { orderId: "o1", userId: "u1", bookId: "b1" }), true);
+  assertEquals(fake.row.book_id, "b1");
+});
+
+Deno.test("link: never touches another user's order, even with the bypass on", async () => {
+  const fake = makeFakeOrders({ id: "o1", user_id: "someone-else", book_id: null });
+  assertEquals(await linkBookToOrder(fake.db, { orderId: "o1", userId: "u1", bookId: "b1" }), false);
+  assertEquals(fake.row.book_id, null);
+});
+
+Deno.test("link: never overwrites a book already linked to someone else's order", async () => {
+  const fake = makeFakeOrders({ id: "o1", user_id: "someone-else", book_id: "their-book" });
+  await linkBookToOrder(fake.db, { orderId: "o1", userId: "u1", bookId: "b1" });
+  assertEquals(fake.row.book_id, "their-book");
 });

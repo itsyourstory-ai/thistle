@@ -113,3 +113,24 @@ export async function claimOrderBook(
   if (error) throw error;
   return Array.isArray(data) && data.length > 0;
 }
+
+/**
+ * Dev-bypass path (THI-59): link `bookId` to the order, but only if the order
+ * belongs to `userId`. The bypass skips the paid-order check that normally
+ * proves ownership, and edge functions write with service_role (which skips
+ * RLS), so this filter is the only thing stopping a request from attaching a
+ * book to someone else's order. Returns false if no order of theirs matched.
+ */
+export async function linkBookToOrder(
+  db: OrdersDb,
+  args: { orderId: string; userId: string; bookId: string },
+): Promise<boolean> {
+  const { data, error } = await db
+    .from("orders")
+    .update({ book_id: args.bookId, updated_at: new Date().toISOString() })
+    .eq("id", args.orderId)
+    .eq("user_id", args.userId)
+    .select("id");
+  if (error) throw error;
+  return Array.isArray(data) && data.length > 0;
+}
