@@ -173,3 +173,63 @@ Deno.test("non-POST → 400", async () => {
   const res = await handleAuthEmailHook(req);
   assertEquals(res.status, 400);
 });
+
+// ── reply format (THI-72) ─────────────────────────────────────────────────────
+// Supabase Auth rejects a hook reply that isn't JSON ("Invalid JSON response.
+// Received content-type: text/plain"), and the whole sign-up fails with it.
+// The tests above only check status codes, which is how this slipped through.
+
+async function withHookEnv(extra: Record<string, string | null>, fn: () => Promise<void>) {
+  const vars: Record<string, string | null> = {
+    SEND_EMAIL_HOOK_SECRET: "v1," + TEST_SECRET,
+    SUPABASE_URL: "https://supabase.test",
+    ...extra,
+  };
+  const previous = Object.fromEntries(Object.keys(vars).map((k) => [k, Deno.env.get(k) ?? null]));
+  try {
+    for (const [k, v] of Object.entries(vars)) {
+      if (v === null) Deno.env.delete(k);
+      else Deno.env.set(k, v);
+    }
+    await fn();
+  } finally {
+    for (const [k, v] of Object.entries(previous)) {
+      if (v === null) Deno.env.delete(k);
+      else Deno.env.set(k, v);
+    }
+  }
+}
+
+async function assertJsonReply(res: Response) {
+  assertEquals(res.status, 200);
+  assertEquals(res.headers.get("content-type")?.startsWith("application/json"), true);
+  assertEquals(await res.json(), {});
+}
+
+Deno.test("sign-up email: the reply to Supabase Auth is JSON", async () => {
+  __resetLoopsMock();
+  await withHookEnv({}, async () => {
+    await assertJsonReply(await handleAuthEmailHook(makeRequest("signup")));
+  });
+});
+
+Deno.test("password reset email: the reply to Supabase Auth is JSON", async () => {
+  __resetLoopsMock();
+  await withHookEnv({}, async () => {
+    await assertJsonReply(await handleAuthEmailHook(makeRequest("recovery")));
+  });
+});
+
+Deno.test("an email type we don't send: the reply to Supabase Auth is still JSON", async () => {
+  __resetLoopsMock();
+  await withHookEnv({}, async () => {
+    await assertJsonReply(await handleAuthEmailHook(makeRequest("email_change")));
+  });
+});
+
+Deno.test("Loops is down: sign-up still gets a JSON reply (the email failing must not fail the sign-up)", async () => {
+  __resetLoopsMock();
+  await withHookEnv({ LOOPS_TRANSPORT: "live", LOOPS_API_KEY: null }, async () => {
+    await assertJsonReply(await handleAuthEmailHook(makeRequest("signup")));
+  });
+});
