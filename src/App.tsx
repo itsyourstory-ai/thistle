@@ -31,6 +31,7 @@ const StepSecretIngredient = lazy(() => import("./pages/steps/StepSecretIngredie
 const StepPlaceholder = lazy(() => import("./pages/steps/StepPlaceholder"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const ResumeDraft = lazy(() => import("./pages/ResumeDraft"));
+const BookView = lazy(() => import("./pages/BookView"));
 const Account = lazy(() => import("./pages/Account"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
@@ -64,6 +65,8 @@ const App = () => (
               <Route path="/login" element={<Login />} />
               <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
               <Route path="/resume/:draftId" element={<ProtectedRoute><ResumeDraft /></ProtectedRoute>} />
+              {/* Customer-facing book view — RLS on generated_books makes someone else's id a 404 */}
+              <Route path="/book/:id" element={<ProtectedRoute><BookView /></ProtectedRoute>} />
               {/* Wizard steps — WizardLayout stays mounted across step navigation for draft persistence */}
               <Route element={<ProtectedRoute><WizardLayout /></ProtectedRoute>}>
                 <Route path="/step/1-name" element={<Step1Name />} />

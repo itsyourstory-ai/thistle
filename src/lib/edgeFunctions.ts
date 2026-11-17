@@ -24,7 +24,8 @@ export type EdgeFnName =
   | "generate-character-portrait"
   | "extract-appearance-traits"
   | "generate-book"
-  | "generate-book-images";
+  | "generate-book-images"
+  | "get-book-image";
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
