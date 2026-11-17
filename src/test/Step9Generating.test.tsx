@@ -332,3 +332,57 @@ describe("Step9Generating — deterministic progress bar", () => {
     expect(screen.getByText(/page 3 of 10/i)).toBeInTheDocument();
   });
 });
+
+
+// ── Tests: a story that never finishes (THI-10) ───────────────────────────────
+
+describe("Step9Generating — story that never finishes", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    mockCallEdge.mockResolvedValue({ data: { id: "book-stuck" }, error: null });
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  async function renderWithStoryStartedMinutesAgo(minutes: number) {
+    mockGetBookStatus.mockResolvedValue({
+      pipeline_status: "story",
+      pipeline_progress: {
+        stage: "story",
+        current: 0,
+        total: 1,
+        started_at: new Date(Date.now() - minutes * 60_000).toISOString(),
+      },
+      pipeline_error: null,
+    });
+    renderStep({ childName: "Leo", orderId: "order-1" });
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+  }
+
+  it("offers 'Try again' instead of spinning forever once the story has been stuck for 10+ minutes", async () => {
+    await renderWithStoryStartedMinutesAgo(11);
+    expect(screen.getByRole("button", { name: /try again/i })).toBeInTheDocument();
+  });
+
+  it("stops checking on the book once it has told the buyer it's stuck", async () => {
+    await renderWithStoryStartedMinutesAgo(11);
+    const callsWhenStuck = mockGetBookStatus.mock.calls.length;
+
+    await act(async () => {
+      vi.advanceTimersByTime(60_000);
+    });
+
+    expect(mockGetBookStatus.mock.calls.length).toBe(callsWhenStuck);
+  });
+
+  it("keeps showing progress while the story is still within its normal time", async () => {
+    await renderWithStoryStartedMinutesAgo(1);
+    expect(screen.queryByRole("button", { name: /try again/i })).not.toBeInTheDocument();
+  });
+});

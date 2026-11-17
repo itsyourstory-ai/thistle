@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import React from "react";
 import { Route, Routes } from "react-router-dom";
-import { renderWithProviders, screen, userEvent, waitFor, fireEvent } from "@/test/utils";
+import { renderWithProviders, screen, userEvent, waitFor, fireEvent, act } from "@/test/utils";
 
 // --- Mocks ---
 
@@ -17,6 +17,11 @@ vi.mock("@/integrations/supabase/client", () => ({
       },
     })),
   },
+}));
+
+const mockCallEdge = vi.fn();
+vi.mock("@/lib/edgeFunctions", () => ({
+  callEdge: (...args: unknown[]) => mockCallEdge(...args),
 }));
 
 const mockFetchBookImage = vi.fn();
@@ -213,6 +218,130 @@ describe("BookView — a finished book", () => {
     const cols = mockSelect.mock.calls[0][0] as string;
     const asksForWholeBrief = cols.split(",").some((c) => c.trim() === "brief");
     expect(asksForWholeBrief).toBe(false);
+  });
+});
+
+describe("BookView — retrying a book that failed or got stuck (THI-10)", () => {
+  const minutesAgo = (m: number) => new Date(Date.now() - m * 60_000).toISOString();
+
+  it("buyer can try again when the book failed, and the page goes back to showing progress", async () => {
+    const user = userEvent.setup();
+    mockMaybeSingle
+      .mockResolvedValueOnce({ data: bookRow({ pipeline_status: "failed", parsed: null }), error: null })
+      .mockResolvedValue({
+        data: bookRow({
+          pipeline_status: "portraits",
+          pipeline_progress: { stage: "portraits", current: 0, total: 1 },
+          parsed: null,
+        }),
+        error: null,
+      });
+    mockCallEdge.mockResolvedValue({ data: { id: "book-1", queued: true, restarted: true }, error: null });
+    renderBookView();
+
+    await user.click(await screen.findByRole("button", { name: /try again/i }));
+
+    expect(mockCallEdge).toHaveBeenCalledWith("generate-book", { retry_book_id: "book-1" });
+    expect(await screen.findByText(/still being made/i)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /try again/i })).not.toBeInTheDocument();
+  });
+
+  it("buyer is told why when the retry doesn't work, and can try once more", async () => {
+    const user = userEvent.setup();
+    mockMaybeSingle.mockResolvedValue({ data: bookRow({ pipeline_status: "failed", parsed: null }), error: null });
+    mockCallEdge.mockResolvedValue({
+      data: null,
+      error: {
+        context: { json: async () => ({ error: "This order was refunded, so it can't be used to make a book." }) },
+      },
+    });
+    renderBookView();
+
+    await user.click(await screen.findByRole("button", { name: /try again/i }));
+
+    expect(await screen.findByText(/order was refunded/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /try again/i })).toBeEnabled();
+  });
+
+  it("buyer can't send two retries at once by double-clicking", async () => {
+    const user = userEvent.setup();
+    mockMaybeSingle.mockResolvedValue({ data: bookRow({ pipeline_status: "failed", parsed: null }), error: null });
+    mockCallEdge.mockReturnValue(new Promise(() => {})); // never answers
+    renderBookView();
+
+    const button = await screen.findByRole("button", { name: /try again/i });
+    await user.click(button);
+    await user.click(button);
+
+    expect(mockCallEdge).toHaveBeenCalledTimes(1);
+    expect(button).toBeDisabled();
+  });
+
+  it("buyer can try again when the story has been stuck for more than 10 minutes", async () => {
+    mockMaybeSingle.mockResolvedValue({
+      data: bookRow({
+        pipeline_status: "story",
+        pipeline_progress: { stage: "story", current: 0, total: 1, started_at: minutesAgo(11) },
+        parsed: null,
+      }),
+      error: null,
+    });
+    renderBookView();
+
+    expect(await screen.findByText(/taking longer than usual/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /try again/i })).toBeInTheDocument();
+  });
+
+  it("a page left open notices when the story has been running too long, with no reload", async () => {
+    vi.useFakeTimers({ toFake: ["Date", "setInterval", "clearInterval"] });
+    try {
+      mockMaybeSingle.mockResolvedValue({
+        data: bookRow({
+          pipeline_status: "story",
+          pipeline_progress: { stage: "story", current: 0, total: 1, started_at: minutesAgo(9) },
+          parsed: null,
+        }),
+        error: null,
+      });
+      renderBookView();
+      expect(await screen.findByText(/still being made/i)).toBeInTheDocument();
+
+      await act(async () => {
+        vi.advanceTimersByTime(2 * 60_000); // now 11 minutes in; the row hasn't changed
+      });
+
+      expect(await screen.findByText(/taking longer than usual/i)).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /try again/i })).toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("buyer is told the book is still being made when the server says it was already running", async () => {
+    const user = userEvent.setup();
+    mockMaybeSingle.mockResolvedValue({ data: bookRow({ pipeline_status: "failed", parsed: null }), error: null });
+    mockCallEdge.mockResolvedValue({ data: { id: "book-1", queued: false, existing: true }, error: null });
+    renderBookView();
+
+    await user.click(await screen.findByRole("button", { name: /try again/i }));
+
+    expect(await screen.findByText(/still being made\. please check back/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /try again/i })).toBeEnabled();
+  });
+
+  it("a story that only just started is still shown as being made, with no retry button", async () => {
+    mockMaybeSingle.mockResolvedValue({
+      data: bookRow({
+        pipeline_status: "story",
+        pipeline_progress: { stage: "story", current: 0, total: 1, started_at: minutesAgo(1) },
+        parsed: null,
+      }),
+      error: null,
+    });
+    renderBookView();
+
+    expect(await screen.findByText(/still being made/i)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /try again/i })).not.toBeInTheDocument();
   });
 });
 

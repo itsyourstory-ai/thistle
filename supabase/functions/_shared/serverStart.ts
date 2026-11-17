@@ -204,6 +204,55 @@ export async function loadServerStartInputs(
   };
 }
 
+/**
+ * Inputs for a buyer's retry of their own failed book (THI-10).
+ *
+ * After a reload the browser has no wizard answers, so it sends just the book
+ * id. We find the order that paid for that book, but only if it belongs to
+ * `userId` (the signed-in caller): edge functions write with service_role, which
+ * skips RLS, so this filter is what stops a request from touching another
+ * buyer's book. Someone else's book looks exactly like a missing one (404).
+ * The rest comes from the order's saved inputs, as for a server start.
+ */
+export async function loadRetryInputs(
+  db: InputsReadDb,
+  userId: string,
+  bookId: unknown,
+): Promise<ServerStartInputs> {
+  if (typeof bookId !== "string" || !bookId) {
+    return { ok: false, status: 400, error: "retry_book_id is required." };
+  }
+
+  const { data: order, error: orderErr } = await db
+    .from("orders")
+    .select("id")
+    .eq("book_id", bookId)
+    .eq("user_id", userId)
+    .maybeSingle();
+  // Postgres 22P02: the id isn't a UUID, so no book can have it.
+  if ((orderErr as { code?: string } | null)?.code === "22P02") {
+    return { ok: false, status: 404, error: "Book not found." };
+  }
+  if (orderErr) return { ok: false, status: 500, error: "Order lookup failed." };
+  if (!order) return { ok: false, status: 404, error: "Book not found." };
+
+  const loaded = await loadServerStartInputs(db, order.id);
+  // Belt and braces: never hand back inputs that belong to someone else.
+  if (loaded.ok && loaded.userId !== userId) {
+    return { ok: false, status: 404, error: "Book not found." };
+  }
+  // The buyer sees this message. Older orders have no saved details (THI-38),
+  // and "details for this order" means nothing to them.
+  if (!loaded.ok && loaded.status === 422) {
+    return {
+      ok: false,
+      status: 422,
+      error: "We can't restart this book automatically. Please email support@thistlebook.com and we'll sort it out.",
+    };
+  }
+  return loaded;
+}
+
 // ── stripe-webhook's side ────────────────────────────────────────────────────
 
 export type StartOutcome =

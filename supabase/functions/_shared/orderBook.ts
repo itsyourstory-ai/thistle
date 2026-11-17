@@ -37,6 +37,8 @@ export interface ExistingBook {
  * after this long lost its worker (timeout, deploy, eviction) and will never
  * finish or be marked failed, so it's safe to restart.
  */
+// AIDEV-NOTE: src/lib/bookRetry.ts mirrors this value so the book page can offer
+// "Try again" for a stuck story. A test there fails if the two drift apart.
 export const STALE_STORY_MS = 10 * 60 * 1000;
 
 function isStaleStory(book: ExistingBook, now: number): boolean {

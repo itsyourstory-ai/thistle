@@ -7,8 +7,9 @@
 
 import { Link, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import type { ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
 import DashboardHeader from "@/components/DashboardHeader";
 import BookReader, { type ReaderPage } from "@/components/BookReader";
 import EmptyState from "@/components/EmptyState";
@@ -16,16 +17,20 @@ import AsyncError from "@/components/AsyncError";
 import LoadingScreen from "@/components/LoadingScreen";
 import NotFound from "@/pages/NotFound";
 import { pipelineMessage } from "@/lib/loadingMessages";
+import { isStuckAtStory, retryBook } from "@/lib/bookRetry";
 
 const SUPPORT_EMAIL = "support@thistlebook.com";
 const POLL_MS = 5000;
+// How often the page re-checks whether a story has been running too long. The
+// row doesn't change when a worker dies, so nothing else would re-render it.
+const STUCK_CHECK_MS = 30_000;
 // Postgres "invalid input syntax for type uuid": the URL id isn't a real book id.
 const INVALID_UUID = "22P02";
 
 interface BookViewRow {
   id: string;
   pipeline_status: string | null;
-  pipeline_progress: { stage: string; current: number; total: number } | null;
+  pipeline_progress: { stage: string; current: number; total: number; started_at?: string } | null;
   parsed: unknown;
   child: { name?: string } | null;
 }
@@ -49,6 +54,51 @@ function readableBook(parsed: unknown) {
   return { title, pages: p.pages };
 }
 
+// "Try again" for a book that failed or got stuck (THI-10). The buyer's paid
+// order holds everything the server needs, so this only says which book.
+function RetryAction({ bookId, onRestarted }: { bookId: string; onRestarted: () => Promise<unknown> }) {
+  const [retrying, setRetrying] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [note, setNote] = useState<string | null>(null);
+
+  async function retry() {
+    setRetrying(true);
+    setError(null);
+    setNote(null);
+    try {
+      const result = await retryBook(bookId);
+      if (!result.ok) {
+        setError(result.message);
+      } else if (!result.restarted) {
+        // The server says the book is already running, so nothing was restarted.
+        setNote("We checked, and your book is still being made. Please check back in a few minutes.");
+      } else {
+        // The row now shows progress again, and the page goes back to checking on it.
+        await onRestarted();
+      }
+    } finally {
+      setRetrying(false);
+    }
+  }
+
+  return (
+    <div className="flex flex-col items-center gap-3">
+      <Button variant="wizard" size="pill" onClick={retry} disabled={retrying}>
+        {retrying ? "Restarting…" : "Try again"}
+      </Button>
+      {error && (
+        <p role="alert" className="max-w-[36ch] text-sm text-destructive">
+          {error}
+        </p>
+      )}
+      {note && <p className="max-w-[36ch] text-sm text-muted-foreground">{note}</p>}
+      <p className="max-w-[36ch] text-xs text-muted-foreground">
+        Still stuck? Email <SupportLink /> and we'll sort it out.
+      </p>
+    </div>
+  );
+}
+
 function Shell({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-screen bg-wizard-bg">
@@ -65,6 +115,13 @@ function Shell({ children }: { children: ReactNode }) {
 
 export default function BookView() {
   const { id } = useParams<{ id: string }>();
+
+  // Ticks so a page left open notices a story that has run too long.
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(Date.now()), STUCK_CHECK_MS);
+    return () => window.clearInterval(timer);
+  }, []);
 
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["book", id],
@@ -111,11 +168,23 @@ export default function BookView() {
         <EmptyState
           emoji="🌧️"
           title="Something went wrong with this book"
-          description={
-            <>
-              We're sorry. Email <SupportLink /> and we'll sort it out.
-            </>
-          }
+          description="We're sorry. Your payment is safe. Try again and we'll pick up where we left off."
+          action={<RetryAction bookId={data.id} onRestarted={refetch} />}
+        />
+      </Shell>
+    );
+  }
+
+  // The story run died without marking the book failed, so the page would show
+  // "still being made" forever. Offer the same retry (the server restarts it).
+  if (isStuckAtStory(data.pipeline_status, data.pipeline_progress, now)) {
+    return (
+      <Shell>
+        <EmptyState
+          emoji="⏳"
+          title="This is taking longer than usual"
+          description="Your book looks stuck. Your payment is safe. Try again and we'll start it again."
+          action={<RetryAction bookId={data.id} onRestarted={refetch} />}
         />
       </Shell>
     );
