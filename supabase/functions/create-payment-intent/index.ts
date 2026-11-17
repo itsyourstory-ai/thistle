@@ -14,6 +14,7 @@ import {
 } from "../_shared/stripe.ts";
 import { sanitizeUserText, isValidEmail } from "../_shared/sanitize.ts";
 import { saveBookInputsIfSent } from "../_shared/serverStart.ts";
+import { trySaveBuyerDetailsOnOrder } from "../_shared/orderBuyer.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -119,8 +120,15 @@ Deno.serve(async (req) => {
     // overwrite a previously applied valid discount or update the PI amount.
     if (discountInvalid && existingOrder?.stripe_payment_intent_id) {
       const pi = await stripe.paymentIntents.retrieve(existingOrder.stripe_payment_intent_id);
-      // This path returns before the order update below, but the book details
-      // still need saving (THI-38).
+      // This path returns before the order update below, but the buyer's details
+      // (THI-67) and the book details (THI-38) still need saving. The price
+      // fields are left alone on purpose. A failed save is logged, not thrown:
+      // payment must not break.
+      await trySaveBuyerDetailsOnOrder(supabase, existingOrder.id, {
+        buyer_name,
+        buyer_email,
+        shipping: normalizedShipping,
+      });
       const savedOnInvalidCode = await saveBookInputsIfSent(supabase, existingOrder.id, body);
       return jsonResponse({
         client_secret: pi.client_secret,
