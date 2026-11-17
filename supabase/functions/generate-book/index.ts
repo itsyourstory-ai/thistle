@@ -24,7 +24,12 @@ import {
   orderPaymentState,
 } from "../_shared/orderBook.ts";
 import { CAN_BECOME_PAID_FROM } from "../_shared/orderStatus.ts";
-import { type InputsReadDb, loadServerStartInputs, type ServerStartInputs } from "../_shared/serverStart.ts";
+import {
+  type InputsReadDb,
+  loadRetryInputs,
+  loadServerStartInputs,
+  type ServerStartInputs,
+} from "../_shared/serverStart.ts";
 import {
   ageToBand,
   applyDedication,
@@ -383,10 +388,25 @@ Deno.serve(async (req) => {
       if (!allowed) return rateLimitExceeded(corsHeaders);
 
       body = await req.json();
+
+      // A retry from the book page (THI-10) sends only `retry_book_id`: after a
+      // reload the browser has no brief. Load the saved inputs from the caller's
+      // own order. The caller stays the user, and the paid-order gate below still
+      // runs for them.
+      if (body.retry_book_id !== undefined) {
+        const loaded = await loadRetryInputs(supabase as unknown as InputsReadDb, userId, body.retry_book_id);
+        if (!loaded.ok) {
+          return new Response(
+            JSON.stringify({ error: loaded.error }),
+            { status: loaded.status, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+          );
+        }
+        serverStart = loaded;
+      }
     }
 
     // Where the request's inputs come from: the body for a browser call, the
-    // saved order for a server start (which never honors the dev bypass).
+    // saved order for a server start or a retry (neither honors the dev bypass).
     const input = serverStart
       ? {
         brief: serverStart.brief,
@@ -403,10 +423,12 @@ Deno.serve(async (req) => {
     const rawBuyerEmail = input.buyer_email || rawBrief.buyer_email;
     const buyer_email: string = isValidEmail(rawBuyerEmail) ? rawBuyerEmail : "";
     const brief = { ...rawBrief, buyer_name, buyer_email };
-    const revision_note: string | undefined = body.revision_note
+    // A server start or a retry is made from the saved order, so the request
+    // body can't steer the prompt or pick the model.
+    const revision_note: string | undefined = !serverStart && body.revision_note
       ? sanitizeUserText(body.revision_note, 4000)
       : undefined;
-    const model: string = body.modelOverride || MODELS.book;
+    const model: string = (!serverStart && body.modelOverride) || MODELS.book;
     const seed_portrait_data_url: string | null = input.seed_portrait_data_url || null;
     const order_id: string | null = input.order_id ?? null;
     // Dev bypass is only honored when the ALLOW_CHECKOUT_BYPASS secret is "true"

@@ -21,6 +21,8 @@ export interface BookStatusRow {
     stage: string;
     current: number;
     total: number;
+    /** When the story run started (set by generate-book). Used to spot a dead story run. */
+    started_at?: string;
   } | null;
   pipeline_error: string | null;
 }

@@ -8,6 +8,7 @@ import { buildBrief } from "@/lib/buildBrief";
 import { coverMessages, pipelineMessage, useRotatingMessage } from "@/lib/loadingMessages";
 import { callEdge } from "@/lib/edgeFunctions";
 import { getBookStatus } from "@/lib/bookStatus";
+import { isStuckAtStory } from "@/lib/bookRetry";
 import { getTestMode } from "@/lib/testMode";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -121,6 +122,14 @@ export default function Step10Generating() {
       if (stalled) {
         lastAt = Date.now();
         void callEdge("generate-book-images", { book_id: bookId });
+      }
+
+      if (isStuckAtStory(status, prog)) {
+        // The story run died without marking the book failed. "Try again" asks
+        // generate-book, which restarts a story that has been stuck this long.
+        setErrored("The story took too long to write.");
+        setIsGenerating(false);
+        return;
       }
 
       if (status === "done") {

@@ -1,6 +1,7 @@
 import { assert, assertEquals } from "jsr:@std/assert";
 import {
   clearSeedPortraitForBook,
+  loadRetryInputs,
   loadServerStartInputs,
   MAX_SEED_PORTRAIT_CHARS,
   prepareOrderBookInputs,
@@ -159,6 +160,101 @@ Deno.test("server start: a database error is a 500, so the webhook retries", asy
   );
   assertEquals(result.ok, false);
   if (!result.ok) assertEquals(result.status, 500);
+});
+
+// ── loadRetryInputs (THI-10) ─────────────────────────────────────────────────
+// The buyer's browser retries a failed book with just `retry_book_id`. The
+// server finds the caller's own order for that book and loads its saved inputs.
+
+/** Fake read client that applies `.eq()` filters to real row lists, like Postgres would. */
+function fakeFilteringDb(tables: Record<string, Record<string, unknown>[]>, errors: Record<string, unknown> = {}) {
+  return {
+    from(table: string) {
+      return {
+        select() {
+          const filters: [string, unknown][] = [];
+          const filter = {
+            eq(col: string, val: unknown) {
+              filters.push([col, val]);
+              return filter;
+            },
+            maybeSingle() {
+              const match = (tables[table] ?? []).find((row) => filters.every(([c, v]) => row[c] === v));
+              return Promise.resolve({ data: match ?? null, error: errors[table] ?? null });
+            },
+          };
+          return filter;
+        },
+      };
+    },
+  };
+}
+
+const RETRY_TABLES = {
+  orders: [{ ...ORDER, book_id: "book-1" }],
+  order_book_inputs: [{ order_id: "order-1", ...INPUTS }],
+};
+
+Deno.test("retry: loads the saved inputs for the caller's own book", async () => {
+  const result = await loadRetryInputs(fakeFilteringDb(RETRY_TABLES), "user-1", "book-1");
+  assertEquals(result, {
+    ok: true,
+    orderId: "order-1",
+    userId: "user-1",
+    draftId: "draft-1",
+    buyerName: "Sarah",
+    buyerEmail: "sarah@example.com",
+    brief: { child: { name: "Ellie" } },
+    seedPortraitDataUrl: PORTRAIT,
+  });
+});
+
+Deno.test("retry: someone else's book is a 404, same as a book that doesn't exist", async () => {
+  const result = await loadRetryInputs(fakeFilteringDb(RETRY_TABLES), "user-2", "book-1");
+  assertEquals(result, { ok: false, status: 404, error: "Book not found." });
+});
+
+Deno.test("retry: a book with no order (made with the dev bypass) is a 404", async () => {
+  const result = await loadRetryInputs(fakeFilteringDb(RETRY_TABLES), "user-1", "book-unlinked");
+  assertEquals(result, { ok: false, status: 404, error: "Book not found." });
+});
+
+Deno.test("retry: an order with no saved inputs is a 422 with a message the buyer can act on", async () => {
+  const result = await loadRetryInputs(
+    fakeFilteringDb({ orders: RETRY_TABLES.orders, order_book_inputs: [] }),
+    "user-1",
+    "book-1",
+  );
+  assertEquals(result.ok, false);
+  if (!result.ok) {
+    assertEquals(result.status, 422);
+    assert(result.error.includes("support@thistlebook.com"));
+  }
+});
+
+Deno.test("retry: an id that isn't a UUID is a 404, not a server error", async () => {
+  const result = await loadRetryInputs(
+    fakeFilteringDb(RETRY_TABLES, { orders: { code: "22P02", message: "invalid input syntax for type uuid" } }),
+    "user-1",
+    "not-a-uuid",
+  );
+  assertEquals(result, { ok: false, status: 404, error: "Book not found." });
+});
+
+Deno.test("retry: a missing book id is a 400", async () => {
+  for (const bookId of [undefined, null, "", 5]) {
+    const result = await loadRetryInputs(fakeFilteringDb(RETRY_TABLES), "user-1", bookId);
+    assertEquals(result, { ok: false, status: 400, error: "retry_book_id is required." });
+  }
+});
+
+Deno.test("retry: a database error is a 500", async () => {
+  const result = await loadRetryInputs(
+    fakeFilteringDb(RETRY_TABLES, { orders: new Error("db down") }),
+    "user-1",
+    "book-1",
+  );
+  assertEquals(result, { ok: false, status: 500, error: "Order lookup failed." });
 });
 
 // ── saveBookInputsIfSent ─────────────────────────────────────────────────────
