@@ -229,7 +229,7 @@ Other routes: `/` (landing, or redirect to dashboard when signed in), `/login`, 
 1. Checkout (`Step10Preview`) calls `create-payment-intent`, which creates the Stripe PaymentIntent and an `orders` row (`status = 'pending'`). A second `create-payment-intent` call, made just before payment, saves the brief and approved character portrait in `order_book_inputs` (so the server can start the book without the browser). It is separate from the buyer-details call because the portrait is a multi-MB image.
 2. The browser confirms payment with Stripe. `stripe-webhook` marks the order `paid`, sends the receipt, then starts the book by calling `generate-book` with the service-role key and just the `order_id`. If that fails temporarily it returns 500 so Stripe retries.
 3. The generating step (`Step9Generating`) also calls `generate-book` with the brief and `order_id`. One paid order = one book, so whichever call comes second just gets the existing book back. `generate-book` checks the order is paid, writes the story, then starts `generate-book-images` in the background.
-4. `generate-book-images` generates portraits and pages, re-invoking itself in time slices until done, uploads to Google Drive, and sends the book ready / failed email.
+4. `generate-book-images` generates portraits and pages, re-invoking itself in time slices until done, uploads to Google Drive, and sends the book ready / failed email. A book is done once its images are generated; a failed Drive upload is logged (`console.error`) but never fails the book (THI-40).
 5. The browser polls `generated_books.pipeline_status` for progress.
 
 Known gaps in this flow are tracked in Linear project `1 · Checkout & payments` (THI-35 to THI-39).

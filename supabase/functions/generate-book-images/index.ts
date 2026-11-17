@@ -9,7 +9,8 @@
 //      image_prompt already baked into generated_books.parsed.pages[].
 //   3. Drive phase — hand off to export-book-images-to-drive to upload
 //      every image into the same Drive folder as the manuscript, in a
-//      book_images_<bookId>/ subfolder.
+//      book_images_<bookId>/ subfolder. Best effort: Drive is an internal
+//      backup, so a failed upload is logged but never fails the book.
 //
 // Input: { book_id: string }
 // Sequential by design (page images need consistent character likeness).
@@ -31,7 +32,8 @@ import {
   ensureBookFolder,
   uploadByKindSlot,
 } from "../_shared/driveUpload.ts";
-import { maybeSendFailed, maybeSendReady } from "../_shared/bookEmails.ts";
+import { maybeSendFailed } from "../_shared/bookEmails.ts";
+import { finishBook, setPipeline } from "../_shared/bookCompletion.ts";
 
 // Fire-and-forget Drive upload for a single (kind, slot). Safe to call
 // without awaiting — surface failures only via console + the row's error
@@ -120,23 +122,6 @@ function buildProtoDesc(brief: any): string {
 }
 
 // ---- DB helpers --------------------------------------------------------
-
-async function setPipeline(
-  supabase: any,
-  bookId: string,
-  status: string,
-  progress: Record<string, unknown>,
-): Promise<void> {
-  await supabase
-    .from("generated_books")
-    .update({
-      pipeline_status: status,
-      pipeline_progress: progress,
-      // Forward progress clears any stale error from a prior premature/failed attempt.
-      pipeline_error: null,
-    })
-    .eq("id", bookId);
-}
 
 async function upsertImage(
   supabase: any,
@@ -485,66 +470,6 @@ async function finalSweepGenerations(
   return still;
 }
 
-interface VerdictGap {
-  kind: "portrait" | "page" | "cover";
-  slot: number;
-  reason: "not_generated" | "not_uploaded";
-}
-
-async function verifyComplete(
-  supabase: any,
-  bookId: string,
-  parsed: any,
-): Promise<{ ok: boolean; gaps: VerdictGap[] }> {
-  const pages = Array.isArray(parsed?.pages) ? parsed.pages : [];
-  const requiredPageSlots = pages
-    .filter((p: any) => p.image_prompt)
-    .map((p: any) => Number(p.page_number));
-
-  const { data: rows, error } = await supabase
-    .from("book_images")
-    .select("kind,slot,status,drive_file_id")
-    .eq("book_id", bookId);
-  if (error) throw new Error(`verifyComplete read failed: ${error.message}`);
-
-  const byKey = new Map<string, { status: string; drive_file_id: string | null }>();
-  for (const r of rows || []) {
-    byKey.set(`${r.kind}/${r.slot}`, { status: r.status, drive_file_id: r.drive_file_id });
-  }
-
-  const gaps: VerdictGap[] = [];
-  const check = (kind: "portrait" | "page" | "cover", slot: number) => {
-    const row = byKey.get(`${kind}/${slot}`);
-    if (!row || row.status !== "ok") {
-      gaps.push({ kind, slot, reason: "not_generated" });
-    } else if (!row.drive_file_id) {
-      gaps.push({ kind, slot, reason: "not_uploaded" });
-    }
-  };
-
-  check("portrait", 1);
-  for (const s of requiredPageSlots) check("page", s);
-  // Cover is generated elsewhere; only enforce if a row exists.
-  if (byKey.has("cover/1")) check("cover", 1);
-
-  return { ok: gaps.length === 0, gaps };
-}
-
-function summarizeGaps(gaps: VerdictGap[]): string {
-  const pagesMissing = gaps.filter((g) => g.kind === "page" && g.reason === "not_generated").map((g) => g.slot);
-  const pagesUnuploaded = gaps.filter((g) => g.kind === "page" && g.reason === "not_uploaded").map((g) => g.slot);
-  const parts: string[] = [];
-  if (pagesMissing.length) parts.push(`missing ${pagesMissing.length} page(s) (${pagesMissing.join(", ")})`);
-  if (pagesUnuploaded.length) parts.push(`${pagesUnuploaded.length} page(s) not uploaded (${pagesUnuploaded.join(", ")})`);
-  for (const g of gaps) {
-    if (g.kind === "page") continue;
-    parts.push(`${g.kind}${g.slot > 1 ? ` ${g.slot}` : ""} ${g.reason === "not_generated" ? "not generated" : "not uploaded"}`);
-  }
-  return `Book incomplete: ${parts.join("; ")}`;
-}
-
-
-
 // ---- Handler -----------------------------------------------------------
 
 Deno.serve(async (req) => {
@@ -687,30 +612,15 @@ Deno.serve(async (req) => {
       console.error("Drive image export threw:", e);
     }
 
-    // 3c. Strict completion verdict: every required image must be generated
-    // AND uploaded to Drive, otherwise the book is failed.
-    const verdict = await verifyComplete(supabase, bookId, row.parsed);
-    if (!verdict.ok) {
-      const summary = summarizeGaps(verdict.gaps);
-      console.error("Book verification failed:", summary);
-      await supabase
-        .from("generated_books")
-        .update({
-          pipeline_status: "failed",
-          pipeline_error: summary.slice(0, 1000),
-        })
-        .eq("id", bookId);
-      await maybeSendFailed(supabase, bookRow);
+    // 3c. Completion verdict: the book is done once every required image is
+    // generated. Drive uploads that didn't land are logged, not fatal (THI-40).
+    const finished = await finishBook(supabase, bookRow, row.parsed);
+    if (!finished.ok) {
       return new Response(
-        JSON.stringify({ ok: false, book_id: bookId, error: summary, gaps: verdict.gaps }),
+        JSON.stringify({ ok: false, book_id: bookId, error: finished.summary, gaps: finished.gaps }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
-
-    await setPipeline(supabase, bookId, "done", {
-      stage: "done", current: 1, total: 1, message: "All done!",
-    });
-    await maybeSendReady(supabase, bookRow);
 
     // The saved seed portrait (THI-38) isn't needed once the book is done.
     // Best effort: the book is already finished and the buyer emailed.
