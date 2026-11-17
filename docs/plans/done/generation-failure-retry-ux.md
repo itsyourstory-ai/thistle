@@ -1,7 +1,7 @@
 # Plan: Generation failure & retry UX
 
-**Ticket:** THI-10
-**Branch:** feature/thi-10-generation-failure-retry-ux
+> Ticket: THI-10
+> Branch: feature/thi-10-generation-failure-retry-ux
 
 ## Goal
 
