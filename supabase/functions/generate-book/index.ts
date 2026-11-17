@@ -23,6 +23,7 @@ import {
   linkBookToOrder,
   orderPaymentState,
 } from "../_shared/orderBook.ts";
+import { CAN_BECOME_PAID_FROM } from "../_shared/orderStatus.ts";
 import { type InputsReadDb, loadServerStartInputs, type ServerStartInputs } from "../_shared/serverStart.ts";
 import {
   ageToBand,
@@ -486,7 +487,9 @@ Deno.serve(async (req) => {
             updated_at: new Date().toISOString(),
           })
           .eq("id", order.id)
-          .neq("status", "paid");
+          // Never move a refunded order back to paid, even if a refund landed
+          // since we read the status above (THI-68).
+          .in("status", [...CAN_BECOME_PAID_FROM]);
       }
 
       // Does this order already have a book?
