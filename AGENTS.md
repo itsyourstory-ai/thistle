@@ -204,7 +204,7 @@ Steps are defined in `src/lib/wizardSteps.ts` and routed in `src/App.tsx`:
 
 Note: component filenames are offset from route numbers for steps 9–12 (historical artifact).
 
-Other routes: `/` (landing, or redirect to dashboard when signed in), `/login`, `/dashboard` (drafts + finished books), `/resume/:draftId`, `/account`.
+Other routes: `/` (landing, or redirect to dashboard when signed in), `/login`, `/dashboard` (drafts + books, each with its status), `/book/:id` (the customer's book, page by page; shows a message while the book is still being made or if it failed), `/resume/:draftId`, `/account`.
 
 ### State management
 
@@ -249,6 +249,7 @@ All server logic runs in `supabase/functions/`. The client calls them through `c
 | `nudge-abandoned-orders` | Scheduled (pg_cron) abandoned-checkout email |
 | `generate-book` | Paid-order gate + full story text generation; starts the image pipeline. Called by the browser (user JWT + brief) or by `stripe-webhook` (service-role key + `order_id`, brief read from `order_book_inputs`) |
 | `generate-book-images` | Generates portraits and page illustrations; self-chains until done |
+| `get-book-image` | Returns one page image of the caller's own book (the browser can't read `book_images`). Called by the `/book/:id` reader, one image at a time |
 | `export-book-to-drive` / `export-book-images-to-drive` | Exports the manuscript and images to the team's Google Drive |
 | `sync-contact` | Syncs the signed-in user to Loops; sends the welcome email |
 | `delete-account` | Deletes the user's account and data (photo cleanup currently misses files; see THI-41) |
@@ -266,7 +267,7 @@ Migrations live in `supabase/migrations/`. Don't use `supabase db push` (see [Kn
 - `orders` — one row per checkout: product, amounts, buyer, shipping, Stripe ids, `status`, `book_id`, email stamps
 - `order_book_inputs` — the brief and approved character portrait saved at checkout, one row per order; service_role only. The portrait is cleared when the book is done; the brief stays
 - `generated_books` — one row per book; stores `brief` (jsonb), `status`, `parsed` story output, `pipeline_status` / `pipeline_progress`, email stamps. Users can read their own rows (not the buyer email/name columns).
-- `book_images` — generated portraits and page images (base64 in `image_data_url`); service_role only
+- `book_images` — generated portraits and page images (base64 in `image_data_url`); service_role only. The browser gets them through `get-book-image`. The approved cover isn't stored anywhere (`generate-book` blanks data URLs out of the brief), so the viewer has no cover image
 - `book_image_upload_attempts` — Drive upload tracking; service_role only
 - `stripe_webhook_events` — idempotency ledger for Stripe events
 - `edge_rate_limits` — per-user rate limit counters

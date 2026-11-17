@@ -23,8 +23,11 @@ function childName(book: GeneratedBookRow): string {
   return book.brief?.child?.name || "";
 }
 
-function previewUrl(): string {
-  return `${appBaseUrl()}/dashboard`;
+// Opens the customer book page (THI-20). The route is behind sign-in. A
+// signed-out buyer is sent to /login and lands on /dashboard afterwards (login
+// doesn't remember the page they were headed to).
+function previewUrl(book: GeneratedBookRow): string {
+  return `${appBaseUrl()}/book/${book.id}`;
 }
 
 async function stampBook(
@@ -104,7 +107,7 @@ export async function maybeSendReady(
     LOOPS_TEMPLATES.bookReady,
     {
       childName: childName(book),
-      previewUrl: previewUrl(),
+      previewUrl: previewUrl(book),
       bookId: book.id,
     },
   );

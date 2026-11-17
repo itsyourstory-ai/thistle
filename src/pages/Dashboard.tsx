@@ -16,14 +16,14 @@ interface BookParsed {
 interface BookRow {
   parsed?: BookParsed | null;
   childName?: string | null;
-  selectedConcept?: { title?: string } | null;
+  conceptTitle?: string | null;
 }
 
 function getBookTitle(book: BookRow): string {
   return (
     book.parsed?.meta?.title ||
     book.parsed?.cover_text ||
-    (book.selectedConcept as { title?: string } | null)?.title ||
+    book.conceptTitle ||
     "Untitled"
   );
 }
@@ -57,8 +57,11 @@ export default function Dashboard() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("generated_books")
-        .select("id, created_at, status, parsed, brief->childName, brief->selectedConcept")
-        .eq("status", "ok")
+        // AIDEV-NOTE: Pick single fields out of `brief` (child name, approved title).
+        // Never select the whole brief or `approvedConcept`: they hold the child's
+        // photos and the multi-MB cover image. No filter on `status` either: that
+        // is the story check (ok / needs_review) and hid books still being made.
+        .select("id, created_at, pipeline_status, parsed, childName:brief->child->>name, conceptTitle:brief->approvedConcept->>title")
         .order("created_at", { ascending: false })
         .limit(25);
       if (error) { console.error("Books query error:", error); return []; }
@@ -132,6 +135,7 @@ export default function Dashboard() {
                   title={getBookTitle(b as BookRow)}
                   childName={getChildName(b as BookRow)}
                   createdAt={b.created_at}
+                  pipelineStatus={b.pipeline_status}
                 />
               ))}
             </div>

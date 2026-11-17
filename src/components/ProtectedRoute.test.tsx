@@ -95,6 +95,29 @@ describe("ProtectedRoute", () => {
   });
 });
 
+describe("ProtectedRoute — customer book view", () => {
+  it("sends a signed-out visitor who opens a book link to /login", () => {
+    mockUseAuth.mockReturnValue({ session: null, loading: false });
+    render(
+      <MemoryRouter initialEntries={["/book/abc-123"]}>
+        <Routes>
+          <Route path="/login" element={<div>LOGIN PAGE</div>} />
+          <Route
+            path="/book/:id"
+            element={
+              <ProtectedRoute>
+                <div>BOOK VIEW</div>
+              </ProtectedRoute>
+            }
+          />
+        </Routes>
+      </MemoryRouter>
+    );
+    expect(screen.queryByText("BOOK VIEW")).not.toBeInTheDocument();
+    expect(screen.getByText("LOGIN PAGE")).toBeInTheDocument();
+  });
+});
+
 describe("RootRedirect", () => {
   it("shows a loading state while auth is resolving", () => {
     mockUseAuth.mockReturnValue({ session: null, loading: true });

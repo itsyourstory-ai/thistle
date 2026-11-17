@@ -126,6 +126,10 @@ export function getFixture(
       // Fire-and-forget; return value is ignored by the call site.
       return { data: {}, error: null };
 
+    case "get-book-image":
+      // One page image for the customer book viewer.
+      return { data: { image_data_url: COVER_URLS[profileId] }, error: null };
+
     default:
       return null;
   }

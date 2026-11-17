@@ -117,7 +117,7 @@ Deno.test("maybeSendReady: sends ready email and stamps book", async () => {
   assertEquals(mockSentEmails[0].payload.email, "buyer@example.com");
   assertEquals(mockSentEmails[0].payload.dataVariables, {
     childName: "Mira",
-    previewUrl: "https://thistlebook.com/dashboard",
+    previewUrl: "https://thistlebook.com/book/book-1",
     bookId: "book-1",
   });
   assertSingleBookStamp(db, "ready_email_sent_at");
@@ -193,7 +193,7 @@ Deno.test("maybeSendFailed: skips when buyer_email is null", async () => {
   assertEquals(db.calls.length, 0);
 });
 
-Deno.test("maybeSendReady: preview URL resolves from APP_BASE_URL with dashboard path", async () => {
+Deno.test("maybeSendReady: preview URL links to the book page, built from APP_BASE_URL", async () => {
   __resetLoopsMock();
   Deno.env.set("APP_BASE_URL", "https://thistlebook.com/");
   const db = makeFakeDb();
@@ -203,7 +203,7 @@ Deno.test("maybeSendReady: preview URL resolves from APP_BASE_URL with dashboard
   assertEquals(result, true);
   assertEquals(mockSentEmails[0].payload.dataVariables, {
     childName: "Mira",
-    previewUrl: "https://thistlebook.com/dashboard",
+    previewUrl: "https://thistlebook.com/book/book-1",
     bookId: "book-1",
   });
 });

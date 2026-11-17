@@ -15,6 +15,11 @@ const mockSingle = vi.fn();
 const mockEq = vi.fn(() => ({ single: mockSingle }));
 const mockSelect = vi.fn(() => ({ eq: mockEq }));
 
+const mockBooksLimit = vi.fn(() => Promise.resolve({ data: [], error: null }));
+const mockBooksOrder = vi.fn(() => ({ limit: mockBooksLimit }));
+const mockBooksEq = vi.fn(() => ({ order: mockBooksOrder }));
+const mockBooksSelect = vi.fn((_cols: string) => ({ order: mockBooksOrder, eq: mockBooksEq }));
+
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: {
     from: vi.fn((table: string) => {
@@ -23,6 +28,9 @@ vi.mock("@/integrations/supabase/client", () => ({
           delete: vi.fn(() => ({ eq: vi.fn(() => Promise.resolve({ error: null })) })),
           select: mockSelect,
         };
+      }
+      if (table === "generated_books") {
+        return { select: mockBooksSelect };
       }
       return {
         delete: vi.fn(() => ({ eq: vi.fn(() => Promise.resolve({ error: null })) })),
@@ -74,7 +82,13 @@ vi.mock("@/components/DraftCard", () => ({
 }));
 
 vi.mock("@/components/BookCard", () => ({
-  default: ({ title }: any) => <div data-testid="book-card">{title}</div>,
+  default: ({ title, childName, pipelineStatus }: any) => (
+    <div data-testid="book-card">
+      <span>{title}</span>
+      <span data-testid="book-child">{childName}</span>
+      <span data-testid="book-status">{String(pipelineStatus)}</span>
+    </div>
+  ),
 }));
 
 vi.mock("@/components/DashboardHeader", () => ({
@@ -157,15 +171,52 @@ describe("Dashboard", () => {
         id: "book-1",
         created_at: new Date().toISOString(),
         childName: "Leo",
-        selectedConcept: { title: "The Great Adventure" },
+        conceptTitle: "The Great Adventure",
         parsed: null,
         status: "ok",
+        pipeline_status: "pages",
       },
     ];
     mockQueries({ drafts: [], books });
     renderDashboard();
     expect(screen.getByTestId("book-card")).toBeInTheDocument();
     expect(screen.getByText("The Great Adventure")).toBeInTheDocument();
+    expect(screen.getByTestId("book-child")).toHaveTextContent("Leo");
+  });
+
+  it("shows each book's generation status on its card", () => {
+    const books = [
+      { id: "b1", created_at: new Date().toISOString(), parsed: null, pipeline_status: "failed" },
+    ];
+    mockQueries({ drafts: [], books });
+    renderDashboard();
+    expect(screen.getByTestId("book-status")).toHaveTextContent("failed");
+  });
+
+  it("lists books that are still being made, not only finished ones", async () => {
+    mockQueries();
+    renderDashboard();
+
+    const booksCall = (useQuery as any).mock.calls.find(
+      ([opts]: any[]) => opts.queryKey?.[0] === "generated_books",
+    );
+    await booksCall[0].queryFn();
+
+    expect(mockBooksSelect.mock.calls[0][0]).toContain("pipeline_status");
+    // No filter on the story's status: that hid books still generating.
+    expect(mockBooksEq).not.toHaveBeenCalled();
+  });
+
+  it("reads the child's name from where briefs actually store it", async () => {
+    mockQueries();
+    renderDashboard();
+
+    const booksCall = (useQuery as any).mock.calls.find(
+      ([opts]: any[]) => opts.queryKey?.[0] === "generated_books",
+    );
+    await booksCall[0].queryFn();
+
+    expect(mockBooksSelect.mock.calls[0][0]).toContain("brief->child->>name");
   });
 
   it('"Create a new book" button calls resetWizard and navigates to /step/1-name', () => {
