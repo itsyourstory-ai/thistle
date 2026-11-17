@@ -10,6 +10,7 @@ function renderBookCard(overrides: Partial<Parameters<typeof BookCard>[0]> = {})
     title: "The Brave Little Bunny",
     childName: "Mia",
     createdAt: "2026-06-11T12:00:00.000Z",
+    pipelineStatus: "done",
   };
   const props = { ...defaults, ...overrides };
   return render(
@@ -30,9 +31,27 @@ describe("BookCard", () => {
     expect(screen.getByText("Lena")).toBeInTheDocument();
   });
 
-  it("View link points to the correct story-preview URL", () => {
+  it("View link opens the customer book page, not the dev-only preview", () => {
     renderBookCard({ id: "book-abc-123" });
     const link = screen.getByRole("link", { name: /view/i });
-    expect(link).toHaveAttribute("href", "/dev/story-preview/book-abc-123");
+    expect(link).toHaveAttribute("href", "/book/book-abc-123");
+  });
+
+  it("shows a finished book as ready", () => {
+    renderBookCard({ pipelineStatus: "done" });
+    expect(screen.getByText("Ready")).toBeInTheDocument();
+  });
+
+  it("shows a book that is still generating as being made", () => {
+    for (const pipelineStatus of ["story", "portraits", "pages", "retrying", "idle", null]) {
+      const { unmount } = renderBookCard({ pipelineStatus });
+      expect(screen.getByText("Being made")).toBeInTheDocument();
+      unmount();
+    }
+  });
+
+  it("shows a failed book as having a problem", () => {
+    renderBookCard({ pipelineStatus: "failed" });
+    expect(screen.getByText("Something went wrong")).toBeInTheDocument();
   });
 });
